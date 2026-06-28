@@ -41,6 +41,47 @@ export const StudentDashboard = () => {
   const [showResults, setShowResults] = useState(false);
   const [currentAttempt, setCurrentAttempt] = useState<TestAttempt | null>(null);
   const [viewingAnswerSheet, setViewingAnswerSheet] = useState<{ attempt: TestAttempt; test: Test } | null>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const handleDownloadResultPdf = async () => {
+    const node = resultRef.current;
+    if (!node || !currentTest) return;
+    setDownloadingPdf(true);
+    try {
+      await document.fonts.ready;
+      await new Promise((r) => setTimeout(r, 100));
+      const canvas = await html2canvas(node, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        allowTaint: true,
+        windowWidth: node.scrollWidth,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const ratio = pdfWidth / canvas.width;
+      const totalPdfHeight = canvas.height * ratio;
+      let position = 0;
+      let remaining = totalPdfHeight;
+      while (remaining > 0) {
+        if (position > 0) pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, -position, pdfWidth, totalPdfHeight);
+        position += pdfHeight;
+        remaining -= pdfHeight;
+      }
+      pdf.save(`${currentTest.title.replace(/\s+/g, "_")}_Result.pdf`);
+    } catch (err) {
+      console.error("PDF download error:", err);
+      toast.error("Failed to generate PDF");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
 
   // Load data from Supabase
   useEffect(() => {
