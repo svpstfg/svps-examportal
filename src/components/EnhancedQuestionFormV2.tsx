@@ -17,14 +17,41 @@ import { ImageUploadField } from './ImageUploadField';
 interface EnhancedQuestionFormV2Props {
   onAddQuestion: (question: Question) => void;
   onRemoveQuestion?: (questionId: string) => void;
+  onUpdateQuestion?: (question: Question) => void;
   existingQuestions?: Question[];
 }
 
 export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
   onAddQuestion,
   onRemoveQuestion,
+  onUpdateQuestion,
   existingQuestions = []
 }) => {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<Question | null>(null);
+
+  const startEditing = (question: Question) => {
+    setEditingId(question.id);
+    setEditDraft({ ...question, options: [...question.options] });
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditDraft(null);
+  };
+
+  const saveEditing = () => {
+    if (!editDraft) return;
+    if (editDraft.options.some(opt => !opt.replace(/<[^>]*>/g, '').trim())) {
+      toast.error('Options cannot be empty');
+      return;
+    }
+    onUpdateQuestion?.(editDraft);
+    setEditingId(null);
+    setEditDraft(null);
+    toast.success('Question updated!');
+  };
+
   const [currentQuestion, setCurrentQuestion] = useState<Question>({
     id: '',
     question: '',
