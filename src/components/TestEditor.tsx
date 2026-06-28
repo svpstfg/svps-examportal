@@ -55,6 +55,14 @@ export const TestEditor = ({ test, chapters, courses, classes, onSave, onCancel 
     }));
   };
 
+  const updateQuestionInTest = (question: Question) => {
+    setEditingTest(prev => ({
+      ...prev,
+      questions: prev.questions.map(q => q.id === question.id ? question : q)
+    }));
+  };
+
+
   const handleSaveTest = async () => {
     if (!editingTest.title || !editingTest.chapterId || editingTest.questions.length === 0) {
       toast.error('Please fill in all required fields and add at least one question');
