@@ -833,18 +833,19 @@ export const StudentDashboard = () => {
                     </div>
                   );
                 })}
-                
-                <Button 
-                  onClick={() => {
-                    setCurrentTest(null);
-                    setShowResults(false);
-                  }}
-                  className="w-full"
-                >
-                  Back to Dashboard
-                </Button>
               </CardContent>
             </Card>
+            </div>
+
+            <Button 
+              onClick={() => {
+                setCurrentTest(null);
+                setShowResults(false);
+              }}
+              className="w-full mt-6"
+            >
+              Back to Dashboard
+            </Button>
           </div>
         </div>
       </div>
