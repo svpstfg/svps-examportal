@@ -126,6 +126,139 @@ export type Database = {
           },
         ]
       }
+      doubt_messages: {
+        Row: {
+          created_at: string
+          doubt_id: string
+          id: string
+          image_url: string | null
+          message: string | null
+          sender_id: string
+          sender_role: string
+        }
+        Insert: {
+          created_at?: string
+          doubt_id: string
+          id?: string
+          image_url?: string | null
+          message?: string | null
+          sender_id: string
+          sender_role: string
+        }
+        Update: {
+          created_at?: string
+          doubt_id?: string
+          id?: string
+          image_url?: string | null
+          message?: string | null
+          sender_id?: string
+          sender_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doubt_messages_doubt_id_fkey"
+            columns: ["doubt_id"]
+            isOneToOne: false
+            referencedRelation: "doubts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doubts: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          status: string
+          student_id: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          status?: string
+          student_id: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+          student_id?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doubts_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doubts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notices: {
+        Row: {
+          attachment_name: string | null
+          attachment_path: string | null
+          attachment_type: string | null
+          class_id: string
+          content: string | null
+          created_at: string
+          id: string
+          link: string | null
+          teacher_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_type?: string | null
+          class_id: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          teacher_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_type?: string | null
+          class_id?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          teacher_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notices_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -155,6 +288,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      question_papers: {
+        Row: {
+          class_id: string
+          created_at: string
+          file_name: string
+          file_path: string
+          id: string
+          title: string
+          uploaded_by: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          id?: string
+          title: string
+          uploaded_by: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          id?: string
+          title?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_papers_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       slides: {
         Row: {
@@ -201,6 +372,7 @@ export type Database = {
           enrolled_at: string
           id: string
           student_id: string
+          subscription_expires_at: string | null
           tier: string
         }
         Insert: {
@@ -209,6 +381,7 @@ export type Database = {
           enrolled_at?: string
           id?: string
           student_id: string
+          subscription_expires_at?: string | null
           tier?: string
         }
         Update: {
@@ -217,6 +390,7 @@ export type Database = {
           enrolled_at?: string
           id?: string
           student_id?: string
+          subscription_expires_at?: string | null
           tier?: string
         }
         Relationships: [
