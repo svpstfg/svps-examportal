@@ -894,18 +894,13 @@ export const StudentDashboard = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Student Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {student.name}!</p>
-            <p className="text-sm text-muted-foreground">{student.email}</p>
-          </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Student Dashboard</h1>
+          <p className="text-muted-foreground">Welcome back, {student.name}!</p>
+          <p className="text-sm text-muted-foreground">{student.email}</p>
         </div>
       </div>
+
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
