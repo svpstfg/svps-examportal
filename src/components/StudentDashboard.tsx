@@ -734,6 +734,13 @@ export const StudentDashboard = () => {
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
+            <div className="flex justify-end mb-4">
+              <Button onClick={handleDownloadResultPdf} disabled={downloadingPdf} variant="outline" size="sm" title="Download as PDF">
+                <Download className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{downloadingPdf ? "Preparing..." : "Download as PDF"}</span>
+              </Button>
+            </div>
+            <div ref={resultRef} className="bg-background">
             <Card className="mb-6">
               <CardHeader className="text-center">
                 <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
