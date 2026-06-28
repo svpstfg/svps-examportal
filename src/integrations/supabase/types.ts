@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          is_pro: boolean
           name: string
           test_count: number | null
           updated_at: string
@@ -29,6 +30,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_pro?: boolean
           name: string
           test_count?: number | null
           updated_at?: string
@@ -38,6 +40,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_pro?: boolean
           name?: string
           test_count?: number | null
           updated_at?: string
@@ -57,6 +60,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          invite_code: string
           name: string
           student_count: number | null
           teacher_id: string
@@ -66,6 +70,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          invite_code?: string
           name: string
           student_count?: number | null
           teacher_id: string
@@ -75,6 +80,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          invite_code?: string
           name?: string
           student_count?: number | null
           teacher_id?: string
@@ -188,6 +194,48 @@ export type Database = {
           },
         ]
       }
+      student_enrollments: {
+        Row: {
+          class_id: string
+          created_at: string
+          enrolled_at: string
+          id: string
+          student_id: string
+          tier: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          enrolled_at?: string
+          id?: string
+          student_id: string
+          tier?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          enrolled_at?: string
+          id?: string
+          student_id?: string
+          tier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_enrollments_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_enrollments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           class_id: string
@@ -280,6 +328,7 @@ export type Database = {
           created_at: string
           duration: number
           id: string
+          is_pro: boolean
           is_scheduled: boolean | null
           questions: Json
           scheduled_date: string | null
@@ -292,6 +341,7 @@ export type Database = {
           created_at?: string
           duration: number
           id?: string
+          is_pro?: boolean
           is_scheduled?: boolean | null
           questions?: Json
           scheduled_date?: string | null
@@ -304,6 +354,7 @@ export type Database = {
           created_at?: string
           duration?: number
           id?: string
+          is_pro?: boolean
           is_scheduled?: boolean | null
           questions?: Json
           scheduled_date?: string | null
@@ -347,6 +398,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      find_class_by_invite_code: {
+        Args: { _invite_code: string }
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -356,6 +414,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_student_in_class: {
+        Args: { _class_id: string; _email: string }
         Returns: boolean
       }
     }
