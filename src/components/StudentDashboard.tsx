@@ -885,12 +885,6 @@ export const StudentDashboard = () => {
             </CardContent>
           </Card>
           
-          <div className="flex justify-center space-x-4">
-            <Button onClick={handleLogout} variant="outline">
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
         </div>
       </div>
     );
