@@ -546,6 +546,45 @@ export type Database = {
           },
         ]
       }
+      upgrade_requests: {
+        Row: {
+          approved_duration_days: number | null
+          class_id: string
+          created_at: string
+          id: string
+          message: string | null
+          responded_at: string | null
+          status: string
+          student_id: string
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          approved_duration_days?: number | null
+          class_id: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          responded_at?: string | null
+          status?: string
+          student_id: string
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          approved_duration_days?: number | null
+          class_id?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          responded_at?: string | null
+          status?: string
+          student_id?: string
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -567,11 +606,36 @@ export type Database = {
         }
         Relationships: []
       }
+      visitor_counts: {
+        Row: {
+          count: number
+          id: string
+          page: string
+          updated_at: string
+        }
+        Insert: {
+          count?: number
+          id?: string
+          page: string
+          updated_at?: string
+        }
+        Update: {
+          count?: number
+          id?: string
+          page?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      approve_upgrade_request: {
+        Args: { _duration_days?: number; _request_id: string }
+        Returns: undefined
+      }
       find_class_by_invite_code: {
         Args: { _invite_code: string }
         Returns: {
@@ -583,6 +647,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_visitor_count: { Args: { _page: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -590,9 +655,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_visitor_count: { Args: { _page: string }; Returns: number }
       is_student_in_class: {
         Args: { _class_id: string; _email: string }
         Returns: boolean
+      }
+      list_public_classes: {
+        Args: never
+        Returns: {
+          description: string
+          id: string
+          name: string
+        }[]
+      }
+      reject_upgrade_request: {
+        Args: { _request_id: string }
+        Returns: undefined
       }
     }
     Enums: {
