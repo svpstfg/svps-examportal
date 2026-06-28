@@ -14,16 +14,353 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chapters: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          test_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          test_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          test_count?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapters_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classes: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          student_count: number | null
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          student_count?: number | null
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          student_count?: number | null
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      courses: {
+        Row: {
+          chapter_count: number | null
+          class_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          chapter_count?: number | null
+          class_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          chapter_count?: number | null
+          class_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      slides: {
+        Row: {
+          chapter_id: string | null
+          content: string
+          created_at: string
+          id: string
+          serial_number: number
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          chapter_id?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          serial_number?: number
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chapter_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          serial_number?: number
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "slides_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          class_id: string
+          created_at: string
+          email: string
+          enrolled_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          email: string
+          enrolled_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          email?: string
+          enrolled_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_attempts: {
+        Row: {
+          answers: number[]
+          completed_at: string
+          created_at: string
+          id: string
+          score: number
+          student_id: string
+          test_id: string
+          time_spent: number
+        }
+        Insert: {
+          answers: number[]
+          completed_at?: string
+          created_at?: string
+          id?: string
+          score: number
+          student_id: string
+          test_id: string
+          time_spent: number
+        }
+        Update: {
+          answers?: number[]
+          completed_at?: string
+          created_at?: string
+          id?: string
+          score?: number
+          student_id?: string
+          test_id?: string
+          time_spent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_attempts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_attempts_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tests: {
+        Row: {
+          chapter_id: string
+          created_at: string
+          duration: number
+          id: string
+          is_scheduled: boolean | null
+          questions: Json
+          scheduled_date: string | null
+          scheduled_time: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string
+          duration: number
+          id?: string
+          is_scheduled?: boolean | null
+          questions?: Json
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string
+          duration?: number
+          id?: string
+          is_scheduled?: boolean | null
+          questions?: Json
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tests_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "teacher" | "student"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +487,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["teacher", "student"],
+    },
   },
 } as const
