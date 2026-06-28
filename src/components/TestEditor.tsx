@@ -231,6 +231,7 @@ export const TestEditor = ({ test, chapters, courses, classes, onSave, onCancel 
       <EnhancedQuestionFormV2 
         onAddQuestion={addQuestionToTest}
         onRemoveQuestion={removeQuestionFromTest}
+        onUpdateQuestion={updateQuestionInTest}
         existingQuestions={editingTest.questions}
       />
     </div>
