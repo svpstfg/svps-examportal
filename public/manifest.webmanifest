@@ -1,0 +1,18 @@
+{
+  "name": "Mock Test Platform",
+  "short_name": "MockTest",
+  "description": "Learn, practice and excel with mock tests",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/placeholder.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
