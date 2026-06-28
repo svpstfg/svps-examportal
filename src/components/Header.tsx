@@ -71,9 +71,9 @@ export const Header = () => {
                 <User className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Profile</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
+              <Button variant="outline" size="sm" onClick={handleLogout} title="Sign Out">
+                <LogOut className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Sign Out</span>
               </Button>
             </div>
           )}

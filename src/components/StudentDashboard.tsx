@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +41,47 @@ export const StudentDashboard = () => {
   const [showResults, setShowResults] = useState(false);
   const [currentAttempt, setCurrentAttempt] = useState<TestAttempt | null>(null);
   const [viewingAnswerSheet, setViewingAnswerSheet] = useState<{ attempt: TestAttempt; test: Test } | null>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const handleDownloadResultPdf = async () => {
+    const node = resultRef.current;
+    if (!node || !currentTest) return;
+    setDownloadingPdf(true);
+    try {
+      await document.fonts.ready;
+      await new Promise((r) => setTimeout(r, 100));
+      const canvas = await html2canvas(node, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        allowTaint: true,
+        windowWidth: node.scrollWidth,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const ratio = pdfWidth / canvas.width;
+      const totalPdfHeight = canvas.height * ratio;
+      let position = 0;
+      let remaining = totalPdfHeight;
+      while (remaining > 0) {
+        if (position > 0) pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, -position, pdfWidth, totalPdfHeight);
+        position += pdfHeight;
+        remaining -= pdfHeight;
+      }
+      pdf.save(`${currentTest.title.replace(/\s+/g, "_")}_Result.pdf`);
+    } catch (err) {
+      console.error("PDF download error:", err);
+      toast.error("Failed to generate PDF");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
 
   // Load data from Supabase
   useEffect(() => {
@@ -691,6 +734,13 @@ export const StudentDashboard = () => {
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
+            <div className="flex justify-end mb-4">
+              <Button onClick={handleDownloadResultPdf} disabled={downloadingPdf} variant="outline" size="sm" title="Download as PDF">
+                <Download className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{downloadingPdf ? "Preparing..." : "Download as PDF"}</span>
+              </Button>
+            </div>
+            <div ref={resultRef} className="bg-background">
             <Card className="mb-6">
               <CardHeader className="text-center">
                 <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -783,18 +833,19 @@ export const StudentDashboard = () => {
                     </div>
                   );
                 })}
-                
-                <Button 
-                  onClick={() => {
-                    setCurrentTest(null);
-                    setShowResults(false);
-                  }}
-                  className="w-full"
-                >
-                  Back to Dashboard
-                </Button>
               </CardContent>
             </Card>
+            </div>
+
+            <Button 
+              onClick={() => {
+                setCurrentTest(null);
+                setShowResults(false);
+              }}
+              className="w-full mt-6"
+            >
+              Back to Dashboard
+            </Button>
           </div>
         </div>
       </div>
@@ -885,12 +936,6 @@ export const StudentDashboard = () => {
             </CardContent>
           </Card>
           
-          <div className="flex justify-center space-x-4">
-            <Button onClick={handleLogout} variant="outline">
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
         </div>
       </div>
     );
@@ -900,18 +945,13 @@ export const StudentDashboard = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Student Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {student.name}!</p>
-            <p className="text-sm text-muted-foreground">{student.email}</p>
-          </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Student Dashboard</h1>
+          <p className="text-muted-foreground">Welcome back, {student.name}!</p>
+          <p className="text-sm text-muted-foreground">{student.email}</p>
         </div>
       </div>
+
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">

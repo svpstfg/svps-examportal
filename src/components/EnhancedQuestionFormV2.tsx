@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Type, Calculator, AlignLeft, Trash2, Image as ImageIcon, Upload, Download, FileJson } from 'lucide-react';
+import { Plus, Type, Calculator, AlignLeft, Trash2, Image as ImageIcon, Upload, Download, FileJson, Pencil, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Question } from '@/types';
 import { MathSymbolToolbar, processMathText, convertToUnicode, processRichTextPaste } from './MathFormulaProcessor';
@@ -17,14 +17,41 @@ import { ImageUploadField } from './ImageUploadField';
 interface EnhancedQuestionFormV2Props {
   onAddQuestion: (question: Question) => void;
   onRemoveQuestion?: (questionId: string) => void;
+  onUpdateQuestion?: (question: Question) => void;
   existingQuestions?: Question[];
 }
 
 export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
   onAddQuestion,
   onRemoveQuestion,
+  onUpdateQuestion,
   existingQuestions = []
 }) => {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<Question | null>(null);
+
+  const startEditing = (question: Question) => {
+    setEditingId(question.id);
+    setEditDraft({ ...question, options: [...question.options] });
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditDraft(null);
+  };
+
+  const saveEditing = () => {
+    if (!editDraft) return;
+    if (editDraft.options.some(opt => !opt.replace(/<[^>]*>/g, '').trim())) {
+      toast.error('Options cannot be empty');
+      return;
+    }
+    onUpdateQuestion?.(editDraft);
+    setEditingId(null);
+    setEditDraft(null);
+    toast.success('Question updated!');
+  };
+
   const [currentQuestion, setCurrentQuestion] = useState<Question>({
     id: '',
     question: '',
@@ -719,7 +746,9 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
             <CardTitle>Questions Added ({existingQuestions.length})</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {existingQuestions.map((question, index) => (
+            {existingQuestions.map((question, index) => {
+              const isEditing = editingId === question.id && editDraft;
+              return (
               <Card key={question.id} className="border-l-4 border-l-primary">
                 <CardContent className="pt-4">
                   <div className="flex justify-between items-start gap-4">
@@ -739,7 +768,43 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                           )}
                         </div>
                       </div>
-                      
+
+                      {isEditing ? (
+                        <div className="space-y-3 ml-6">
+                          {editDraft!.options.map((option, optIndex) => (
+                            <div key={optIndex} className="space-y-1">
+                              <Label className="text-xs font-mono">Option {String.fromCharCode(65 + optIndex)}</Label>
+                              <Input
+                                value={option}
+                                onChange={(e) => {
+                                  const newOptions = [...editDraft!.options];
+                                  newOptions[optIndex] = e.target.value;
+                                  setEditDraft({ ...editDraft!, options: newOptions });
+                                }}
+                              />
+                            </div>
+                          ))}
+                          <div className="space-y-1">
+                            <Label className="text-xs">Correct Answer</Label>
+                            <Select
+                              value={editDraft!.correctAnswer.toString()}
+                              onValueChange={(value) => setEditDraft({ ...editDraft!, correctAnswer: parseInt(value) })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {editDraft!.options.map((_, optIndex) => (
+                                  <SelectItem key={optIndex} value={optIndex.toString()}>
+                                    Option {String.fromCharCode(65 + optIndex)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Tip: you can use HTML/symbols inside an option.</p>
+                        </div>
+                      ) : (
                       <div className="space-y-2 ml-6">
                         {question.options.map((option, optIndex) => (
                           <div key={optIndex} className={`p-2 rounded ${
@@ -769,6 +834,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                           </div>
                         ))}
                       </div>
+                      )}
                       
                       {(question.explanation || question.explanationImage) && (
                         <div className="ml-6 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md space-y-2">
@@ -788,20 +854,41 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                         </div>
                       )}
                     </div>
-                    {onRemoveQuestion && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => onRemoveQuestion(question.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
+                    <div className="flex flex-col gap-2">
+                      {isEditing ? (
+                        <>
+                          <Button variant="default" size="sm" onClick={saveEditing}>
+                            <Save className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={cancelEditing}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          {onUpdateQuestion && (
+                            <Button variant="outline" size="sm" onClick={() => startEditing(question)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {onRemoveQuestion && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => onRemoveQuestion(question.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
       )}

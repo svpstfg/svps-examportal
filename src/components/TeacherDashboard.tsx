@@ -1243,6 +1243,12 @@ export const TeacherDashboard = () => {
               }));
             }}
             onRemoveQuestion={removeQuestionFromTest}
+            onUpdateQuestion={(question) => {
+              setNewTest(prev => ({
+                ...prev,
+                questions: prev.questions.map(q => q.id === question.id ? question : q)
+              }));
+            }}
             existingQuestions={newTest.questions}
           />
 
