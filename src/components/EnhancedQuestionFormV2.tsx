@@ -753,10 +753,27 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
             </Tabs>
           </div>
 
-          <Button onClick={addQuestionToTest} className="w-full">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Enhanced Question to Test
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={addQuestionToTest} className="flex-1">
+              {editingId ? (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Update Enhanced Question to Test
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Enhanced Question to Test
+                </>
+              )}
+            </Button>
+            {editingId && (
+              <Button variant="outline" onClick={cancelEditing}>
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
