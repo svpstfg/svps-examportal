@@ -499,6 +499,13 @@ export const StudentDashboard = () => {
     return chapter ? courses.find(course => course.id === chapter.courseId)?.name || "Unknown Course" : "Unknown Course";
   };
 
+  const getTestClassName = (chapterId: string) => {
+    const chapter = chapters.find(ch => ch.id === chapterId);
+    const course = chapter ? courses.find(c => c.id === chapter.courseId) : undefined;
+    return course ? classes.find(cls => cls.id === course.classId)?.name || "Unknown Class" : "Unknown Class";
+  };
+
+
   // Filter tests based on student enrollments (multi-class support)
   const [enrolledClassIds, setEnrolledClassIds] = useState<string[]>([]);
   const [studentTiers, setStudentTiers] = useState<Record<string, 'free' | 'pro'>>({});
