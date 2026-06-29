@@ -903,7 +903,7 @@ export const StudentDashboard = () => {
                       </div>
                       
                       <p className="text-sm text-muted-foreground mb-2">
-                        Chapter: {getChapterName(test.chapterId)} • Course: {getCourseName(test.chapterId)}
+                        Class: {getTestClassName(test.chapterId)} • Subject: {getCourseName(test.chapterId)} • Chapter: {getChapterName(test.chapterId)}
                       </p>
                       
                       <div className="flex items-center justify-between">
@@ -1054,7 +1054,7 @@ export const StudentDashboard = () => {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">
-                            Chapter: {getChapterName(test.chapterId)} • Course: {getCourseName(test.chapterId)}
+                            Class: {getTestClassName(test.chapterId)} • Subject: {getCourseName(test.chapterId)} • Chapter: {getChapterName(test.chapterId)}
                           </p>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4 text-sm">
@@ -1095,7 +1095,7 @@ export const StudentDashboard = () => {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">
-                            Chapter: {getChapterName(test.chapterId)} • Course: {getCourseName(test.chapterId)}
+                            Class: {getTestClassName(test.chapterId)} • Subject: {getCourseName(test.chapterId)} • Chapter: {getChapterName(test.chapterId)}
                           </p>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4 text-sm">
@@ -1143,7 +1143,7 @@ export const StudentDashboard = () => {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">
-                            Chapter: {getChapterName(test.chapterId)} • Course: {getCourseName(test.chapterId)}
+                            Class: {getTestClassName(test.chapterId)} • Subject: {getCourseName(test.chapterId)} • Chapter: {getChapterName(test.chapterId)}
                           </p>
                           {!available && countdown && (
                             <div className="flex items-center space-x-2 mb-3 p-2 rounded-md bg-primary/5 border border-primary/20">
@@ -1202,7 +1202,7 @@ export const StudentDashboard = () => {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">
-                            Chapter: {getChapterName(test.chapterId)} • Course: {getCourseName(test.chapterId)}
+                            Class: {getTestClassName(test.chapterId)} • Subject: {getCourseName(test.chapterId)} • Chapter: {getChapterName(test.chapterId)}
                           </p>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4 text-sm">
