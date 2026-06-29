@@ -785,9 +785,10 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
           </CardHeader>
           <CardContent className="space-y-4">
             {existingQuestions.map((question, index) => {
-              const isEditing = editingId === question.id && editDraft;
+              const isEditing = editingId === question.id;
               return (
-              <Card key={question.id} className="border-l-4 border-l-primary">
+              <Card key={question.id} className={`border-l-4 ${isEditing ? 'border-l-primary ring-2 ring-primary/40' : 'border-l-primary'}`}>
+
                 <CardContent className="pt-4">
                   <div className="flex justify-between items-start gap-4">
                     <div className="space-y-3 flex-1">
