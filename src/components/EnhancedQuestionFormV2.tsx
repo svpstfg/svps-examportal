@@ -378,6 +378,21 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       return;
     }
 
+    if (editingId) {
+      const updatedQuestion: Question = {
+        ...currentQuestion,
+        id: editingId,
+        question: questionHTML,
+        options: optionsHTML,
+        explanation: explanationHTML,
+      };
+      onUpdateQuestion?.(updatedQuestion);
+      setEditingId(null);
+      resetBuilder();
+      toast.success('Question updated!');
+      return;
+    }
+
     const normalizedQuestion: Question = {
       ...currentQuestion,
       id: Date.now().toString(),
@@ -387,23 +402,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
     };
 
     onAddQuestion(normalizedQuestion);
-
-    // Clear contentEditable divs
-    if (questionRichRef.current) questionRichRef.current.innerHTML = '';
-    optionRichRefs.current.forEach(ref => { if (ref) ref.innerHTML = ''; });
-    if (explanationRichRef.current) explanationRichRef.current.innerHTML = '';
-
-    setCurrentQuestion({
-      id: '',
-      question: '',
-      questionImage: '',
-      options: ['', '', '', ''],
-      optionImages: ['', '', '', ''],
-      correctAnswer: 0,
-      explanation: '',
-      explanationImage: '',
-    });
-
+    resetBuilder();
     toast.success('Question added to test!');
   };
 
