@@ -505,6 +505,7 @@ export type Database = {
           is_pro: boolean
           is_scheduled: boolean | null
           questions: Json
+          results_published: boolean
           scheduled_date: string | null
           scheduled_time: string | null
           title: string
@@ -518,6 +519,7 @@ export type Database = {
           is_pro?: boolean
           is_scheduled?: boolean | null
           questions?: Json
+          results_published?: boolean
           scheduled_date?: string | null
           scheduled_time?: string | null
           title: string
@@ -531,6 +533,7 @@ export type Database = {
           is_pro?: boolean
           is_scheduled?: boolean | null
           questions?: Json
+          results_published?: boolean
           scheduled_date?: string | null
           scheduled_time?: string | null
           title?: string

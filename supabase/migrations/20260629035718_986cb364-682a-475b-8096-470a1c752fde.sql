@@ -1,0 +1,1 @@
+ALTER TABLE public.tests ADD COLUMN IF NOT EXISTS results_published boolean NOT NULL DEFAULT false;
