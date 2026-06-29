@@ -91,6 +91,8 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
   }
 
   const [pastedImages, setPastedImages] = useState<PastedImage[]>([]);
+  const [defaultImageWidth, setDefaultImageWidth] = useState<number>(30); // default small size
+  const [defaultImageLayout, setDefaultImageLayout] = useState<'row' | 'column'>('column');
 
   const questionRef = useRef<HTMLTextAreaElement>(null);
   const questionRichRef = useRef<HTMLDivElement>(null);
@@ -230,9 +232,17 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       // assign a stable id so we can find and control this image later
       const imgId = `img-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
       imageElement.dataset.imageId = imgId;
-      const defaultWidth = 50; // percent to avoid huge pasted images
+      const defaultWidth = defaultImageWidth; // use global default
       imageElement.style.width = `${defaultWidth}%`;
+      imageElement.draggable = true;
+      // set display style according to layout
+      imageElement.style.display = defaultImageLayout === 'row' ? 'inline-block' : 'block';
       setPastedImages(prev => [...prev, { id: imgId, src: imageData, width: defaultWidth, field, index }]);
+
+      // attach dragstart so we can drag with mouse
+      imageElement.addEventListener('dragstart', (ev: DragEvent) => {
+        try { ev.dataTransfer?.setData('text/plain', imgId); } catch (e) { /* ignore */ }
+      });
 
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0 && target.contains(selection.anchorNode)) {
@@ -315,6 +325,76 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       if (targetMeta.field === 'option' && typeof targetMeta.index === 'number' && optionRichRefs.current[targetMeta.index]) syncRichFieldState(optionRichRefs.current[targetMeta.index]!, 'option', targetMeta.index);
     }
   };
+
+  // Setup dragover/drop handlers on builder container so images can be moved by mouse
+  useEffect(() => {
+    const container = builderRef.current;
+    if (!container) return;
+
+    const onDragOver = (e: DragEvent) => {
+      e.preventDefault();
+    };
+
+    const onDrop = (e: DragEvent) => {
+      e.preventDefault();
+      const data = e.dataTransfer?.getData('text/plain');
+      if (!data) return;
+      const img = document.querySelector(`img[data-image-id="${data}"]`) as HTMLImageElement | null;
+      if (!img) return;
+      // find nearest rich-text editor target
+      const targetEl = (e.target as Element).closest('.rich-text-editor') as HTMLDivElement | null;
+      if (!targetEl) return;
+      // remove from previous parent
+      const prevParent = img.parentElement;
+      if (prevParent) prevParent.removeChild(img);
+      // insert at drop point if possible
+      let range: Range | null = null;
+      try {
+        const x = (e as DragEvent).clientX;
+        const y = (e as DragEvent).clientY;
+        if ((document as any).caretRangeFromPoint) {
+          range = (document as any).caretRangeFromPoint(x, y) as Range;
+        } else if ((document as any).caretPositionFromPoint) {
+          const pos = (document as any).caretPositionFromPoint(x, y);
+          range = document.createRange();
+          range.setStart(pos.offsetNode, pos.offset);
+        }
+      } catch (err) {
+        range = null;
+      }
+      if (range && targetEl.contains(range.startContainer)) {
+        range.insertNode(img);
+      } else {
+        targetEl.appendChild(img);
+      }
+
+      // ensure display style matches default layout
+      img.style.display = defaultImageLayout === 'row' ? 'inline-block' : 'block';
+
+      // reorder pastedImages to match DOM order for the affected field
+      const field = targetEl === questionRichRef.current ? 'question' : targetEl === explanationRichRef.current ? 'explanation' : 'option';
+      const optionIndex = field === 'option' ? Array.from(targetEl.parentElement?.querySelectorAll('.rich-text-editor') || []).indexOf(targetEl) : undefined;
+      const fieldImgs = Array.from(targetEl.querySelectorAll('img')) as HTMLImageElement[];
+      const domOrderIds = fieldImgs.map(i => i.dataset.imageId || '');
+      setPastedImages(prev => {
+        const others = prev.filter(p => !(p.field === field && p.index === optionIndex));
+        const fieldItems = prev.filter(p => p.field === field && p.index === optionIndex).slice();
+        fieldItems.sort((a,b) => domOrderIds.indexOf(a.id) - domOrderIds.indexOf(b.id));
+        return [...others, ...fieldItems];
+      });
+      // sync HTML state
+      if (targetEl === questionRichRef.current) syncRichFieldState(questionRichRef.current!, 'question');
+      else if (targetEl === explanationRichRef.current) syncRichFieldState(explanationRichRef.current!, 'explanation');
+      else if (typeof optionIndex === 'number' && optionRichRefs.current[optionIndex]) syncRichFieldState(optionRichRefs.current[optionIndex]!, 'option', optionIndex);
+    };
+
+    container.addEventListener('dragover', onDragOver);
+    container.addEventListener('drop', onDrop);
+    return () => {
+      container.removeEventListener('dragover', onDragOver);
+      container.removeEventListener('drop', onDrop);
+    };
+  }, [builderRef, pastedImages, defaultImageLayout]);
 
   // Rich paste handler for contentEditable fields
   const handleRichPaste = (
@@ -715,6 +795,22 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       </Card>
 
       <Card ref={builderRef}>
+        <div className="p-4 border-b">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Label className="text-sm">Default Image Size</Label>
+              <input type="range" min={20} max={100} step={5} value={defaultImageWidth} onChange={(e) => setDefaultImageWidth(parseInt(e.target.value))} />
+              <span className="text-xs text-muted-foreground">{defaultImageWidth}%</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-sm">Image Layout</Label>
+              <select value={defaultImageLayout} onChange={(e) => setDefaultImageLayout(e.target.value as 'row' | 'column')} className="px-2 py-1 border rounded">
+                <option value="column">Stack (column)</option>
+                <option value="row">Inline (row)</option>
+              </select>
+            </div>
+          </div>
+        </div>
         {editingId && (
           <div className="mx-6 mt-4 rounded-md bg-primary/10 border border-primary/30 px-3 py-2 text-sm text-primary font-medium">
             Editing question — make your changes and click "Update Enhanced Question to Test".
