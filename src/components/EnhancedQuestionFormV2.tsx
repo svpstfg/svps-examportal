@@ -28,28 +28,45 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
   existingQuestions = []
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<Question | null>(null);
+  const builderRef = useRef<HTMLDivElement>(null);
 
   const startEditing = (question: Question) => {
     setEditingId(question.id);
-    setEditDraft({ ...question, options: [...question.options] });
+    setCurrentQuestion({
+      ...question,
+      options: [...question.options],
+      optionImages: question.optionImages ? [...question.optionImages] : ['', '', '', ''],
+    });
+    // Populate the rich-text builder fields imperatively, then scroll up to it
+    setTimeout(() => {
+      if (questionRichRef.current) questionRichRef.current.innerHTML = question.question || '';
+      question.options.forEach((opt, i) => {
+        if (optionRichRefs.current[i]) optionRichRefs.current[i]!.innerHTML = opt || '';
+      });
+      if (explanationRichRef.current) explanationRichRef.current.innerHTML = question.explanation || '';
+      builderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
+
+  const resetBuilder = () => {
+    if (questionRichRef.current) questionRichRef.current.innerHTML = '';
+    optionRichRefs.current.forEach((ref) => { if (ref) ref.innerHTML = ''; });
+    if (explanationRichRef.current) explanationRichRef.current.innerHTML = '';
+    setCurrentQuestion({
+      id: '',
+      question: '',
+      questionImage: '',
+      options: ['', '', '', ''],
+      optionImages: ['', '', '', ''],
+      correctAnswer: 0,
+      explanation: '',
+      explanationImage: '',
+    });
   };
 
   const cancelEditing = () => {
     setEditingId(null);
-    setEditDraft(null);
-  };
-
-  const saveEditing = () => {
-    if (!editDraft) return;
-    if (editDraft.options.some(opt => !opt.replace(/<[^>]*>/g, '').trim())) {
-      toast.error('Options cannot be empty');
-      return;
-    }
-    onUpdateQuestion?.(editDraft);
-    setEditingId(null);
-    setEditDraft(null);
-    toast.success('Question updated!');
+    resetBuilder();
   };
 
   const [currentQuestion, setCurrentQuestion] = useState<Question>({
