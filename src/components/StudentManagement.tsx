@@ -520,6 +520,78 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="pending" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <ShieldAlert className="h-5 w-5 text-amber-500" />
+                <span>Pending Email Verification ({pendingStudents.length})</span>
+              </CardTitle>
+              <CardDescription>
+                Students who haven't confirmed their email yet. Verify them manually so they can sign in without confirming via email.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingPending ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : pendingStudents.length === 0 ? (
+                <div className="text-center py-12">
+                  <BadgeCheck className="h-12 w-12 mx-auto text-green-500 mb-4" />
+                  <p className="text-muted-foreground">No students pending verification</p>
+                  <p className="text-sm text-muted-foreground mt-1">All your students have confirmed their email or been verified</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingStudents.map(student => (
+                    <div key={student.enrollmentId} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border rounded-lg border-amber-200 bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/10">
+                      <div className="flex items-center space-x-4">
+                        <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                          <span className="text-sm font-semibold text-amber-600">
+                            {student.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-medium">{student.name}</p>
+                            <Badge variant="outline">{getClassName(student.classId)}</Badge>
+                            {student.status === 'no-account' ? (
+                              <Badge variant="secondary" className="text-xs">No account yet</Badge>
+                            ) : (
+                              <Badge variant="destructive" className="text-xs">Email unconfirmed</Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                            <Mail className="h-3 w-3" />
+                            <span>{student.email}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {student.status === 'no-account' ? (
+                          <span className="text-xs text-muted-foreground">Student must sign up first</span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => handleVerifyStudent(student.email)}
+                            disabled={verifyingEmail === student.email}
+                          >
+                            <ShieldCheck className="h-4 w-4 mr-2" />
+                            {verifyingEmail === student.email ? 'Verifying...' : 'Verify Student'}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
