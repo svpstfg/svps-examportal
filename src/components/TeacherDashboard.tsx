@@ -638,7 +638,7 @@ export const TeacherDashboard = () => {
               <div className="flex flex-col space-y-1">
                 <h1 className="text-3xl font-bold tracking-tight">Teacher Dashboard</h1>
                 <p className="text-muted-foreground">
-                  Manage your classes, courses, chapters, and create tests for your students.
+                  Manage your classes, subjects, chapters, and create tests for your students.
                 </p>
               </div>
             </div>
@@ -650,7 +650,7 @@ export const TeacherDashboard = () => {
               <TabsList className="flex flex-wrap h-auto gap-1 w-full">
                 <TabsTrigger value="classes" className="flex-1 min-w-[80px] text-xs sm:text-sm">Classes</TabsTrigger>
                 <TabsTrigger value="students" className="flex-1 min-w-[80px] text-xs sm:text-sm">Students</TabsTrigger>
-                <TabsTrigger value="courses" className="flex-1 min-w-[80px] text-xs sm:text-sm">Courses</TabsTrigger>
+                <TabsTrigger value="courses" className="flex-1 min-w-[80px] text-xs sm:text-sm">Subjects</TabsTrigger>
                 <TabsTrigger value="chapters" className="flex-1 min-w-[80px] text-xs sm:text-sm">Chapters</TabsTrigger>
                 <TabsTrigger value="create-test" className="flex-1 min-w-[80px] text-xs sm:text-sm">Create Test</TabsTrigger>
                 <TabsTrigger value="tests" className="flex-1 min-w-[80px] text-xs sm:text-sm">Tests</TabsTrigger>
@@ -776,7 +776,7 @@ export const TeacherDashboard = () => {
         {/* Courses Tab */}
         <TabsContent value="courses" className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">Manage Courses</h2>
+            <h2 className="text-2xl font-semibold">Manage Subjects</h2>
           </div>
 
           {/* Create New Course Form */}
@@ -784,7 +784,7 @@ export const TeacherDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <BookOpen className="h-5 w-5" />
-                <span>Create New Course</span>
+                <span>Create New Subject</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -801,7 +801,7 @@ export const TeacherDashboard = () => {
               }} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="course-name">Course Name</Label>
+                    <Label htmlFor="course-name">Subject Name</Label>
                     <Input 
                       id="course-name"
                       name="name"
@@ -835,7 +835,7 @@ export const TeacherDashboard = () => {
                 </div>
                 <Button type="submit">
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Course
+                  Create Subject
                 </Button>
               </form>
             </CardContent>
@@ -914,13 +914,13 @@ export const TeacherDashboard = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="chapter-course">Select Course</Label>
+                    <Label htmlFor="chapter-course">Select Subject</Label>
                     <Select 
                       value={newChapter.courseId} 
                       onValueChange={(value) => setNewChapter(prev => ({ ...prev, courseId: value }))}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Choose a course" />
+                        <SelectValue placeholder="Choose a subject" />
                       </SelectTrigger>
                       <SelectContent>
                         {getAvailableCourses().map((course) => (
@@ -960,7 +960,7 @@ export const TeacherDashboard = () => {
                 <CardContent>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Course:</span>
+                      <span className="text-muted-foreground">Subject:</span>
                       <Badge variant="secondary">{getCourseName(chapter.courseId)}</Badge>
                     </div>
                     <div className="flex items-center space-x-2 text-sm text-muted-foreground">
