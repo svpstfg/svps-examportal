@@ -859,35 +859,27 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                       )}
                     </div>
                     <div className="flex flex-col gap-2">
-                      {isEditing ? (
-                        <>
-                          <Button variant="default" size="sm" onClick={saveEditing}>
-                            <Save className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={cancelEditing}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          {onUpdateQuestion && (
-                            <Button variant="outline" size="sm" onClick={() => startEditing(question)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {onRemoveQuestion && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => onRemoveQuestion(question.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </>
+                      {onUpdateQuestion && (
+                        <Button
+                          variant={isEditing ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => startEditing(question)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {onRemoveQuestion && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onRemoveQuestion(question.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       )}
                     </div>
+
                   </div>
                 </CardContent>
               </Card>
