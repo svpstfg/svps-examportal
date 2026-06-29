@@ -23,6 +23,8 @@ const Auth = () => {
   const [resolvedClassId, setResolvedClassId] = useState<string | null>(null);
   const [resolvedClassName, setResolvedClassName] = useState('');
   const [joinMethod, setJoinMethod] = useState<'code' | 'browse' | 'skip'>('code');
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  const hasInviteCode = Boolean(inviteCode.trim());
   const [publicClasses, setPublicClasses] = useState<Array<{ id: string; name: string; description: string | null }>>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [formData, setFormData] = useState({
@@ -44,6 +46,9 @@ const Auth = () => {
     if (initialInvite) {
       setInviteCode(initialInvite.toUpperCase());
       setJoinMethod('code');
+      setActiveTab('signup');
+    } else {
+      setActiveTab('login');
     }
   }, [params.inviteCode]);
 
@@ -231,7 +236,7 @@ const Auth = () => {
 
         <Card className="shadow-lg border-border/50">
           <CardContent className="pt-6">
-            <Tabs defaultValue="login" className="w-full">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'login' | 'signup')} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="login">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -318,18 +323,20 @@ const Auth = () => {
                       <Tabs
                         value={joinMethod}
                         onValueChange={async (v) => {
-                          const method = v as 'code' | 'browse' | 'skip';
-                          setJoinMethod(method);
-                          if (method === 'browse' && publicClasses.length === 0) {
-                            const { data } = await (supabase.rpc as any)('list_public_classes');
-                            if (data) setPublicClasses(data as any);
+                          if (!hasInviteCode) {
+                            const method = v as 'code' | 'browse' | 'skip';
+                            setJoinMethod(method);
+                            if (method === 'browse' && publicClasses.length === 0) {
+                              const { data } = await (supabase.rpc as any)('list_public_classes');
+                              if (data) setPublicClasses(data as any);
+                            }
                           }
                         }}
                       >
                         <TabsList className="grid w-full grid-cols-3 h-9">
                           <TabsTrigger value="code" className="text-xs">Invite Code</TabsTrigger>
-                          <TabsTrigger value="browse" className="text-xs">Select Class</TabsTrigger>
-                          <TabsTrigger value="skip" className="text-xs">Skip</TabsTrigger>
+                          <TabsTrigger value="browse" className="text-xs" disabled={hasInviteCode}>Select Class</TabsTrigger>
+                          <TabsTrigger value="skip" className="text-xs" disabled={hasInviteCode}>Skip</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="code" className="mt-3 space-y-2">

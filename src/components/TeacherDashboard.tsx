@@ -73,6 +73,11 @@ export const TeacherDashboard = () => {
   const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'upgrades' | 'share-signup'>(null);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('classes');
+  const [testFilterClassId, setTestFilterClassId] = useState('');
+  const [testFilterCourseId, setTestFilterCourseId] = useState('');
+  const [testFilterChapterId, setTestFilterChapterId] = useState('');
+  const [newCourseClassId, setNewCourseClassId] = useState('');
 
   const [newChapter, setNewChapter] = useState({ name: '', description: '', courseId: '' });
   const [newTest, setNewTest] = useState({
@@ -126,7 +131,7 @@ export const TeacherDashboard = () => {
           name: c.name,
           description: c.description || '',
           classId: c.class_id,
-          chapterCount: c.chapter_count || 0,
+          chapterCount: chaptersData?.filter(ch => ch.course_id === c.id).length || 0,
           createdAt: new Date(c.created_at)
         })) || [];
 
@@ -135,7 +140,7 @@ export const TeacherDashboard = () => {
           name: c.name,
           description: c.description || '',
           courseId: c.course_id,
-          testCount: c.test_count || 0
+          testCount: testsData?.filter(t => t.chapter_id === c.id).length || 0
         })) || [];
 
         const transformedTests: Test[] = testsData?.map(t => ({
@@ -272,6 +277,7 @@ export const TeacherDashboard = () => {
       };
 
       setCourses(prev => [transformedCourse, ...prev]);
+      setNewCourseClassId('');
       toast.success('Course created successfully!');
     } catch (error) {
       console.error('Error creating course:', error);
@@ -348,6 +354,7 @@ export const TeacherDashboard = () => {
       };
 
       setChapters(prev => [transformedChapter, ...prev]);
+      setCourses(prev => prev.map(course => course.id === newChapter.courseId ? { ...course, chapterCount: course.chapterCount + 1 } : course));
       setNewChapter({ name: '', description: '', courseId: '' });
       toast.success('Chapter created successfully!');
     } catch (error) {
@@ -365,7 +372,11 @@ export const TeacherDashboard = () => {
 
       if (error) throw error;
 
+      const deletedChapter = chapters.find((chapter) => chapter.id === chapterId);
       setChapters(prev => prev.filter(c => c.id !== chapterId));
+      if (deletedChapter) {
+        setCourses(prev => prev.map(course => course.id === deletedChapter.courseId ? { ...course, chapterCount: Math.max(0, course.chapterCount - 1) } : course));
+      }
       toast.success('Chapter deleted successfully!');
     } catch (error) {
       console.error('Error deleting chapter:', error);
@@ -412,6 +423,7 @@ export const TeacherDashboard = () => {
       };
 
       setTests(prev => [transformedTest, ...prev]);
+      setChapters(prev => prev.map(chapter => chapter.id === newTest.chapterId ? { ...chapter, testCount: chapter.testCount + 1 } : chapter));
       setNewTest({
         title: '',
         duration: 30,
@@ -438,7 +450,11 @@ export const TeacherDashboard = () => {
 
       if (error) throw error;
 
+      const deletedTest = tests.find((test) => test.id === testId);
       setTests(prev => prev.filter(t => t.id !== testId));
+      if (deletedTest) {
+        setChapters(prev => prev.map(chapter => chapter.id === deletedTest.chapterId ? { ...chapter, testCount: Math.max(0, chapter.testCount - 1) } : chapter));
+      }
       toast.success('Test deleted successfully!');
     } catch (error) {
       console.error('Error deleting test:', error);
@@ -491,6 +507,18 @@ export const TeacherDashboard = () => {
         return chapter?.courseId === selectedCourseId;
       })
     : [];
+
+  const filteredTests = tests.filter((test) => {
+    const chapter = chapters.find((item) => item.id === test.chapterId);
+    const course = courses.find((item) => item.id === chapter?.courseId);
+    const matchesClass = !testFilterClassId || course?.classId === testFilterClassId;
+    const matchesCourse = !testFilterCourseId || chapter?.courseId === testFilterCourseId;
+    const matchesChapter = !testFilterChapterId || test.chapterId === testFilterChapterId;
+    return matchesClass && matchesCourse && matchesChapter;
+  });
+
+  const availableTestCourses = courses.filter((course) => !testFilterClassId || course.classId === testFilterClassId);
+  const availableTestChapters = chapters.filter((chapter) => !testFilterCourseId || chapter.courseId === testFilterCourseId);
 
   const getAvailableChapters = () => {
     return chapters.filter(chapter => 
@@ -636,7 +664,7 @@ export const TeacherDashboard = () => {
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
                 {classes.map((cls) => {
-                  const signupLink = `${window.location.origin}/inviteCode=${cls.inviteCode}`;
+                  const signupLink = `${window.location.origin}/auth?inviteCode=${cls.inviteCode}`;
                   return (
                     <Card key={cls.id}>
                       <CardHeader>
@@ -757,7 +785,7 @@ export const TeacherDashboard = () => {
             {sidebarSection ? (
               <div className="space-y-6">{renderSidebarSection()}</div>
             ) : (
-            <Tabs defaultValue="classes" className="space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsList className="flex flex-wrap h-auto gap-1 w-full">
                 <TabsTrigger value="classes" className="flex-1 min-w-[80px] text-xs sm:text-sm">Classes</TabsTrigger>
                 <TabsTrigger value="students" className="flex-1 min-w-[80px] text-xs sm:text-sm">Students</TabsTrigger>
@@ -898,9 +926,23 @@ export const TeacherDashboard = () => {
                   <h3 className="text-lg font-semibold">{getClassName(selectedClassId)} subjects</h3>
                   <p className="text-sm text-muted-foreground">Click a subject to view its tests.</p>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => { setSelectedClassId(null); setSelectedCourseId(null); }}>
-                  Clear view
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setTestFilterClassId(selectedClassId || '');
+                      setTestFilterCourseId('');
+                      setTestFilterChapterId('');
+                      setActiveTab('tests');
+                    }}
+                  >
+                    Open in Manage Tests
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => { setSelectedClassId(null); setSelectedCourseId(null); }}>
+                    Clear view
+                  </Button>
+                </div>
               </div>
 
               {selectedClassCourses.length === 0 ? (
@@ -916,17 +958,36 @@ export const TeacherDashboard = () => {
                         "cursor-pointer transition-all duration-200 hover:border-primary/50 hover:shadow-md",
                         selectedCourseId === course.id && "border-primary shadow-md"
                       )}
-                      onClick={() => setSelectedCourseId(course.id)}
+                      onClick={() => {
+                        setSelectedCourseId(course.id);
+                        setTestFilterClassId(course.classId);
+                        setTestFilterCourseId(course.id);
+                        setTestFilterChapterId('');
+                      }}
                     >
                       <CardHeader>
                         <CardTitle className="text-base">{course.name}</CardTitle>
                         <CardDescription>{course.description}</CardDescription>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="space-y-3">
                         <div className="flex items-center justify-between text-sm text-muted-foreground">
                           <span>{course.chapterCount} chapters</span>
                           <span>{format(course.createdAt, 'MMM dd')}</span>
                         </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setTestFilterClassId(course.classId);
+                            setTestFilterCourseId(course.id);
+                            setTestFilterChapterId('');
+                            setActiveTab('tests');
+                          }}
+                        >
+                          Open in Manage Tests
+                        </Button>
                       </CardContent>
                     </Card>
                   ))}
@@ -1001,11 +1062,15 @@ export const TeacherDashboard = () => {
             <CardContent>
               <form onSubmit={(e) => {
                 e.preventDefault();
+                if (!newCourseClassId) {
+                  toast.error('Please select a class for this subject');
+                  return;
+                }
                 const formData = new FormData(e.currentTarget);
                 handleCourseCreate({
                   name: formData.get('name') as string,
                   description: formData.get('description') as string,
-                  classId: formData.get('classId') as string,
+                  classId: newCourseClassId,
                   chapterCount: 0
                 });
                 e.currentTarget.reset();
@@ -1030,7 +1095,7 @@ export const TeacherDashboard = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="course-class">Select Class</Label>
-                    <Select name="classId" required>
+                    <Select value={newCourseClassId} onValueChange={setNewCourseClassId}>
                       <SelectTrigger>
                         <SelectValue placeholder="Choose a class" />
                       </SelectTrigger>
@@ -1191,15 +1256,80 @@ export const TeacherDashboard = () => {
             <h2 className="text-2xl font-semibold">Manage Tests</h2>
           </div>
 
+          <Card>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label>Class</Label>
+                  <Select value={testFilterClassId} onValueChange={(value) => {
+                    setTestFilterClassId(value);
+                    setTestFilterCourseId('');
+                    setTestFilterChapterId('');
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All classes" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All classes</SelectItem>
+                      {classes.map((cls) => (
+                        <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Subject</Label>
+                  <Select value={testFilterCourseId} onValueChange={(value) => {
+                    setTestFilterCourseId(value);
+                    setTestFilterChapterId('');
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All subjects" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All subjects</SelectItem>
+                      {availableTestCourses.map((course) => (
+                        <SelectItem key={course.id} value={course.id}>{course.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Chapter</Label>
+                  <Select value={testFilterChapterId} onValueChange={setTestFilterChapterId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All chapters" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All chapters</SelectItem>
+                      {availableTestChapters.map((chapter) => (
+                        <SelectItem key={chapter.id} value={chapter.id}>{chapter.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end">
+                  <Button variant="outline" className="w-full" onClick={() => {
+                    setTestFilterClassId('');
+                    setTestFilterCourseId('');
+                    setTestFilterChapterId('');
+                  }}>
+                    Clear Filters
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Tests List */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tests.length === 0 ? (
+            {filteredTests.length === 0 ? (
               <div className="col-span-full text-center py-8">
-                <div className="text-muted-foreground">No tests created yet</div>
-                <p className="text-sm text-muted-foreground mt-2">Create your first test to get started</p>
+                <div className="text-muted-foreground">No tests match the current filters</div>
+                <p className="text-sm text-muted-foreground mt-2">Try a different class, subject, or chapter selection</p>
               </div>
             ) : (
-              tests.map((test) => (
+              filteredTests.map((test) => (
                 <Card key={test.id} className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-primary/50" onClick={() => handleEditTest(test)}>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between gap-2">
