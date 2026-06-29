@@ -838,7 +838,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                           </div>
                         ))}
                       </div>
-                      )}
+
                       
                       {(question.explanation || question.explanationImage) && (
                         <div className="ml-6 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md space-y-2">
