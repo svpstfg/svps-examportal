@@ -41,9 +41,65 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
   const [addStudentName, setAddStudentName] = useState('');
   const [addStudentClass, setAddStudentClass] = useState('');
 
+  interface PendingStudent {
+    enrollmentId: string;
+    studentId: string;
+    name: string;
+    email: string;
+    classId: string;
+    enrolledAt: string;
+    status: 'unconfirmed' | 'no-account';
+  }
+  const [pendingStudents, setPendingStudents] = useState<PendingStudent[]>([]);
+  const [loadingPending, setLoadingPending] = useState(false);
+  const [verifyingEmail, setVerifyingEmail] = useState<string | null>(null);
+
   useEffect(() => {
     loadStudents();
+    loadPending();
   }, [classes]);
+
+  const loadPending = async () => {
+    const classIds = classes.map(c => c.id);
+    if (classIds.length === 0) {
+      setPendingStudents([]);
+      return;
+    }
+    setLoadingPending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-student-verification', {
+        body: { action: 'list-pending', classIds },
+      });
+      if (error) throw error;
+      setPendingStudents(data?.pending || []);
+    } catch (error) {
+      console.error('Error loading pending students:', error);
+    } finally {
+      setLoadingPending(false);
+    }
+  };
+
+  const handleVerifyStudent = async (email: string) => {
+    setVerifyingEmail(email);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-student-verification', {
+        body: { action: 'verify', email },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+      toast.success('Student verified — they can now sign in without email confirmation');
+      setPendingStudents(prev => prev.filter(p => p.email.toLowerCase() !== email.toLowerCase()));
+    } catch (error: any) {
+      console.error('Error verifying student:', error);
+      toast.error(error.message || 'Failed to verify student');
+    } finally {
+      setVerifyingEmail(null);
+    }
+  };
+
 
   const loadStudents = async () => {
     try {
