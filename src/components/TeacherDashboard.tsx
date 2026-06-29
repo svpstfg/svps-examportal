@@ -73,7 +73,7 @@ export const TeacherDashboard = () => {
   const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'upgrades' | 'share-signup'>(null);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('classes');
+  const [activeTab, setActiveTab] = useState<'classes' | 'students' | 'courses' | 'chapters' | 'create-test' | 'tests'>('classes');
   const [testFilterClassId, setTestFilterClassId] = useState('');
   const [testFilterCourseId, setTestFilterCourseId] = useState('');
   const [testFilterChapterId, setTestFilterChapterId] = useState('');
@@ -526,6 +526,15 @@ export const TeacherDashboard = () => {
     );
   };
 
+  const handleOpenManageTests = (classId?: string, courseId?: string) => {
+    setSelectedClassId(classId ?? null);
+    setSelectedCourseId(courseId ?? null);
+    setTestFilterClassId(classId ?? '');
+    setTestFilterCourseId(courseId ?? '');
+    setTestFilterChapterId('');
+    setActiveTab('tests');
+  };
+
   // Question management for tests
   const [currentQuestion, setCurrentQuestion] = useState<Question>({
     id: '',
@@ -930,12 +939,7 @@ export const TeacherDashboard = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      setTestFilterClassId(selectedClassId || '');
-                      setTestFilterCourseId('');
-                      setTestFilterChapterId('');
-                      setActiveTab('tests');
-                    }}
+                    onClick={() => handleOpenManageTests(selectedClassId ?? undefined)}
                   >
                     Open in Manage Tests
                   </Button>
@@ -960,9 +964,7 @@ export const TeacherDashboard = () => {
                       )}
                       onClick={() => {
                         setSelectedCourseId(course.id);
-                        setTestFilterClassId(course.classId);
-                        setTestFilterCourseId(course.id);
-                        setTestFilterChapterId('');
+                        handleOpenManageTests(course.classId, course.id);
                       }}
                     >
                       <CardHeader>
@@ -980,10 +982,7 @@ export const TeacherDashboard = () => {
                           className="w-full justify-start"
                           onClick={(event) => {
                             event.stopPropagation();
-                            setTestFilterClassId(course.classId);
-                            setTestFilterCourseId(course.id);
-                            setTestFilterChapterId('');
-                            setActiveTab('tests');
+                            handleOpenManageTests(course.classId, course.id);
                           }}
                         >
                           Open in Manage Tests
