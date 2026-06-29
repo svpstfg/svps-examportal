@@ -348,6 +348,23 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
         </CardContent>
       </Card>
 
+      {/* Students with tabs */}
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="all" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            <span>All Students</span>
+          </TabsTrigger>
+          <TabsTrigger value="pending" className="flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4" />
+            <span>Pending Verification</span>
+            {pendingStudents.length > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-xs">{pendingStudents.length}</Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all" className="mt-6">
       {/* Student List */}
       <Card>
         <CardHeader>
