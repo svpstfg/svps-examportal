@@ -92,7 +92,6 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
 
   const [pastedImages, setPastedImages] = useState<PastedImage[]>([]);
   const [defaultImageWidth, setDefaultImageWidth] = useState<number>(5); // default very small size
-  const [defaultImageLayout, setDefaultImageLayout] = useState<'row' | 'column'>('column');
 
   const questionRef = useRef<HTMLTextAreaElement>(null);
   const questionRichRef = useRef<HTMLDivElement>(null);
@@ -235,8 +234,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       const defaultWidth = defaultImageWidth; // use global default
       imageElement.style.width = `${defaultWidth}%`;
       imageElement.draggable = true;
-      // set display style according to layout
-      imageElement.style.display = defaultImageLayout === 'row' ? 'inline-block' : 'block';
+      imageElement.style.display = 'block';
       setPastedImages(prev => [...prev, { id: imgId, src: imageData, width: defaultWidth, field, index }]);
 
       // attach dragstart so we can drag with mouse
@@ -369,7 +367,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       }
 
       // ensure display style matches default layout
-      img.style.display = defaultImageLayout === 'row' ? 'inline-block' : 'block';
+      img.style.display = 'block';
 
       // reorder pastedImages to match DOM order for the affected field
       const field = targetEl === questionRichRef.current ? 'question' : targetEl === explanationRichRef.current ? 'explanation' : 'option';
@@ -394,7 +392,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       container.removeEventListener('dragover', onDragOver);
       container.removeEventListener('drop', onDrop);
     };
-  }, [builderRef, pastedImages, defaultImageLayout]);
+}, [builderRef, pastedImages]);
 
   // Rich paste handler for contentEditable fields
   const handleRichPaste = (
@@ -797,19 +795,20 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       <Card ref={builderRef}>
         <div className="p-4 border-b">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Label className="text-sm">Default Image Size</Label>
-              <input type="range" min={20} max={100} step={5} value={defaultImageWidth} onChange={(e) => setDefaultImageWidth(parseInt(e.target.value))} />
-              <span className="text-xs text-muted-foreground">{defaultImageWidth}%</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Label className="text-sm">Image Layout</Label>
-              <select value={defaultImageLayout} onChange={(e) => setDefaultImageLayout(e.target.value as 'row' | 'column')} className="px-2 py-1 border rounded">
-                <option value="column">Stack (column)</option>
-                <option value="row">Inline (row)</option>
-              </select>
-            </div>
+          <div className="flex items-center gap-2">
+            <Label className="text-sm">Default Image Size</Label>
+            <input
+              type="number"
+              min={5}
+              max={100}
+              step={5}
+              value={defaultImageWidth}
+              onChange={(e) => setDefaultImageWidth(parseInt(e.target.value) || 5)}
+              className="w-20 rounded border px-2 py-1"
+            />
+            <span className="text-xs text-muted-foreground">%</span>
           </div>
+        </div>
         </div>
         {editingId && (
           <div className="mx-6 mt-4 rounded-md bg-primary/10 border border-primary/30 px-3 py-2 text-sm text-primary font-medium">
