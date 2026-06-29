@@ -20,6 +20,7 @@ import { JoinClassCard } from "./JoinClassCard";
 import { QuestionPaperDownload } from "./QuestionPaperDownload";
 import { StudentDoubtChat } from "./StudentDoubtChat";
 import { ClassLeaderboard } from "./ClassLeaderboard";
+import { TestResults } from "./TestResults";
 import { UpgradeBanner } from "./UpgradeBanner";
 
 const RESUME_KEY = (studentId: string, testId: string) => `test_progress_${studentId}_${testId}`;
