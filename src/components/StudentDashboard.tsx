@@ -20,6 +20,7 @@ import { JoinClassCard } from "./JoinClassCard";
 import { QuestionPaperDownload } from "./QuestionPaperDownload";
 import { StudentDoubtChat } from "./StudentDoubtChat";
 import { ClassLeaderboard } from "./ClassLeaderboard";
+import { TestResults } from "./TestResults";
 import { UpgradeBanner } from "./UpgradeBanner";
 
 const RESUME_KEY = (studentId: string, testId: string) => `test_progress_${studentId}_${testId}`;
@@ -499,6 +500,13 @@ export const StudentDashboard = () => {
     return chapter ? courses.find(course => course.id === chapter.courseId)?.name || "Unknown Course" : "Unknown Course";
   };
 
+  const getTestClassName = (chapterId: string) => {
+    const chapter = chapters.find(ch => ch.id === chapterId);
+    const course = chapter ? courses.find(c => c.id === chapter.courseId) : undefined;
+    return course ? classes.find(cls => cls.id === course.classId)?.name || "Unknown Class" : "Unknown Class";
+  };
+
+
   // Filter tests based on student enrollments (multi-class support)
   const [enrolledClassIds, setEnrolledClassIds] = useState<string[]>([]);
   const [studentTiers, setStudentTiers] = useState<Record<string, 'free' | 'pro'>>({});
@@ -896,7 +904,7 @@ export const StudentDashboard = () => {
                       </div>
                       
                       <p className="text-sm text-muted-foreground mb-2">
-                        Chapter: {getChapterName(test.chapterId)} • Course: {getCourseName(test.chapterId)}
+                        Class: {getTestClassName(test.chapterId)} • Subject: {getCourseName(test.chapterId)} • Chapter: {getChapterName(test.chapterId)}
                       </p>
                       
                       <div className="flex items-center justify-between">
@@ -1009,8 +1017,8 @@ export const StudentDashboard = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Target className="h-5 w-5" />
-                <span>Available Tests</span>
+                <Target className="h-5 w-5 text-primary" />
+                <span className="bg-primary/10 text-primary px-3 py-1 rounded-md font-bold">Available Tests</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1047,7 +1055,7 @@ export const StudentDashboard = () => {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">
-                            Chapter: {getChapterName(test.chapterId)} • Course: {getCourseName(test.chapterId)}
+                            Class: {getTestClassName(test.chapterId)} • Subject: {getCourseName(test.chapterId)} • Chapter: {getChapterName(test.chapterId)}
                           </p>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4 text-sm">
@@ -1088,7 +1096,7 @@ export const StudentDashboard = () => {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">
-                            Chapter: {getChapterName(test.chapterId)} • Course: {getCourseName(test.chapterId)}
+                            Class: {getTestClassName(test.chapterId)} • Subject: {getCourseName(test.chapterId)} • Chapter: {getChapterName(test.chapterId)}
                           </p>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4 text-sm">
@@ -1136,7 +1144,7 @@ export const StudentDashboard = () => {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">
-                            Chapter: {getChapterName(test.chapterId)} • Course: {getCourseName(test.chapterId)}
+                            Class: {getTestClassName(test.chapterId)} • Subject: {getCourseName(test.chapterId)} • Chapter: {getChapterName(test.chapterId)}
                           </p>
                           {!available && countdown && (
                             <div className="flex items-center space-x-2 mb-3 p-2 rounded-md bg-primary/5 border border-primary/20">
@@ -1195,7 +1203,7 @@ export const StudentDashboard = () => {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">
-                            Chapter: {getChapterName(test.chapterId)} • Course: {getCourseName(test.chapterId)}
+                            Class: {getTestClassName(test.chapterId)} • Subject: {getCourseName(test.chapterId)} • Chapter: {getChapterName(test.chapterId)}
                           </p>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4 text-sm">
@@ -1282,6 +1290,15 @@ export const StudentDashboard = () => {
               classes={classes.filter(c => enrolledClassIds.includes(c.id))}
               currentStudentEmail={student.email}
               defaultClassId={selectedClassId !== 'all' ? selectedClassId : undefined}
+            />
+          )}
+
+          {/* Published Test Marks Lists */}
+          {classes.filter(c => enrolledClassIds.includes(c.id)).length > 0 && (
+            <TestResults
+              classes={classes.filter(c => enrolledClassIds.includes(c.id))}
+              mode="student"
+              currentStudentEmail={student.email}
             />
           )}
 

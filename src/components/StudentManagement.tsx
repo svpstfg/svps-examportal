@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Users, Crown, Search, UserPlus, Trash2, Mail, CalendarClock, Download } from "lucide-react";
+import { Users, Crown, Search, UserPlus, Trash2, Mail, CalendarClock, Download, ShieldCheck, ShieldAlert, BadgeCheck } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
@@ -40,9 +41,65 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
   const [addStudentName, setAddStudentName] = useState('');
   const [addStudentClass, setAddStudentClass] = useState('');
 
+  interface PendingStudent {
+    enrollmentId: string;
+    studentId: string;
+    name: string;
+    email: string;
+    classId: string;
+    enrolledAt: string;
+    status: 'unconfirmed' | 'no-account';
+  }
+  const [pendingStudents, setPendingStudents] = useState<PendingStudent[]>([]);
+  const [loadingPending, setLoadingPending] = useState(false);
+  const [verifyingEmail, setVerifyingEmail] = useState<string | null>(null);
+
   useEffect(() => {
     loadStudents();
+    loadPending();
   }, [classes]);
+
+  const loadPending = async () => {
+    const classIds = classes.map(c => c.id);
+    if (classIds.length === 0) {
+      setPendingStudents([]);
+      return;
+    }
+    setLoadingPending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-student-verification', {
+        body: { action: 'list-pending', classIds },
+      });
+      if (error) throw error;
+      setPendingStudents(data?.pending || []);
+    } catch (error) {
+      console.error('Error loading pending students:', error);
+    } finally {
+      setLoadingPending(false);
+    }
+  };
+
+  const handleVerifyStudent = async (email: string) => {
+    setVerifyingEmail(email);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-student-verification', {
+        body: { action: 'verify', email },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+      toast.success('Student verified — they can now sign in without email confirmation');
+      setPendingStudents(prev => prev.filter(p => p.email.toLowerCase() !== email.toLowerCase()));
+    } catch (error: any) {
+      console.error('Error verifying student:', error);
+      toast.error(error.message || 'Failed to verify student');
+    } finally {
+      setVerifyingEmail(null);
+    }
+  };
+
 
   const loadStudents = async () => {
     try {
@@ -291,6 +348,23 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
         </CardContent>
       </Card>
 
+      {/* Students with tabs */}
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="all" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            <span>All Students</span>
+          </TabsTrigger>
+          <TabsTrigger value="pending" className="flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4" />
+            <span>Pending Verification</span>
+            {pendingStudents.length > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-xs">{pendingStudents.length}</Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all" className="mt-6">
       {/* Student List */}
       <Card>
         <CardHeader>
@@ -446,6 +520,78 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="pending" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <ShieldAlert className="h-5 w-5 text-amber-500" />
+                <span>Pending Email Verification ({pendingStudents.length})</span>
+              </CardTitle>
+              <CardDescription>
+                Students who haven't confirmed their email yet. Verify them manually so they can sign in without confirming via email.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingPending ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : pendingStudents.length === 0 ? (
+                <div className="text-center py-12">
+                  <BadgeCheck className="h-12 w-12 mx-auto text-green-500 mb-4" />
+                  <p className="text-muted-foreground">No students pending verification</p>
+                  <p className="text-sm text-muted-foreground mt-1">All your students have confirmed their email or been verified</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingStudents.map(student => (
+                    <div key={student.enrollmentId} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border rounded-lg border-amber-200 bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/10">
+                      <div className="flex items-center space-x-4">
+                        <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                          <span className="text-sm font-semibold text-amber-600">
+                            {student.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-medium">{student.name}</p>
+                            <Badge variant="outline">{getClassName(student.classId)}</Badge>
+                            {student.status === 'no-account' ? (
+                              <Badge variant="secondary" className="text-xs">No account yet</Badge>
+                            ) : (
+                              <Badge variant="destructive" className="text-xs">Email unconfirmed</Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                            <Mail className="h-3 w-3" />
+                            <span>{student.email}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {student.status === 'no-account' ? (
+                          <span className="text-xs text-muted-foreground">Student must sign up first</span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => handleVerifyStudent(student.email)}
+                            disabled={verifyingEmail === student.email}
+                          >
+                            <ShieldCheck className="h-4 w-4 mr-2" />
+                            {verifyingEmail === student.email ? 'Verifying...' : 'Verify Student'}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

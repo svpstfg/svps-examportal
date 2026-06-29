@@ -28,28 +28,45 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
   existingQuestions = []
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<Question | null>(null);
+  const builderRef = useRef<HTMLDivElement>(null);
 
   const startEditing = (question: Question) => {
     setEditingId(question.id);
-    setEditDraft({ ...question, options: [...question.options] });
+    setCurrentQuestion({
+      ...question,
+      options: [...question.options],
+      optionImages: question.optionImages ? [...question.optionImages] : ['', '', '', ''],
+    });
+    // Populate the rich-text builder fields imperatively, then scroll up to it
+    setTimeout(() => {
+      if (questionRichRef.current) questionRichRef.current.innerHTML = question.question || '';
+      question.options.forEach((opt, i) => {
+        if (optionRichRefs.current[i]) optionRichRefs.current[i]!.innerHTML = opt || '';
+      });
+      if (explanationRichRef.current) explanationRichRef.current.innerHTML = question.explanation || '';
+      builderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
+
+  const resetBuilder = () => {
+    if (questionRichRef.current) questionRichRef.current.innerHTML = '';
+    optionRichRefs.current.forEach((ref) => { if (ref) ref.innerHTML = ''; });
+    if (explanationRichRef.current) explanationRichRef.current.innerHTML = '';
+    setCurrentQuestion({
+      id: '',
+      question: '',
+      questionImage: '',
+      options: ['', '', '', ''],
+      optionImages: ['', '', '', ''],
+      correctAnswer: 0,
+      explanation: '',
+      explanationImage: '',
+    });
   };
 
   const cancelEditing = () => {
     setEditingId(null);
-    setEditDraft(null);
-  };
-
-  const saveEditing = () => {
-    if (!editDraft) return;
-    if (editDraft.options.some(opt => !opt.replace(/<[^>]*>/g, '').trim())) {
-      toast.error('Options cannot be empty');
-      return;
-    }
-    onUpdateQuestion?.(editDraft);
-    setEditingId(null);
-    setEditDraft(null);
-    toast.success('Question updated!');
+    resetBuilder();
   };
 
   const [currentQuestion, setCurrentQuestion] = useState<Question>({
@@ -361,6 +378,21 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       return;
     }
 
+    if (editingId) {
+      const updatedQuestion: Question = {
+        ...currentQuestion,
+        id: editingId,
+        question: questionHTML,
+        options: optionsHTML,
+        explanation: explanationHTML,
+      };
+      onUpdateQuestion?.(updatedQuestion);
+      setEditingId(null);
+      resetBuilder();
+      toast.success('Question updated!');
+      return;
+    }
+
     const normalizedQuestion: Question = {
       ...currentQuestion,
       id: Date.now().toString(),
@@ -370,23 +402,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
     };
 
     onAddQuestion(normalizedQuestion);
-
-    // Clear contentEditable divs
-    if (questionRichRef.current) questionRichRef.current.innerHTML = '';
-    optionRichRefs.current.forEach(ref => { if (ref) ref.innerHTML = ''; });
-    if (explanationRichRef.current) explanationRichRef.current.innerHTML = '';
-
-    setCurrentQuestion({
-      id: '',
-      question: '',
-      questionImage: '',
-      options: ['', '', '', ''],
-      optionImages: ['', '', '', ''],
-      correctAnswer: 0,
-      explanation: '',
-      explanationImage: '',
-    });
-
+    resetBuilder();
     toast.success('Question added to test!');
   };
 
@@ -557,7 +573,12 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card ref={builderRef}>
+        {editingId && (
+          <div className="mx-6 mt-4 rounded-md bg-primary/10 border border-primary/30 px-3 py-2 text-sm text-primary font-medium">
+            Editing question — make your changes and click "Update Enhanced Question to Test".
+          </div>
+        )}
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Type className="h-5 w-5" />
@@ -732,10 +753,27 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
             </Tabs>
           </div>
 
-          <Button onClick={addQuestionToTest} className="w-full">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Enhanced Question to Test
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={addQuestionToTest} className="flex-1">
+              {editingId ? (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Update Enhanced Question to Test
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Enhanced Question to Test
+                </>
+              )}
+            </Button>
+            {editingId && (
+              <Button variant="outline" onClick={cancelEditing}>
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -747,9 +785,10 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
           </CardHeader>
           <CardContent className="space-y-4">
             {existingQuestions.map((question, index) => {
-              const isEditing = editingId === question.id && editDraft;
+              const isEditing = editingId === question.id;
               return (
-              <Card key={question.id} className="border-l-4 border-l-primary">
+              <Card key={question.id} className={`border-l-4 ${isEditing ? 'border-l-primary ring-2 ring-primary/40' : 'border-l-primary'}`}>
+
                 <CardContent className="pt-4">
                   <div className="flex justify-between items-start gap-4">
                     <div className="space-y-3 flex-1">
@@ -769,43 +808,8 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                         </div>
                       </div>
 
-                      {isEditing ? (
-                        <div className="space-y-3 ml-6">
-                          {editDraft!.options.map((option, optIndex) => (
-                            <div key={optIndex} className="space-y-1">
-                              <Label className="text-xs font-mono">Option {String.fromCharCode(65 + optIndex)}</Label>
-                              <Input
-                                value={option}
-                                onChange={(e) => {
-                                  const newOptions = [...editDraft!.options];
-                                  newOptions[optIndex] = e.target.value;
-                                  setEditDraft({ ...editDraft!, options: newOptions });
-                                }}
-                              />
-                            </div>
-                          ))}
-                          <div className="space-y-1">
-                            <Label className="text-xs">Correct Answer</Label>
-                            <Select
-                              value={editDraft!.correctAnswer.toString()}
-                              onValueChange={(value) => setEditDraft({ ...editDraft!, correctAnswer: parseInt(value) })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {editDraft!.options.map((_, optIndex) => (
-                                  <SelectItem key={optIndex} value={optIndex.toString()}>
-                                    Option {String.fromCharCode(65 + optIndex)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <p className="text-xs text-muted-foreground">Tip: you can use HTML/symbols inside an option.</p>
-                        </div>
-                      ) : (
                       <div className="space-y-2 ml-6">
+
                         {question.options.map((option, optIndex) => (
                           <div key={optIndex} className={`p-2 rounded ${
                             optIndex === question.correctAnswer 
@@ -834,7 +838,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                           </div>
                         ))}
                       </div>
-                      )}
+
                       
                       {(question.explanation || question.explanationImage) && (
                         <div className="ml-6 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md space-y-2">
@@ -855,35 +859,27 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                       )}
                     </div>
                     <div className="flex flex-col gap-2">
-                      {isEditing ? (
-                        <>
-                          <Button variant="default" size="sm" onClick={saveEditing}>
-                            <Save className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={cancelEditing}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          {onUpdateQuestion && (
-                            <Button variant="outline" size="sm" onClick={() => startEditing(question)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {onRemoveQuestion && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => onRemoveQuestion(question.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </>
+                      {onUpdateQuestion && (
+                        <Button
+                          variant={isEditing ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => startEditing(question)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {onRemoveQuestion && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onRemoveQuestion(question.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       )}
                     </div>
+
                   </div>
                 </CardContent>
               </Card>
