@@ -573,7 +573,12 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card ref={builderRef}>
+        {editingId && (
+          <div className="mx-6 mt-4 rounded-md bg-primary/10 border border-primary/30 px-3 py-2 text-sm text-primary font-medium">
+            Editing question — make your changes and click "Update Enhanced Question to Test".
+          </div>
+        )}
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Type className="h-5 w-5" />
