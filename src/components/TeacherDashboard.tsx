@@ -566,12 +566,15 @@ export const TeacherDashboard = () => {
             {classes.length === 0 ? (
               <p className="text-muted-foreground">Create a class first to see rankings.</p>
             ) : (
-              <ClassLeaderboard
-                classes={classes}
-                onSelectStudent={(id, name) =>
-                  navigate(`/student-history/${id}?name=${encodeURIComponent(name)}`)
-                }
-              />
+              <>
+                <ClassLeaderboard
+                  classes={classes}
+                  onSelectStudent={(id, name) =>
+                    navigate(`/student-history/${id}?name=${encodeURIComponent(name)}`)
+                  }
+                />
+                <TestResults classes={classes} mode="teacher" />
+              </>
             )}
           </div>
         );
