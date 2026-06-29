@@ -511,14 +511,14 @@ export const TeacherDashboard = () => {
   const filteredTests = tests.filter((test) => {
     const chapter = chapters.find((item) => item.id === test.chapterId);
     const course = courses.find((item) => item.id === chapter?.courseId);
-    const matchesClass = !testFilterClassId || course?.classId === testFilterClassId;
-    const matchesCourse = !testFilterCourseId || chapter?.courseId === testFilterCourseId;
-    const matchesChapter = !testFilterChapterId || test.chapterId === testFilterChapterId;
+    const matchesClass = !testFilterClassId || testFilterClassId === 'all' || course?.classId === testFilterClassId;
+    const matchesCourse = !testFilterCourseId || testFilterCourseId === 'all' || chapter?.courseId === testFilterCourseId;
+    const matchesChapter = !testFilterChapterId || testFilterChapterId === 'all' || test.chapterId === testFilterChapterId;
     return matchesClass && matchesCourse && matchesChapter;
   });
 
-  const availableTestCourses = courses.filter((course) => !testFilterClassId || course.classId === testFilterClassId);
-  const availableTestChapters = chapters.filter((chapter) => !testFilterCourseId || chapter.courseId === testFilterCourseId);
+  const availableTestCourses = courses.filter((course) => !testFilterClassId || testFilterClassId === 'all' || course.classId === testFilterClassId);
+  const availableTestChapters = chapters.filter((chapter) => !testFilterCourseId || testFilterCourseId === 'all' || chapter.courseId === testFilterCourseId);
 
   const getAvailableChapters = () => {
     return chapters.filter(chapter => 
@@ -1269,7 +1269,7 @@ export const TeacherDashboard = () => {
                       <SelectValue placeholder="All classes" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All classes</SelectItem>
+                      <SelectItem value="all">All classes</SelectItem>
                       {classes.map((cls) => (
                         <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
                       ))}
@@ -1286,7 +1286,7 @@ export const TeacherDashboard = () => {
                       <SelectValue placeholder="All subjects" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All subjects</SelectItem>
+                      <SelectItem value="all">All subjects</SelectItem>
                       {availableTestCourses.map((course) => (
                         <SelectItem key={course.id} value={course.id}>{course.name}</SelectItem>
                       ))}
@@ -1300,7 +1300,7 @@ export const TeacherDashboard = () => {
                       <SelectValue placeholder="All chapters" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All chapters</SelectItem>
+                      <SelectItem value="all">All chapters</SelectItem>
                       {availableTestChapters.map((chapter) => (
                         <SelectItem key={chapter.id} value={chapter.id}>{chapter.name}</SelectItem>
                       ))}
@@ -1309,9 +1309,9 @@ export const TeacherDashboard = () => {
                 </div>
                 <div className="flex items-end">
                   <Button variant="outline" className="w-full" onClick={() => {
-                    setTestFilterClassId('');
-                    setTestFilterCourseId('');
-                    setTestFilterChapterId('');
+                    setTestFilterClassId('all');
+                    setTestFilterCourseId('all');
+                    setTestFilterChapterId('all');
                   }}>
                     Clear Filters
                   </Button>
