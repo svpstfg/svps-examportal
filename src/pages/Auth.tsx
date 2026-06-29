@@ -31,6 +31,15 @@ const Auth = () => {
     role: 'student' as 'teacher' | 'student'
   });
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const inviteFromUrl = params.get('inviteCode') || params.get('invite') || params.get('code');
+    if (inviteFromUrl) {
+      setInviteCode(inviteFromUrl.toUpperCase());
+      setJoinMethod('code');
+    }
+  }, []);
+
   // Resolve invite code to class
   useEffect(() => {
     const resolveCode = async () => {

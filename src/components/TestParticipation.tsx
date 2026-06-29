@@ -139,6 +139,12 @@ export const TestParticipation = ({ test, onClose }: Props) => {
     return Math.round(attempts.reduce((s, a) => s + (a.timeSpent || 0), 0) / attempts.length);
   }, [attempts]);
 
+  const fullMarks = test?.questions?.length ?? 0;
+  const avgScore = attempts.length > 0
+    ? Math.round(attempts.reduce((sum, attempt) => sum + attempt.score, 0) / attempts.length)
+    : 0;
+  const needsAttention = avgScore < 70;
+
   const handleExport = () => {
     if (!test) return;
     const rows = [
@@ -146,7 +152,8 @@ export const TestParticipation = ({ test, onClose }: Props) => {
         Status: "Completed",
         Name: a.name,
         Email: a.email,
-        Score: `${a.score}%`,
+        "Full marks": fullMarks,
+        "Marks obtained": fullMarks > 0 ? Math.round((a.score / 100) * fullMarks) : 0,
         "Time spent": formatDuration(a.timeSpent),
         "Completed at": new Date(a.completedAt).toLocaleString(),
       })),
@@ -154,7 +161,8 @@ export const TestParticipation = ({ test, onClose }: Props) => {
         Status: "Not attempted",
         Name: p.name,
         Email: p.email,
-        Score: "",
+        "Full marks": fullMarks,
+        "Marks obtained": "",
         "Time spent": "",
         "Completed at": "",
       })),
@@ -179,6 +187,13 @@ export const TestParticipation = ({ test, onClose }: Props) => {
               : `${attempts.length} attempted • ${pending.length} pending • Avg time ${formatDuration(avgTime)}`}
           </DialogDescription>
         </DialogHeader>
+
+        {!loading && needsAttention && (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+            <div className="font-semibold">Special attention needed</div>
+            <div>Average score is {avgScore}% for this test, which is below the 70% threshold.</div>
+          </div>
+        )}
 
         {!loading && (
           <>
@@ -211,7 +226,8 @@ export const TestParticipation = ({ test, onClose }: Props) => {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Student</TableHead>
-                        <TableHead>Score</TableHead>
+                        <TableHead>Full Marks</TableHead>
+                        <TableHead>Marks Obtained</TableHead>
                         <TableHead><Clock className="h-3.5 w-3.5 inline mr-1" />Time</TableHead>
                         <TableHead>Completed</TableHead>
                       </TableRow>
@@ -223,10 +239,10 @@ export const TestParticipation = ({ test, onClose }: Props) => {
                             <div className="font-medium">{a.name}</div>
                             <div className="text-xs text-muted-foreground">{a.email}</div>
                           </TableCell>
+                          <TableCell className="font-medium">{fullMarks}</TableCell>
                           <TableCell>
-                            <Badge variant={a.score >= 75 ? "default" : a.score >= 50 ? "secondary" : "destructive"}>
-                              {a.score}%
-                            </Badge>
+                            <div className="font-medium">{fullMarks > 0 ? Math.round((a.score / 100) * fullMarks) : 0}/{fullMarks}</div>
+                            <div className="text-xs text-muted-foreground">{a.score}%</div>
                           </TableCell>
                           <TableCell className="text-sm">{formatDuration(a.timeSpent)}</TableCell>
                           <TableCell className="text-xs text-muted-foreground">

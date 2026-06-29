@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Upload, Trash2, Link } from "lucide-react";
+import { FileText, Upload, Trash2, Link, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -113,6 +113,30 @@ export const QuestionPaperUpload = ({ classes, userId }: QuestionPaperUploadProp
   const getClassName = (classId: string) =>
     classes.find((c) => c.id === classId)?.name || "Unknown";
 
+  const handleDownloadJson = (paper: QuestionPaper) => {
+    const payload = {
+      id: paper.id,
+      title: paper.title,
+      classId: paper.class_id,
+      className: getClassName(paper.class_id),
+      fileName: paper.file_name,
+      filePath: paper.file_path,
+      createdAt: paper.created_at,
+      downloadUrl: `${window.location.origin}/paper/${paper.id}`,
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${paper.title.replace(/[^a-z0-9]+/gi, "_").toLowerCase() || "question_paper"}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Question paper JSON downloaded.");
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -190,6 +214,9 @@ export const QuestionPaperUpload = ({ classes, userId }: QuestionPaperUploadProp
                       toast.success("Shareable link copied!");
                     }}>
                       <Link className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDownloadJson(paper)} title="Download as JSON">
+                      <Download className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => handleDelete(paper)}>
                       <Trash2 className="h-4 w-4 text-destructive" />

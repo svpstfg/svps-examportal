@@ -173,6 +173,70 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
     toast.success('Content pasted with formatting preserved!');
   };
 
+  const syncRichFieldState = (
+    target: HTMLDivElement,
+    field: 'question' | 'explanation' | 'option',
+    index?: number
+  ) => {
+    if (field === 'question') {
+      setCurrentQuestion(prev => ({ ...prev, question: target.innerHTML }));
+    } else if (field === 'explanation') {
+      setCurrentQuestion(prev => ({ ...prev, explanation: target.innerHTML }));
+    } else if (field === 'option' && typeof index === 'number') {
+      setCurrentQuestion(prev => {
+        const newOptions = [...prev.options];
+        newOptions[index] = target.innerHTML;
+        return { ...prev, options: newOptions };
+      });
+    }
+  };
+
+  const handleImagePaste = (
+    file: File,
+    target: HTMLDivElement,
+    field: 'question' | 'explanation' | 'option',
+    index?: number
+  ) => {
+    if (!file.type.startsWith('image/')) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should be less than 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const imageData = reader.result as string;
+      const imageElement = document.createElement('img');
+      imageElement.src = imageData;
+      imageElement.alt = 'Pasted image';
+      imageElement.style.display = 'block';
+      imageElement.style.maxWidth = '100%';
+      imageElement.style.height = 'auto';
+      imageElement.style.margin = '0.5rem 0';
+      imageElement.style.borderRadius = '0.375rem';
+
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0 && target.contains(selection.anchorNode)) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(imageElement);
+        range.setStartAfter(imageElement);
+        range.collapse(true);
+      } else {
+        target.appendChild(imageElement);
+      }
+
+      target.focus();
+      syncRichFieldState(target, field, index);
+      toast.success('Image pasted successfully!');
+    };
+    reader.onerror = () => {
+      toast.error('Failed to read the pasted image');
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Rich paste handler for contentEditable fields
   const handleRichPaste = (
     e: React.ClipboardEvent<HTMLDivElement>,
@@ -180,6 +244,16 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
     index?: number
   ) => {
     e.preventDefault();
+
+    const target = e.currentTarget;
+    const imageItem = Array.from(e.clipboardData.items).find(item => item.type.startsWith('image/'));
+    if (imageItem) {
+      const file = imageItem.getAsFile();
+      if (file) {
+        handleImagePaste(file, target, field, index);
+        return;
+      }
+    }
 
     const htmlData = e.clipboardData.getData('text/html');
     const textData = e.clipboardData.getData('text/plain');
@@ -197,7 +271,6 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
 
     if (!pastedContent) return;
 
-    // Insert at cursor
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
@@ -210,18 +283,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       range.collapse(false);
     }
 
-    // Sync state from the target element
-    const target = e.currentTarget;
-    if (field === 'question') {
-      setCurrentQuestion(prev => ({ ...prev, question: target.innerHTML }));
-    } else if (field === 'explanation') {
-      setCurrentQuestion(prev => ({ ...prev, explanation: target.innerHTML }));
-    } else if (field === 'option' && typeof index === 'number') {
-      const newOptions = [...currentQuestion.options];
-      newOptions[index] = target.innerHTML;
-      setCurrentQuestion(prev => ({ ...prev, options: newOptions }));
-    }
-
+    syncRichFieldState(target, field, index);
     toast.success('Content pasted with formatting preserved!');
   };
 
@@ -619,7 +681,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                   ref={questionRichRef}
                   contentEditable
                   className="rich-text-editor rich-text-content"
-                  data-placeholder="Enter your question here... Copy/paste from any source (ChatGPT, Word, Google Docs) - formatting will be preserved!"
+                  data-placeholder="Enter your question here... You can paste text, math, or images directly!"
                   onInput={handleRichInput}
                   onPaste={(e) => handleRichPaste(e, 'question')}
                   onFocus={() => setActiveMathField({field: 'question'})}
@@ -665,7 +727,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                         contentEditable
                         className="rich-text-editor rich-text-content min-h-[40px]"
                         style={{ minHeight: '40px' }}
-                        data-placeholder={`Option ${index + 1} - copy/paste content directly`}
+                        data-placeholder={`Option ${index + 1} - paste text or images directly`}
                         onBlur={(e) => {
                           const newOptions = [...currentQuestion.options];
                           newOptions[index] = e.currentTarget.innerHTML;
@@ -734,7 +796,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                   ref={explanationRichRef}
                   contentEditable
                   className="rich-text-editor rich-text-content min-h-[80px]"
-                  data-placeholder="Explain why this is the correct answer... Copy/paste with preserved formatting!"
+                  data-placeholder="Explain why this is the correct answer... Paste text or images directly!"
                   onBlur={(e) => setCurrentQuestion(prev => ({ ...prev, explanation: e.currentTarget.innerHTML }))}
                   onPaste={(e) => handleRichPaste(e, 'explanation')}
                   onFocus={() => setActiveMathField({field: 'explanation'})}

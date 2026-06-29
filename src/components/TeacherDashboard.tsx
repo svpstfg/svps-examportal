@@ -1,6 +1,16 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Plus, BookOpen, Clock, Users, Edit, Trash2, Image, GraduationCap, FolderOpen, CalendarIcon, Eye, Copy, Crown, FileText, BarChart3, Trophy, Download, UsersRound, MessageCircle, Megaphone, FileQuestion, Sparkles, LayoutDashboard } from "lucide-react";
+import { Plus, BookOpen, Clock, Users, Edit, Trash2, Image, GraduationCap, FolderOpen, CalendarIcon, Eye, Copy, Crown, FileText, BarChart3, Trophy, Download, UsersRound, MessageCircle, Megaphone, FileQuestion, Sparkles, LayoutDashboard, Share2 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -59,7 +69,10 @@ export const TeacherDashboard = () => {
   const [analyticsTest, setAnalyticsTest] = useState<Test | null>(null);
   const [downloadingTest, setDownloadingTest] = useState<Test | null>(null);
   const [participationTest, setParticipationTest] = useState<Test | null>(null);
-  const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'upgrades'>(null);
+  const [testToDelete, setTestToDelete] = useState<Test | null>(null);
+  const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'upgrades' | 'share-signup'>(null);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
   const [newChapter, setNewChapter] = useState({ name: '', description: '', courseId: '' });
   const [newTest, setNewTest] = useState({
@@ -211,6 +224,12 @@ export const TeacherDashboard = () => {
   };
 
   const handleClassDelete = async (classId: string) => {
+    const targetClass = classes.find((cls) => cls.id === classId);
+    if (targetClass && targetClass.studentCount > 0) {
+      toast.error('Cannot delete a class that already has students enrolled.');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('classes')
@@ -427,6 +446,12 @@ export const TeacherDashboard = () => {
     }
   };
 
+  const handleConfirmDeleteTest = async () => {
+    if (!testToDelete) return;
+    await handleDeleteTest(testToDelete.id);
+    setTestToDelete(null);
+  };
+
   const handleEditTest = (test: Test) => {
     setEditingTest(test);
   };
@@ -458,6 +483,14 @@ export const TeacherDashboard = () => {
       classes.some(cls => cls.id === course.classId)
     );
   };
+
+  const selectedClassCourses = courses.filter((course) => course.classId === selectedClassId);
+  const selectedCourseTests = selectedCourseId
+    ? tests.filter((test) => {
+        const chapter = chapters.find((item) => item.id === test.chapterId);
+        return chapter?.courseId === selectedCourseId;
+      })
+    : [];
 
   const getAvailableChapters = () => {
     return chapters.filter(chapter => 
@@ -548,6 +581,7 @@ export const TeacherDashboard = () => {
     { key: 'notices' as const, label: 'Notices', icon: Megaphone },
     { key: 'leaderboard' as const, label: 'Leaderboard', icon: Trophy },
     { key: 'upgrades' as const, label: 'Upgrades', icon: Sparkles },
+    { key: 'share-signup' as const, label: 'Share Signup Link', icon: Share2 },
   ];
 
   const renderSidebarSection = () => {
@@ -581,13 +615,86 @@ export const TeacherDashboard = () => {
         );
       case 'upgrades':
         return <UpgradeRequestsManager />;
+      case 'share-signup':
+        return (
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-semibold flex items-center gap-2">
+                <Share2 className="h-6 w-6 text-primary" /> Share Signup Links
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Send these links to students so they can sign up and join your classes directly.
+              </p>
+            </div>
+
+            {classes.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  Create a class first to generate a signup link.
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2">
+                {classes.map((cls) => {
+                  const signupLink = `${window.location.origin}/auth?inviteCode=${cls.inviteCode}`;
+                  return (
+                    <Card key={cls.id}>
+                      <CardHeader>
+                        <CardTitle className="text-base">{cls.name}</CardTitle>
+                        <CardDescription>{cls.description || 'Open signup link for this class'}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="rounded-md border bg-muted/40 p-3 text-sm break-all">
+                          {signupLink}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => {
+                            navigator.clipboard.writeText(signupLink);
+                            toast.success(`Signup link copied for ${cls.name}`);
+                          }}
+                        >
+                          <Copy className="mr-2 h-4 w-4" />
+                          Copy Signup Link
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
       default:
         return null;
     }
   };
 
   return (
-    <SidebarProvider>
+    <>
+      <AlertDialog open={!!testToDelete} onOpenChange={(open) => !open && setTestToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this test?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove {testToDelete?.title || 'this test'} and all its associated data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleConfirmDeleteTest}
+            >
+              Delete Test
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <Sidebar collapsible="icon">
           <SidebarContent>
@@ -718,7 +825,17 @@ export const TeacherDashboard = () => {
           {/* Classes List */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {classes.map((cls) => (
-              <Card key={cls.id}>
+              <Card
+                key={cls.id}
+                className={cn(
+                  "cursor-pointer transition-all duration-200 hover:border-primary/50 hover:shadow-md",
+                  selectedClassId === cls.id && "border-primary shadow-md"
+                )}
+                onClick={() => {
+                  setSelectedClassId((current) => (current === cls.id ? null : cls.id));
+                  setSelectedCourseId(null);
+                }}
+              >
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>{cls.name}</span>
@@ -726,7 +843,12 @@ export const TeacherDashboard = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => handleClassDelete(cls.id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleClassDelete(cls.id);
+                        }}
+                        disabled={cls.studentCount > 0}
+                        title={cls.studentCount > 0 ? 'This class has students enrolled and cannot be deleted' : 'Delete class'}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -753,7 +875,8 @@ export const TeacherDashboard = () => {
                           variant="ghost"
                           size="sm"
                           className="h-7 w-7 p-0"
-                          onClick={() => {
+                          onClick={(event) => {
+                            event.stopPropagation();
                             navigator.clipboard.writeText(cls.inviteCode);
                             toast.success('Invite code copied!');
                           }}
@@ -767,6 +890,90 @@ export const TeacherDashboard = () => {
               </Card>
             ))}
           </div>
+
+          {selectedClassId && (
+            <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">{getClassName(selectedClassId)} subjects</h3>
+                  <p className="text-sm text-muted-foreground">Click a subject to view its tests.</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => { setSelectedClassId(null); setSelectedCourseId(null); }}>
+                  Clear view
+                </Button>
+              </div>
+
+              {selectedClassCourses.length === 0 ? (
+                <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                  No subjects created for this class yet.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {selectedClassCourses.map((course) => (
+                    <Card
+                      key={course.id}
+                      className={cn(
+                        "cursor-pointer transition-all duration-200 hover:border-primary/50 hover:shadow-md",
+                        selectedCourseId === course.id && "border-primary shadow-md"
+                      )}
+                      onClick={() => setSelectedCourseId(course.id)}
+                    >
+                      <CardHeader>
+                        <CardTitle className="text-base">{course.name}</CardTitle>
+                        <CardDescription>{course.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          <span>{course.chapterCount} chapters</span>
+                          <span>{format(course.createdAt, 'MMM dd')}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {selectedCourseId && (
+                <div className="space-y-3 rounded-lg border bg-background/80 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold">Tests for {courses.find((course) => course.id === selectedCourseId)?.name}</h4>
+                      <p className="text-sm text-muted-foreground">These are the tests connected to the selected subject.</p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedCourseId(null)}>
+                      Back to subjects
+                    </Button>
+                  </div>
+
+                  {selectedCourseTests.length === 0 ? (
+                    <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                      No tests created for this subject yet.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedCourseTests.map((test) => (
+                        <Card key={test.id} className="hover:border-primary/50 transition-colors">
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-base">{test.title}</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-2 text-sm text-muted-foreground">
+                            <div className="flex items-center justify-between">
+                              <span>Duration</span>
+                              <span>{test.duration} mins</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span>Chapter</span>
+                              <span>{getChapterName(test.chapterId)}</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </TabsContent>
 
         {/* Students Tab */}
@@ -995,8 +1202,8 @@ export const TeacherDashboard = () => {
               tests.map((test) => (
                 <Card key={test.id} className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-primary/50" onClick={() => handleEditTest(test)}>
                   <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span className="truncate pr-2">{test.title}</span>
+                    <CardTitle className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 flex-1 whitespace-normal break-words leading-6">{test.title}</span>
                       <div className="flex space-x-1 flex-shrink-0">
                         <Button
                           variant="ghost"
@@ -1069,7 +1276,7 @@ export const TeacherDashboard = () => {
                           className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteTest(test.id);
+                            setTestToDelete(test);
                           }}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -1286,6 +1493,7 @@ export const TeacherDashboard = () => {
           </div>
         </div>
       </div>
-    </SidebarProvider>
+      </SidebarProvider>
+    </>
   );
 };
