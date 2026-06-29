@@ -1330,10 +1330,13 @@ export const TeacherDashboard = () => {
             ) : (
               filteredTests.map((test) => (
                 <Card key={test.id} className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-primary/50" onClick={() => handleEditTest(test)}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between gap-2">
-                      <span className="min-w-0 flex-1 whitespace-normal break-words leading-6">{test.title}</span>
-                      <div className="flex space-x-1 flex-shrink-0">
+                          <CardHeader>
+                            <CardTitle className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <div className="text-xs text-muted-foreground">Test</div>
+                                <div className="font-semibold leading-6 break-words">{test.title}</div>
+                              </div>
+                              <div className="flex space-x-1 flex-shrink-0 mt-1">
                         <Button
                           variant="ghost"
                           size="sm"
