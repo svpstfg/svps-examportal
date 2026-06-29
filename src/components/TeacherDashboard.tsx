@@ -25,6 +25,7 @@ import {
 import { QuestionAnalytics } from "@/components/QuestionAnalytics";
 import { TestParticipation } from "@/components/TestParticipation";
 import { ClassLeaderboard } from "@/components/ClassLeaderboard";
+import { TestResults } from "@/components/TestResults";
 import { downloadCSV } from "@/lib/csv";
 import { QuestionPaperUpload } from "@/components/QuestionPaperUpload";
 import { TeacherDoubtChat } from "@/components/TeacherDoubtChat";
