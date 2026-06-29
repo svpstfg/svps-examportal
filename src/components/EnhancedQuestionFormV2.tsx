@@ -808,43 +808,8 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                         </div>
                       </div>
 
-                      {isEditing ? (
-                        <div className="space-y-3 ml-6">
-                          {editDraft!.options.map((option, optIndex) => (
-                            <div key={optIndex} className="space-y-1">
-                              <Label className="text-xs font-mono">Option {String.fromCharCode(65 + optIndex)}</Label>
-                              <Input
-                                value={option}
-                                onChange={(e) => {
-                                  const newOptions = [...editDraft!.options];
-                                  newOptions[optIndex] = e.target.value;
-                                  setEditDraft({ ...editDraft!, options: newOptions });
-                                }}
-                              />
-                            </div>
-                          ))}
-                          <div className="space-y-1">
-                            <Label className="text-xs">Correct Answer</Label>
-                            <Select
-                              value={editDraft!.correctAnswer.toString()}
-                              onValueChange={(value) => setEditDraft({ ...editDraft!, correctAnswer: parseInt(value) })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {editDraft!.options.map((_, optIndex) => (
-                                  <SelectItem key={optIndex} value={optIndex.toString()}>
-                                    Option {String.fromCharCode(65 + optIndex)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <p className="text-xs text-muted-foreground">Tip: you can use HTML/symbols inside an option.</p>
-                        </div>
-                      ) : (
                       <div className="space-y-2 ml-6">
+
                         {question.options.map((option, optIndex) => (
                           <div key={optIndex} className={`p-2 rounded ${
                             optIndex === question.correctAnswer 
