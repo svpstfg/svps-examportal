@@ -1292,6 +1292,15 @@ export const StudentDashboard = () => {
             />
           )}
 
+          {/* Published Test Marks Lists */}
+          {classes.filter(c => enrolledClassIds.includes(c.id)).length > 0 && (
+            <TestResults
+              classes={classes.filter(c => enrolledClassIds.includes(c.id))}
+              mode="student"
+              currentStudentEmail={student.email}
+            />
+          )}
+
           {/* Doubt Clearing Section */}
           <StudentDoubtChat
             studentIds={allStudentIds}
