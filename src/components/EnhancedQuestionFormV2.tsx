@@ -91,7 +91,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
   }
 
   const [pastedImages, setPastedImages] = useState<PastedImage[]>([]);
-  const [defaultImageWidth, setDefaultImageWidth] = useState<number>(30); // default small size
+  const [defaultImageWidth, setDefaultImageWidth] = useState<number>(5); // default very small size
   const [defaultImageLayout, setDefaultImageLayout] = useState<'row' | 'column'>('column');
 
   const questionRef = useRef<HTMLTextAreaElement>(null);
