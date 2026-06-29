@@ -1016,8 +1016,8 @@ export const StudentDashboard = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Target className="h-5 w-5" />
-                <span>Available Tests</span>
+                <Target className="h-5 w-5 text-primary" />
+                <span className="bg-primary/10 text-primary px-3 py-1 rounded-md font-bold">Available Tests</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
