@@ -47,6 +47,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/inviteCode=:inviteCode" element={<Auth />} />
               <Route path="/student" element={<StudentPortal />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/paper/:id" element={<PaperView />} />

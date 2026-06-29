@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import type { User } from '@supabase/supabase-js';
 
 const Auth = () => {
   const navigate = useNavigate();
+  const params = useParams<{ inviteCode?: string }>();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
@@ -32,13 +33,19 @@ const Auth = () => {
   });
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const inviteFromUrl = params.get('inviteCode') || params.get('invite') || params.get('code');
-    if (inviteFromUrl) {
-      setInviteCode(inviteFromUrl.toUpperCase());
+    const searchParams = new URLSearchParams(window.location.search);
+    const inviteFromUrl = searchParams.get('inviteCode') || searchParams.get('invite') || searchParams.get('code');
+    const inviteFromRoute = params.inviteCode;
+    const inviteFromPath = window.location.pathname.startsWith('/inviteCode=')
+      ? window.location.pathname.replace('/inviteCode=', '')
+      : '';
+    const initialInvite = inviteFromRoute || inviteFromPath || inviteFromUrl;
+
+    if (initialInvite) {
+      setInviteCode(initialInvite.toUpperCase());
       setJoinMethod('code');
     }
-  }, []);
+  }, [params.inviteCode]);
 
   // Resolve invite code to class
   useEffect(() => {

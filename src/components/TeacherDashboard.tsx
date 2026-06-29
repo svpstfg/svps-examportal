@@ -636,7 +636,7 @@ export const TeacherDashboard = () => {
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
                 {classes.map((cls) => {
-                  const signupLink = `${window.location.origin}/auth?inviteCode=${cls.inviteCode}`;
+                  const signupLink = `${window.location.origin}/inviteCode=${cls.inviteCode}`;
                   return (
                     <Card key={cls.id}>
                       <CardHeader>
