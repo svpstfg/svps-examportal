@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Type, Calculator, AlignLeft, Trash2, Image as ImageIcon, Upload, Download, FileJson, Pencil, Save, X } from 'lucide-react';
+import { Plus, Type, Calculator, AlignLeft, Trash2, Image as ImageIcon, Upload, Download, FileJson, Pencil, Save, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { Question } from '@/types';
 import { MathSymbolToolbar, processMathText, convertToUnicode, processRichTextPaste } from './MathFormulaProcessor';
@@ -62,6 +62,8 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       explanation: '',
       explanationImage: '',
     });
+    // clear any pasted image metadata tracked while building a question
+    try { setPastedImages && setPastedImages([]); } catch (e) { /* noop if not initialized yet */ }
   };
 
   const cancelEditing = () => {
@@ -79,6 +81,16 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
     explanation: '',
     explanationImage: '',
   });
+
+  interface PastedImage {
+    id: string;
+    src: string;
+    width: number; // percent
+    field: 'question' | 'explanation' | 'option';
+    index?: number;
+  }
+
+  const [pastedImages, setPastedImages] = useState<PastedImage[]>([]);
 
   const questionRef = useRef<HTMLTextAreaElement>(null);
   const questionRichRef = useRef<HTMLDivElement>(null);
@@ -215,6 +227,12 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       imageElement.style.height = 'auto';
       imageElement.style.margin = '0.5rem 0';
       imageElement.style.borderRadius = '0.375rem';
+      // assign a stable id so we can find and control this image later
+      const imgId = `img-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+      imageElement.dataset.imageId = imgId;
+      const defaultWidth = 50; // percent to avoid huge pasted images
+      imageElement.style.width = `${defaultWidth}%`;
+      setPastedImages(prev => [...prev, { id: imgId, src: imageData, width: defaultWidth, field, index }]);
 
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0 && target.contains(selection.anchorNode)) {
@@ -235,6 +253,67 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       toast.error('Failed to read the pasted image');
     };
     reader.readAsDataURL(file);
+  };
+
+  // Helpers to control pasted images (resize, reorder, remove)
+  const updatePastedImageWidth = (id: string, width: number) => {
+    setPastedImages(prev => prev.map(p => p.id === id ? { ...p, width } : p));
+    const img = document.querySelector(`img[data-image-id="${id}"]`) as HTMLImageElement | null;
+    if (img) img.style.width = `${width}%`;
+  };
+
+  const removePastedImage = (id: string) => {
+    const target = pastedImages.find(p => p.id === id);
+    setPastedImages(prev => prev.filter(p => p.id !== id));
+    const img = document.querySelector(`img[data-image-id="${id}"]`);
+    if (img && img.parentNode) img.parentNode.removeChild(img);
+    // Update the underlying editor field HTML state for the affected field
+    if (target) {
+      if (target.field === 'question' && questionRichRef.current) syncRichFieldState(questionRichRef.current, 'question');
+      if (target.field === 'explanation' && explanationRichRef.current) syncRichFieldState(explanationRichRef.current, 'explanation');
+      if (target.field === 'option' && typeof target.index === 'number' && optionRichRefs.current[target.index]) syncRichFieldState(optionRichRefs.current[target.index]!, 'option', target.index);
+    }
+  };
+
+  const movePastedImage = (id: string, direction: 'left' | 'right') => {
+    // reorder within the same field/editor
+    const img = document.querySelector(`img[data-image-id="${id}"]`);
+    if (!img) return;
+    const parent = img.parentElement;
+    if (!parent) return;
+    if (direction === 'left') {
+      const prev = img.previousSibling;
+      if (prev) parent.insertBefore(img, prev);
+    } else {
+      const next = img.nextSibling;
+      if (next && next.nextSibling) parent.insertBefore(img, next.nextSibling);
+      else parent.appendChild(img);
+    }
+    // reorder state array to reflect visual order among same-field images
+    setPastedImages(prev => {
+      const idx = prev.findIndex(p => p.id === id);
+      if (idx < 0) return prev;
+      const target = prev[idx];
+      const others = prev.filter(p => p.field === target.field && p.index === target.index);
+      // compute order of images in DOM for this field
+      const fieldImgs = Array.from((target.field === 'question' ? questionRichRef.current : target.field === 'explanation' ? explanationRichRef.current : optionRichRefs.current[target.index!])?.querySelectorAll('img') || []) as HTMLImageElement[];
+      const domOrderIds = fieldImgs.map(i => i.dataset.imageId || '');
+      // stable sort prev by domOrderIds when field matches
+      const reordered = prev.slice().sort((a, b) => {
+        if (a.field !== target.field || a.index !== target.index) return 0;
+        const ai = domOrderIds.indexOf(a.id);
+        const bi = domOrderIds.indexOf(b.id);
+        return ai - bi;
+      });
+      return reordered;
+    });
+    // Sync editor state
+    const targetMeta = pastedImages.find(p => p.id === id);
+    if (targetMeta) {
+      if (targetMeta.field === 'question' && questionRichRef.current) syncRichFieldState(questionRichRef.current, 'question');
+      if (targetMeta.field === 'explanation' && explanationRichRef.current) syncRichFieldState(explanationRichRef.current, 'explanation');
+      if (targetMeta.field === 'option' && typeof targetMeta.index === 'number' && optionRichRefs.current[targetMeta.index]) syncRichFieldState(optionRichRefs.current[targetMeta.index]!, 'option', targetMeta.index);
+    }
   };
 
   // Rich paste handler for contentEditable fields
@@ -531,7 +610,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
 
         // Answer: support letter (A/B/C/D) -> index, numeric index, or exact option text
         if (norm.correctAnswer === undefined || norm.correctAnswer === null || norm.correctAnswer === '') {
-          const ans = q.answer ?? q.correct ?? q.correct_answer;
+          const ans = q.answer ?? q.correct ?? q.correct_answer ?? q.correctAnswer ?? q.correctanswer;
           const opts = Array.isArray(norm.options) ? norm.options.map((o: any) => String(o ?? '').trim()) : [];
           if (typeof ans === 'string') {
             const trimmedAns = ans.trim();
@@ -703,6 +782,39 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                 />
               </TabsContent>
             </Tabs>
+            {pastedImages.filter(p => p.field === 'question').length > 0 && (
+              <div className="space-y-2 mt-2">
+                <Label className="text-sm">Pasted Images (Question)</Label>
+                <div className="flex flex-col gap-2">
+                  {pastedImages.filter(p => p.field === 'question').map((p) => (
+                    <div key={p.id} className="flex items-center gap-3">
+                      <img src={p.src} alt="pasted" className="h-16 object-contain rounded border" style={{ width: `${p.width}%` }} />
+                      <div className="flex-1">
+                        <input
+                          type="range"
+                          min={20}
+                          max={100}
+                          step={5}
+                          value={p.width}
+                          onChange={(e) => updatePastedImageWidth(p.id, parseInt(e.target.value))}
+                        />
+                        <div className="flex gap-2 mt-2">
+                          <Button size="sm" variant="outline" onClick={() => movePastedImage(p.id, 'left')}>
+                            <ChevronUp className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => movePastedImage(p.id, 'right')}>
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => removePastedImage(p.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Options */}
@@ -756,6 +868,39 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                       />
                     </TabsContent>
                   </Tabs>
+                  {pastedImages.filter(p => p.field === 'option' && p.index === index).length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      <Label className="text-sm">Pasted Images (Option {index + 1})</Label>
+                      <div className="flex flex-col gap-2">
+                        {pastedImages.filter(p => p.field === 'option' && p.index === index).map((p) => (
+                          <div key={p.id} className="flex items-center gap-3">
+                            <img src={p.src} alt="pasted" className="h-12 object-contain rounded border" style={{ width: `${p.width}%` }} />
+                            <div className="flex-1">
+                              <input
+                                type="range"
+                                min={20}
+                                max={100}
+                                step={5}
+                                value={p.width}
+                                onChange={(e) => updatePastedImageWidth(p.id, parseInt(e.target.value))}
+                              />
+                              <div className="flex gap-2 mt-2">
+                                <Button size="sm" variant="outline" onClick={() => movePastedImage(p.id, 'left')}>
+                                  <ChevronUp className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => movePastedImage(p.id, 'right')}>
+                                  <ChevronDown className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="text-destructive" onClick={() => removePastedImage(p.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -813,6 +958,39 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                 />
               </TabsContent>
             </Tabs>
+            {pastedImages.filter(p => p.field === 'explanation').length > 0 && (
+              <div className="space-y-2 mt-2">
+                <Label className="text-sm">Pasted Images (Explanation)</Label>
+                <div className="flex flex-col gap-2">
+                  {pastedImages.filter(p => p.field === 'explanation').map((p) => (
+                    <div key={p.id} className="flex items-center gap-3">
+                      <img src={p.src} alt="pasted" className="h-16 object-contain rounded border" style={{ width: `${p.width}%` }} />
+                      <div className="flex-1">
+                        <input
+                          type="range"
+                          min={20}
+                          max={100}
+                          step={5}
+                          value={p.width}
+                          onChange={(e) => updatePastedImageWidth(p.id, parseInt(e.target.value))}
+                        />
+                        <div className="flex gap-2 mt-2">
+                          <Button size="sm" variant="outline" onClick={() => movePastedImage(p.id, 'left')}>
+                            <ChevronUp className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => movePastedImage(p.id, 'right')}>
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => removePastedImage(p.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2">

@@ -902,6 +902,17 @@ export const TeacherDashboard = () => {
                       </div>
                       <span className="text-xs text-muted-foreground">Created {format(cls.createdAt, 'MMM dd, yyyy')}</span>
                     </div>
+                    <div className="pt-2">
+                      <div className="text-sm text-muted-foreground">Subjects:</div>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {courses.filter((c) => c.classId === cls.id).slice(0, 6).map((c) => (
+                          <Badge key={c.id} variant="secondary">{c.name}</Badge>
+                        ))}
+                        {courses.filter((c) => c.classId === cls.id).length === 0 && (
+                          <div className="text-sm text-muted-foreground">No subjects yet</div>
+                        )}
+                      </div>
+                    </div>
                     {cls.inviteCode && (
                       <div className="flex items-center justify-between bg-muted/50 rounded-lg p-2">
                         <div className="flex items-center space-x-2">
@@ -1331,12 +1342,12 @@ export const TeacherDashboard = () => {
               filteredTests.map((test) => (
                 <Card key={test.id} className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-primary/50" onClick={() => handleEditTest(test)}>
                           <CardHeader>
-                            <CardTitle className="flex items-start justify-between gap-2">
-                              <div className="min-w-0 flex-1">
+                            <CardTitle className="flex flex-col sm:flex-row items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1 w-full">
                                 <div className="text-xs text-muted-foreground">Test</div>
                                 <div className="font-semibold leading-6 break-words">{test.title}</div>
                               </div>
-                              <div className="flex space-x-1 flex-shrink-0 mt-1">
+                              <div className="flex space-x-1 flex-shrink-0 mt-2 sm:mt-1">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -1418,6 +1429,23 @@ export const TeacherDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground">Subject:</span>
+                          <Badge variant="secondary">{(() => {
+                            const chapter = chapters.find((ch) => ch.id === test.chapterId);
+                            return getCourseName(chapter?.courseId || '');
+                          })()}</Badge>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <span className="text-muted-foreground">Class:</span>
+                          <Badge variant="outline">{(() => {
+                            const chapter = chapters.find((ch) => ch.id === test.chapterId);
+                            const course = courses.find((co) => co.id === chapter?.courseId);
+                            return getClassName(course?.classId || '');
+                          })()}</Badge>
+                        </div>
+                      </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Chapter:</span>
                         <Badge variant="secondary">{getChapterName(test.chapterId)}</Badge>
