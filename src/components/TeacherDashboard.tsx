@@ -794,7 +794,7 @@ export const TeacherDashboard = () => {
             {sidebarSection ? (
               <div className="space-y-6">{renderSidebarSection()}</div>
             ) : (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-6">
               <TabsList className="flex flex-wrap h-auto gap-1 w-full">
                 <TabsTrigger value="classes" className="flex-1 min-w-[80px] text-xs sm:text-sm">Classes</TabsTrigger>
                 <TabsTrigger value="students" className="flex-1 min-w-[80px] text-xs sm:text-sm">Students</TabsTrigger>
