@@ -326,13 +326,40 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
     }
   };
 
-  // Setup dragover/drop handlers on builder container so images can be moved by mouse
+  // Setup dragstart/dragover/drop handlers on builder container so images can be moved by mouse
   useEffect(() => {
     const container = builderRef.current;
     if (!container) return;
 
+    // Make every image inside the editors draggable (covers images loaded when editing)
+    const normalizeImages = () => {
+      const imgs = Array.from(container.querySelectorAll('.rich-text-editor img')) as HTMLImageElement[];
+      imgs.forEach((img) => {
+        img.draggable = true;
+        if (!img.dataset.imageId) {
+          img.dataset.imageId = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        }
+      });
+    };
+    normalizeImages();
+    const observer = new MutationObserver(() => normalizeImages());
+    observer.observe(container, { childList: true, subtree: true });
+
+    const onDragStart = (e: DragEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && target.tagName === 'IMG' && target.closest('.rich-text-editor')) {
+        const img = target as HTMLImageElement;
+        if (!img.dataset.imageId) {
+          img.dataset.imageId = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        }
+        try { e.dataTransfer?.setData('text/plain', img.dataset.imageId); } catch (err) { /* ignore */ }
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+      }
+    };
+
     const onDragOver = (e: DragEvent) => {
       e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
     };
 
     const onDrop = (e: DragEvent) => {
