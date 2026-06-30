@@ -901,6 +901,50 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
             </p>
           </div>
 
+          {/* Insert Table */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <TableIcon className="h-4 w-4" />
+              Insert Table
+            </Label>
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Rows</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={tableRows}
+                  onChange={(e) => setTableRows(Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
+                  className="w-20"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Columns</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={tableCols}
+                  onChange={(e) => setTableCols(Math.max(1, Math.min(10, Number(e.target.value) || 1)))}
+                  className="w-20"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => insertTable(tableRows, tableCols)}
+              >
+                <TableIcon className="h-4 w-4 mr-1" />
+                Insert Table
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Click inside the Question, an Option, or the Explanation field first, then insert a table. The first row is a header — click any cell to type.
+            </p>
+          </div>
+
           {/* Question Field with Image */}
           <div className="space-y-4">
             <Label htmlFor="question-text" className="flex items-center gap-2">
