@@ -490,6 +490,41 @@ export const TeacherDashboard = () => {
     setEditingTest(test);
   };
 
+  const handleDownloadTestJson = (test: Test) => {
+    const chapter = chapters.find((item) => item.id === test.chapterId);
+    const course = courses.find((item) => item.id === chapter?.courseId);
+
+    const payload = {
+      id: test.id,
+      title: test.title,
+      duration: test.duration,
+      chapterId: test.chapterId,
+      chapterName: chapter?.name || 'Unknown Chapter',
+      courseId: chapter?.courseId,
+      courseName: course?.name || 'Unknown Course',
+      classId: course?.classId,
+      className: getClassName(course?.classId || ''),
+      questions: test.questions,
+      createdAt: test.createdAt?.toISOString(),
+      scheduledDate: test.scheduledDate?.toISOString(),
+      scheduledTime: test.scheduledTime,
+      isScheduled: test.isScheduled,
+      isPro: test.isPro,
+      isLocked: test.isLocked || false,
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${(test.title || 'test').replace(/[^a-z0-9]+/gi, '_').toLowerCase() || 'test'}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('Test JSON downloaded');
+  };
+
   const handleSaveEditedTest = (updatedTest: Test) => {
     setTests(prev => prev.map(t => t.id === updatedTest.id ? updatedTest : t));
     setEditingTest(null);
@@ -1412,6 +1447,18 @@ export const TeacherDashboard = () => {
                             }
                             toast.info("Generating PDF...");
                             setDownloadingTest(test);
+                          }}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          title="Download as JSON"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadTestJson(test);
                           }}
                         >
                           <Download className="h-4 w-4" />
