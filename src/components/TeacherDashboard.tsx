@@ -18,7 +18,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Plus, BookOpen, Clock, Users, Edit, Trash2, Image, GraduationCap, FolderOpen, CalendarIcon, Eye, Copy, Crown, FileText, BarChart3, Trophy, Download, UsersRound, MessageCircle, Megaphone, FileQuestion, Sparkles, LayoutDashboard, Share2 } from "lucide-react";
+import { Plus, BookOpen, Clock, Users, Edit, Trash2, Image, GraduationCap, FolderOpen, CalendarIcon, Eye, Copy, Crown, FileText, BarChart3, Trophy, Download, UsersRound, MessageCircle, Megaphone, FileQuestion, Sparkles, LayoutDashboard, Share2, Lock } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Sidebar,
   SidebarContent,
@@ -153,7 +154,8 @@ export const TeacherDashboard = () => {
           scheduledDate: t.scheduled_date ? new Date(t.scheduled_date) : undefined,
           scheduledTime: t.scheduled_time || undefined,
           isScheduled: t.is_scheduled || false,
-          isPro: (t as any).is_pro || false
+          isPro: (t as any).is_pro || false,
+          isLocked: (t as any).is_locked || false
         })) || [];
 
         setClasses(transformedClasses);
@@ -438,6 +440,22 @@ export const TeacherDashboard = () => {
     } catch (error) {
       console.error('Error creating test:', error);
       toast.error('Failed to create test');
+    }
+  };
+
+  const handleToggleTestLock = async (test: Test, locked: boolean) => {
+    setTests(prev => prev.map(t => t.id === test.id ? { ...t, isLocked: locked } : t));
+    try {
+      const { error } = await supabase
+        .from('tests')
+        .update({ is_locked: locked } as any)
+        .eq('id', test.id);
+      if (error) throw error;
+      toast.success(locked ? 'Test locked — delete disabled' : 'Test unlocked');
+    } catch (error) {
+      console.error('Error updating test lock:', error);
+      setTests(prev => prev.map(t => t.id === test.id ? { ...t, isLocked: !locked } : t));
+      toast.error('Failed to update lock state');
     }
   };
 
@@ -794,7 +812,7 @@ export const TeacherDashboard = () => {
             {sidebarSection ? (
               <div className="space-y-6">{renderSidebarSection()}</div>
             ) : (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-6">
               <TabsList className="flex flex-wrap h-auto gap-1 w-full">
                 <TabsTrigger value="classes" className="flex-1 min-w-[80px] text-xs sm:text-sm">Classes</TabsTrigger>
                 <TabsTrigger value="students" className="flex-1 min-w-[80px] text-xs sm:text-sm">Students</TabsTrigger>
@@ -1342,12 +1360,8 @@ export const TeacherDashboard = () => {
               filteredTests.map((test) => (
                 <Card key={test.id} className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-primary/50" onClick={() => handleEditTest(test)}>
                           <CardHeader>
-                            <CardTitle className="flex flex-col sm:flex-row items-start justify-between gap-2">
-                              <div className="min-w-0 flex-1 w-full">
-                                <div className="text-xs text-muted-foreground">Test</div>
-                                <div className="font-semibold leading-6 break-words">{test.title}</div>
-                              </div>
-                              <div className="flex space-x-1 flex-shrink-0 mt-2 sm:mt-1">
+                            {/* Icons line */}
+                            <div className="flex flex-wrap items-center justify-end gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -1416,16 +1430,40 @@ export const TeacherDashboard = () => {
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive disabled:opacity-40"
+                          disabled={!!test.isLocked}
+                          title={test.isLocked ? "Unlock to delete" : "Delete test"}
                           onClick={(e) => {
                             e.stopPropagation();
+                            if (test.isLocked) return;
                             setTestToDelete(test);
                           }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    </CardTitle>
+                      {/* Lock checkbox */}
+                      <div
+                        className="flex items-center gap-2 mt-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Checkbox
+                          id={`lock-${test.id}`}
+                          checked={!!test.isLocked}
+                          onCheckedChange={(checked) => handleToggleTestLock(test, checked === true)}
+                        />
+                        <Label
+                          htmlFor={`lock-${test.id}`}
+                          className="text-xs flex items-center gap-1 cursor-pointer text-muted-foreground"
+                        >
+                          <Lock className="h-3 w-3" /> Lock (disable delete)
+                        </Label>
+                      </div>
+                      {/* Test title below the icons line, above the subject */}
+                      <div className="mt-2 min-w-0">
+                        <div className="text-xs text-muted-foreground">Test</div>
+                        <CardTitle className="font-semibold leading-6 break-words">{test.title}</CardTitle>
+                      </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">

@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Type, Calculator, AlignLeft, Trash2, Image as ImageIcon, Upload, Download, FileJson, Pencil, Save, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Type, Calculator, AlignLeft, Trash2, Image as ImageIcon, Upload, Download, FileJson, Pencil, Save, X, ChevronUp, ChevronDown, Table as TableIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Question } from '@/types';
 import { MathSymbolToolbar, processMathText, convertToUnicode, processRichTextPaste } from './MathFormulaProcessor';
@@ -100,6 +100,8 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
   const optionRefs = useRef<(HTMLInputElement | null)[]>([]);
   const explanationRef = useRef<HTMLTextAreaElement>(null);
   const [activeMathField, setActiveMathField] = useState<{field: 'question' | 'explanation' | 'option', index?: number} | null>(null);
+  const [tableRows, setTableRows] = useState(2);
+  const [tableCols, setTableCols] = useState(2);
 
   // Enhanced text processing for math/science content
   const enhancedProcessText = (text: string): string => {
@@ -324,13 +326,40 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
     }
   };
 
-  // Setup dragover/drop handlers on builder container so images can be moved by mouse
+  // Setup dragstart/dragover/drop handlers on builder container so images can be moved by mouse
   useEffect(() => {
     const container = builderRef.current;
     if (!container) return;
 
+    // Make every image inside the editors draggable (covers images loaded when editing)
+    const normalizeImages = () => {
+      const imgs = Array.from(container.querySelectorAll('.rich-text-editor img')) as HTMLImageElement[];
+      imgs.forEach((img) => {
+        img.draggable = true;
+        if (!img.dataset.imageId) {
+          img.dataset.imageId = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        }
+      });
+    };
+    normalizeImages();
+    const observer = new MutationObserver(() => normalizeImages());
+    observer.observe(container, { childList: true, subtree: true });
+
+    const onDragStart = (e: DragEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && target.tagName === 'IMG' && target.closest('.rich-text-editor')) {
+        const img = target as HTMLImageElement;
+        if (!img.dataset.imageId) {
+          img.dataset.imageId = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        }
+        try { e.dataTransfer?.setData('text/plain', img.dataset.imageId); } catch (err) { /* ignore */ }
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+      }
+    };
+
     const onDragOver = (e: DragEvent) => {
       e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
     };
 
     const onDrop = (e: DragEvent) => {
@@ -386,9 +415,12 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       else if (typeof optionIndex === 'number' && optionRichRefs.current[optionIndex]) syncRichFieldState(optionRichRefs.current[optionIndex]!, 'option', optionIndex);
     };
 
+    container.addEventListener('dragstart', onDragStart);
     container.addEventListener('dragover', onDragOver);
     container.addEventListener('drop', onDrop);
     return () => {
+      observer.disconnect();
+      container.removeEventListener('dragstart', onDragStart);
       container.removeEventListener('dragover', onDragOver);
       container.removeEventListener('drop', onDrop);
     };
@@ -525,7 +557,69 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
     }, 0);
   };
 
-  // Process HTML content to preserve mathematical symbols and formatting (for textarea fields)
+  // Resolve the rich-text editor that currently has focus (via activeMathField)
+  const getActiveRichEditor = (): { el: HTMLDivElement; field: 'question' | 'explanation' | 'option'; index?: number } | null => {
+    if (!activeMathField) return null;
+    if (activeMathField.field === 'question' && questionRichRef.current) {
+      return { el: questionRichRef.current, field: 'question' };
+    }
+    if (activeMathField.field === 'explanation' && explanationRichRef.current) {
+      return { el: explanationRichRef.current, field: 'explanation' };
+    }
+    if (activeMathField.field === 'option' && typeof activeMathField.index === 'number') {
+      const el = optionRichRefs.current[activeMathField.index];
+      if (el) return { el, field: 'option', index: activeMathField.index };
+    }
+    return null;
+  };
+
+  // Insert an editable table at the cursor of the active rich-text field
+  const insertTable = (rows: number, cols: number) => {
+    const active = getActiveRichEditor();
+    if (!active) {
+      toast.error('Click inside the Question (or an Option/Explanation) text field first, then insert a table');
+      return;
+    }
+    const { el, field, index } = active;
+    el.focus();
+
+    const wrapper = document.createElement('div');
+    wrapper.style.overflowX = 'auto';
+    const table = document.createElement('table');
+    table.className = 'qb-table';
+    table.style.borderCollapse = 'collapse';
+    table.style.width = '100%';
+    table.style.margin = '0.5rem 0';
+    for (let r = 0; r < rows; r++) {
+      const tr = document.createElement('tr');
+      for (let c = 0; c < cols; c++) {
+        const cell = document.createElement(r === 0 ? 'th' : 'td');
+        cell.style.border = '1px solid #cbd5e1';
+        cell.style.padding = '6px 10px';
+        cell.style.minWidth = '48px';
+        cell.innerHTML = '<br>';
+        tr.appendChild(cell);
+      }
+      table.appendChild(tr);
+    }
+    wrapper.appendChild(table);
+    const after = document.createElement('p');
+    after.innerHTML = '<br>';
+
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && el.contains(sel.anchorNode)) {
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(after);
+      range.insertNode(wrapper);
+      range.collapse(false);
+    } else {
+      el.appendChild(wrapper);
+      el.appendChild(after);
+    }
+    syncRichFieldState(el, field, index);
+    toast.success(`Inserted ${rows} × ${cols} table`);
+  };
   const processHTMLForMath = (element: HTMLElement): string => {
     let result = '';
     for (const node of Array.from(element.childNodes)) {
@@ -834,6 +928,50 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
             />
             <p className="text-xs text-muted-foreground">
               Click on any text field below, then select a symbol. Auto-formatting converts text like "pi", "alpha", "^2", "_1" into proper symbols.
+            </p>
+          </div>
+
+          {/* Insert Table */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <TableIcon className="h-4 w-4" />
+              Insert Table
+            </Label>
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Rows</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={tableRows}
+                  onChange={(e) => setTableRows(Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
+                  className="w-20"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Columns</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={tableCols}
+                  onChange={(e) => setTableCols(Math.max(1, Math.min(10, Number(e.target.value) || 1)))}
+                  className="w-20"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => insertTable(tableRows, tableCols)}
+              >
+                <TableIcon className="h-4 w-4 mr-1" />
+                Insert Table
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Click inside the Question, an Option, or the Explanation field first, then insert a table. The first row is a header — click any cell to type.
             </p>
           </div>
 

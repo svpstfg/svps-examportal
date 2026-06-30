@@ -502,6 +502,7 @@ export type Database = {
           created_at: string
           duration: number
           id: string
+          is_locked: boolean
           is_pro: boolean
           is_scheduled: boolean | null
           questions: Json
@@ -516,6 +517,7 @@ export type Database = {
           created_at?: string
           duration: number
           id?: string
+          is_locked?: boolean
           is_pro?: boolean
           is_scheduled?: boolean | null
           questions?: Json
@@ -530,6 +532,7 @@ export type Database = {
           created_at?: string
           duration?: number
           id?: string
+          is_locked?: boolean
           is_pro?: boolean
           is_scheduled?: boolean | null
           questions?: Json

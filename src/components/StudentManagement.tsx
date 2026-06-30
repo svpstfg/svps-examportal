@@ -353,7 +353,7 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
 
       if (error) throw error;
 
-      const { deleteError } = await supabase
+      const { error: deleteError } = await supabase
         .from('students')
         .delete()
         .eq('id', studentId);

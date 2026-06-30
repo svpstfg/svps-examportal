@@ -47,6 +47,7 @@ export interface Test {
   scheduledTime?: string;
   isScheduled: boolean;
   isPro: boolean;
+  isLocked?: boolean;
 }
 
 export interface StudentEnrollment {
