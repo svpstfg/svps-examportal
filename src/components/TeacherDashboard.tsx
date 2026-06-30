@@ -442,6 +442,22 @@ export const TeacherDashboard = () => {
     }
   };
 
+  const handleToggleTestLock = async (test: Test, locked: boolean) => {
+    setTests(prev => prev.map(t => t.id === test.id ? { ...t, isLocked: locked } : t));
+    try {
+      const { error } = await supabase
+        .from('tests')
+        .update({ is_locked: locked } as any)
+        .eq('id', test.id);
+      if (error) throw error;
+      toast.success(locked ? 'Test locked — delete disabled' : 'Test unlocked');
+    } catch (error) {
+      console.error('Error updating test lock:', error);
+      setTests(prev => prev.map(t => t.id === test.id ? { ...t, isLocked: !locked } : t));
+      toast.error('Failed to update lock state');
+    }
+  };
+
   const handleDeleteTest = async (testId: string) => {
     try {
       const { error } = await supabase
