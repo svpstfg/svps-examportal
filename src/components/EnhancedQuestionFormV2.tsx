@@ -415,9 +415,12 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       else if (typeof optionIndex === 'number' && optionRichRefs.current[optionIndex]) syncRichFieldState(optionRichRefs.current[optionIndex]!, 'option', optionIndex);
     };
 
+    container.addEventListener('dragstart', onDragStart);
     container.addEventListener('dragover', onDragOver);
     container.addEventListener('drop', onDrop);
     return () => {
+      observer.disconnect();
+      container.removeEventListener('dragstart', onDragStart);
       container.removeEventListener('dragover', onDragOver);
       container.removeEventListener('drop', onDrop);
     };
