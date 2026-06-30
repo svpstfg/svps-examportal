@@ -153,7 +153,8 @@ export const TeacherDashboard = () => {
           scheduledDate: t.scheduled_date ? new Date(t.scheduled_date) : undefined,
           scheduledTime: t.scheduled_time || undefined,
           isScheduled: t.is_scheduled || false,
-          isPro: (t as any).is_pro || false
+          isPro: (t as any).is_pro || false,
+          isLocked: (t as any).is_locked || false
         })) || [];
 
         setClasses(transformedClasses);
