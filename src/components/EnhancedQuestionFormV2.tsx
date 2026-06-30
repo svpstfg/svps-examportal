@@ -525,7 +525,69 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
     }, 0);
   };
 
-  // Process HTML content to preserve mathematical symbols and formatting (for textarea fields)
+  // Resolve the rich-text editor that currently has focus (via activeMathField)
+  const getActiveRichEditor = (): { el: HTMLDivElement; field: 'question' | 'explanation' | 'option'; index?: number } | null => {
+    if (!activeMathField) return null;
+    if (activeMathField.field === 'question' && questionRichRef.current) {
+      return { el: questionRichRef.current, field: 'question' };
+    }
+    if (activeMathField.field === 'explanation' && explanationRichRef.current) {
+      return { el: explanationRichRef.current, field: 'explanation' };
+    }
+    if (activeMathField.field === 'option' && typeof activeMathField.index === 'number') {
+      const el = optionRichRefs.current[activeMathField.index];
+      if (el) return { el, field: 'option', index: activeMathField.index };
+    }
+    return null;
+  };
+
+  // Insert an editable table at the cursor of the active rich-text field
+  const insertTable = (rows: number, cols: number) => {
+    const active = getActiveRichEditor();
+    if (!active) {
+      toast.error('Click inside the Question (or an Option/Explanation) text field first, then insert a table');
+      return;
+    }
+    const { el, field, index } = active;
+    el.focus();
+
+    const wrapper = document.createElement('div');
+    wrapper.style.overflowX = 'auto';
+    const table = document.createElement('table');
+    table.className = 'qb-table';
+    table.style.borderCollapse = 'collapse';
+    table.style.width = '100%';
+    table.style.margin = '0.5rem 0';
+    for (let r = 0; r < rows; r++) {
+      const tr = document.createElement('tr');
+      for (let c = 0; c < cols; c++) {
+        const cell = document.createElement(r === 0 ? 'th' : 'td');
+        cell.style.border = '1px solid #cbd5e1';
+        cell.style.padding = '6px 10px';
+        cell.style.minWidth = '48px';
+        cell.innerHTML = '<br>';
+        tr.appendChild(cell);
+      }
+      table.appendChild(tr);
+    }
+    wrapper.appendChild(table);
+    const after = document.createElement('p');
+    after.innerHTML = '<br>';
+
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && el.contains(sel.anchorNode)) {
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(after);
+      range.insertNode(wrapper);
+      range.collapse(false);
+    } else {
+      el.appendChild(wrapper);
+      el.appendChild(after);
+    }
+    syncRichFieldState(el, field, index);
+    toast.success(`Inserted ${rows} × ${cols} table`);
+  };
   const processHTMLForMath = (element: HTMLElement): string => {
     let result = '';
     for (const node of Array.from(element.childNodes)) {
