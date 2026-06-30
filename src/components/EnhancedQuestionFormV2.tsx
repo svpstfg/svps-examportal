@@ -100,6 +100,8 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
   const optionRefs = useRef<(HTMLInputElement | null)[]>([]);
   const explanationRef = useRef<HTMLTextAreaElement>(null);
   const [activeMathField, setActiveMathField] = useState<{field: 'question' | 'explanation' | 'option', index?: number} | null>(null);
+  const [tableRows, setTableRows] = useState(2);
+  const [tableCols, setTableCols] = useState(2);
 
   // Enhanced text processing for math/science content
   const enhancedProcessText = (text: string): string => {
