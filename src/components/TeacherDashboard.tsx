@@ -1360,12 +1360,8 @@ export const TeacherDashboard = () => {
               filteredTests.map((test) => (
                 <Card key={test.id} className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-primary/50" onClick={() => handleEditTest(test)}>
                           <CardHeader>
-                            <CardTitle className="flex flex-col sm:flex-row items-start justify-between gap-2">
-                              <div className="min-w-0 flex-1 w-full">
-                                <div className="text-xs text-muted-foreground">Test</div>
-                                <div className="font-semibold leading-6 break-words">{test.title}</div>
-                              </div>
-                              <div className="flex space-x-1 flex-shrink-0 mt-2 sm:mt-1">
+                            {/* Icons line */}
+                            <div className="flex flex-wrap items-center justify-end gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -1434,16 +1430,40 @@ export const TeacherDashboard = () => {
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive disabled:opacity-40"
+                          disabled={!!test.isLocked}
+                          title={test.isLocked ? "Unlock to delete" : "Delete test"}
                           onClick={(e) => {
                             e.stopPropagation();
+                            if (test.isLocked) return;
                             setTestToDelete(test);
                           }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    </CardTitle>
+                      {/* Lock checkbox */}
+                      <div
+                        className="flex items-center gap-2 mt-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Checkbox
+                          id={`lock-${test.id}`}
+                          checked={!!test.isLocked}
+                          onCheckedChange={(checked) => handleToggleTestLock(test, checked === true)}
+                        />
+                        <Label
+                          htmlFor={`lock-${test.id}`}
+                          className="text-xs flex items-center gap-1 cursor-pointer text-muted-foreground"
+                        >
+                          <Lock className="h-3 w-3" /> Lock (disable delete)
+                        </Label>
+                      </div>
+                      {/* Test title below the icons line, above the subject */}
+                      <div className="mt-2 min-w-0">
+                        <div className="text-xs text-muted-foreground">Test</div>
+                        <CardTitle className="font-semibold leading-6 break-words">{test.title}</CardTitle>
+                      </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
