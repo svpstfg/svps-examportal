@@ -86,6 +86,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
     id: string;
     src: string;
     width: number; // percent
+    layout: 'block' | 'horizontal-left' | 'horizontal-right';
     field: 'question' | 'explanation' | 'option';
     index?: number;
   }
@@ -234,10 +235,9 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       const imgId = `img-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
       imageElement.dataset.imageId = imgId;
       const defaultWidth = defaultImageWidth; // use global default
-      imageElement.style.width = `${defaultWidth}%`;
       imageElement.draggable = true;
-      imageElement.style.display = 'block';
-      setPastedImages(prev => [...prev, { id: imgId, src: imageData, width: defaultWidth, field, index }]);
+      setPastedImages(prev => [...prev, { id: imgId, src: imageData, width: defaultWidth, layout: 'block', field, index }]);
+      applyPastedImageLayout(imageElement, { width: defaultWidth, layout: 'block' });
 
       // attach dragstart so we can drag with mouse
       imageElement.addEventListener('dragstart', (ev: DragEvent) => {
@@ -266,10 +266,29 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
   };
 
   // Helpers to control pasted images (resize, reorder, remove)
+  const applyPastedImageLayout = (img: HTMLImageElement, image: Pick<PastedImage, 'width' | 'layout'>) => {
+    const width = Math.max(20, Math.min(100, image.width));
+    img.style.width = `${width}%`;
+    img.style.maxWidth = '100%';
+    img.style.height = 'auto';
+    img.style.display = image.layout === 'block' ? 'block' : 'inline-block';
+    img.style.float = image.layout === 'horizontal-left' ? 'left' : image.layout === 'horizontal-right' ? 'right' : 'none';
+    img.style.margin = image.layout === 'block' ? '0.5rem 0' : '0.5rem 1rem 0.5rem 0';
+    img.style.clear = image.layout === 'block' ? 'both' : 'none';
+    img.style.verticalAlign = 'top';
+  };
+
   const updatePastedImageWidth = (id: string, width: number) => {
     setPastedImages(prev => prev.map(p => p.id === id ? { ...p, width } : p));
     const img = document.querySelector(`img[data-image-id="${id}"]`) as HTMLImageElement | null;
-    if (img) img.style.width = `${width}%`;
+    if (img) applyPastedImageLayout(img, { width, layout: pastedImages.find(p => p.id === id)?.layout || 'block' });
+  };
+
+  const updatePastedImageLayout = (id: string, layout: PastedImage['layout']) => {
+    setPastedImages(prev => prev.map(p => p.id === id ? { ...p, layout } : p));
+    const img = document.querySelector(`img[data-image-id="${id}"]`) as HTMLImageElement | null;
+    const current = pastedImages.find(p => p.id === id);
+    if (img && current) applyPastedImageLayout(img, { width: current.width, layout });
   };
 
   const removePastedImage = (id: string) => {
@@ -573,6 +592,41 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
     return null;
   };
 
+  const attachTableResizers = (table: HTMLTableElement) => {
+    if (!table.rows.length) return;
+    const headerCells = Array.from(table.rows[0].cells) as HTMLTableCellElement[];
+    table.style.tableLayout = 'fixed';
+    table.style.width = '100%';
+
+    headerCells.forEach((cell, index) => {
+      if (index === headerCells.length - 1) return;
+      cell.style.position = 'relative';
+      const handle = document.createElement('div');
+      handle.className = 'qb-table-resizer';
+      handle.title = 'Drag to resize column';
+      handle.addEventListener('mousedown', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const startX = event.clientX;
+        const startWidth = cell.getBoundingClientRect().width;
+        const onMove = (moveEvent: MouseEvent) => {
+          const newWidth = Math.max(48, startWidth + (moveEvent.clientX - startX));
+          Array.from(table.rows).forEach((row) => {
+            const targetCell = row.cells[index];
+            if (targetCell) targetCell.style.width = `${newWidth}px`;
+          });
+        };
+        const onUp = () => {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+      cell.appendChild(handle);
+    });
+  };
+
   // Insert an editable table at the cursor of the active rich-text field
   const insertTable = (rows: number, cols: number) => {
     const active = getActiveRichEditor();
@@ -602,6 +656,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       }
       table.appendChild(tr);
     }
+    attachTableResizers(table);
     wrapper.appendChild(table);
     const after = document.createElement('p');
     after.innerHTML = '<br>';
@@ -1117,7 +1172,23 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                                 value={p.width}
                                 onChange={(e) => updatePastedImageWidth(p.id, parseInt(e.target.value))}
                               />
-                              <div className="flex gap-2 mt-2">
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                <div className="flex items-center gap-2">
+                                  <Label className="text-xs">Layout</Label>
+                                  <Select
+                                    value={p.layout}
+                                    onValueChange={(value) => updatePastedImageLayout(p.id, value as PastedImage['layout'])}
+                                  >
+                                    <SelectTrigger className="h-8 w-28">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="block">Block</SelectItem>
+                                      <SelectItem value="horizontal-left">Horizontal Left</SelectItem>
+                                      <SelectItem value="horizontal-right">Horizontal Right</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                                 <Button size="sm" variant="outline" onClick={() => movePastedImage(p.id, 'left')}>
                                   <ChevronUp className="h-4 w-4" />
                                 </Button>

@@ -79,6 +79,7 @@ export const TeacherDashboard = () => {
   const [testFilterCourseId, setTestFilterCourseId] = useState('');
   const [testFilterChapterId, setTestFilterChapterId] = useState('');
   const [newCourseClassId, setNewCourseClassId] = useState('');
+  const [isCreatingTest, setIsCreatingTest] = useState(false);
 
   const [newChapter, setNewChapter] = useState({ name: '', description: '', courseId: '' });
   const [newTest, setNewTest] = useState({
@@ -393,6 +394,8 @@ export const TeacherDashboard = () => {
       return;
     }
 
+    setIsCreatingTest(true);
+
     try {
       const { data, error } = await supabase
         .from('tests')
@@ -440,6 +443,8 @@ export const TeacherDashboard = () => {
     } catch (error) {
       console.error('Error creating test:', error);
       toast.error('Failed to create test');
+    } finally {
+      setIsCreatingTest(false);
     }
   };
 
@@ -1714,9 +1719,9 @@ export const TeacherDashboard = () => {
               <Button 
                 onClick={handleCreateTest} 
                 className="w-full"
-                disabled={!newTest.title || !newTest.chapterId || newTest.questions.length === 0}
+                disabled={isCreatingTest || !newTest.title || !newTest.chapterId || newTest.questions.length === 0}
               >
-                Create Test ({newTest.questions.length} questions)
+                {isCreatingTest ? 'Saving...' : `Create Test (${newTest.questions.length} questions)`}
               </Button>
             </CardContent>
           </Card>
