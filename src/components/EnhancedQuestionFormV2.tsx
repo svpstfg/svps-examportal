@@ -86,7 +86,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
     id: string;
     src: string;
     width: number; // percent
-    layout: 'block' | 'horizontal-left' | 'horizontal-right';
+    layout: 'inline' | 'block' | 'horizontal-left' | 'horizontal-right';
     field: 'question' | 'explanation' | 'option';
     index?: number;
   }
