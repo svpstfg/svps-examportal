@@ -1082,13 +1082,30 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                       <div className="flex-1">
                         <input
                           type="range"
-                          min={20}
+                          min={3}
                           max={100}
-                          step={5}
+                          step={1}
                           value={p.width}
                           onChange={(e) => updatePastedImageWidth(p.id, parseInt(e.target.value))}
                         />
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-xs">Layout</Label>
+                            <Select
+                              value={p.layout}
+                              onValueChange={(value) => updatePastedImageLayout(p.id, value as PastedImage['layout'])}
+                            >
+                              <SelectTrigger className="h-8 w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="inline">Inline (same line)</SelectItem>
+                                <SelectItem value="block">Block</SelectItem>
+                                <SelectItem value="horizontal-left">Horizontal Left</SelectItem>
+                                <SelectItem value="horizontal-right">Horizontal Right</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                           <Button size="sm" variant="outline" onClick={() => movePastedImage(p.id, 'left')}>
                             <ChevronUp className="h-4 w-4" />
                           </Button>
