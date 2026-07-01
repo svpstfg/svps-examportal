@@ -757,6 +757,53 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!manageClassesStudentId} onOpenChange={(open) => { if (!open) setManageClassesStudentId(null); }}>
+        <DialogContent className="max-w-md">
+          {(() => {
+            const student = students.find(s => s.id === manageClassesStudentId);
+            if (!student) return null;
+            const search = classModalSearch.trim().toLowerCase();
+            const filtered = classes.filter(c => c.name.toLowerCase().includes(search));
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Assign Classes</DialogTitle>
+                  <DialogDescription>
+                    Search and select classes to assign to <span className="font-medium">{student.name}</span>.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search classes..."
+                    value={classModalSearch}
+                    onChange={(e) => setClassModalSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <div className="max-h-72 overflow-y-auto space-y-1 mt-2">
+                  {filtered.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-6 text-center">No classes found</p>
+                  ) : filtered.map(cls => {
+                    const isAssigned = student.classAssignments.some(a => a.classId === cls.id);
+                    return (
+                      <label key={cls.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer text-sm">
+                        <Checkbox
+                          checked={isAssigned}
+                          onCheckedChange={() => handleUpdateClassAssignment(student.id, cls.id, isAssigned)}
+                        />
+                        <span>{cls.name}</span>
+                        {isAssigned && <Badge variant="outline" className="ml-auto text-xs">Assigned</Badge>}
+                      </label>
+                    );
+                  })}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
