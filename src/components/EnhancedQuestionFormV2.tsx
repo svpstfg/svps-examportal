@@ -1185,6 +1185,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
+                                      <SelectItem value="inline">Inline (same line)</SelectItem>
                                       <SelectItem value="block">Block</SelectItem>
                                       <SelectItem value="horizontal-left">Horizontal Left</SelectItem>
                                       <SelectItem value="horizontal-right">Horizontal Right</SelectItem>
