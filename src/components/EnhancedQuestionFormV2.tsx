@@ -513,7 +513,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
 
   const handleRichInput = () => {
     if (!questionRichRef.current) return;
-    setCurrentQuestion(prev => ({ ...prev, question: questionRichRef.current!.innerHTML }));
+    setCurrentQuestion(prev => ({ ...prev, question: cleanEditorHTML(questionRichRef.current!) }));
   };
 
   // Convert text to superscript unicode
