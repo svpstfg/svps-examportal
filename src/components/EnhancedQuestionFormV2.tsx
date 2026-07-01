@@ -416,8 +416,8 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
         targetEl.appendChild(img);
       }
 
-      // ensure display style matches default layout
-      img.style.display = 'block';
+      // keep inline images inline after moving
+      if (img.style.display !== 'inline-block') img.style.display = 'block';
 
       // reorder pastedImages to match DOM order for the affected field
       const field = targetEl === questionRichRef.current ? 'question' : targetEl === explanationRichRef.current ? 'explanation' : 'option';
