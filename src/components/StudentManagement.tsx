@@ -132,7 +132,7 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
 
       const { data: studentsData, error: studentsError } = await supabase
         .from('students')
-        .select('id, name, email')
+        .select('id, name, email, is_locked')
         .in('id', studentIds);
 
       if (studentsError) throw studentsError;
@@ -144,6 +144,7 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
           id: student?.id || '',
           name: student?.name || 'Unknown',
           email: student?.email || '',
+          isLocked: (student as any)?.is_locked ?? false,
           classAssignments: []
         };
 
