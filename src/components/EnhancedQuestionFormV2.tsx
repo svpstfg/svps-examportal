@@ -361,6 +361,12 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
           img.dataset.imageId = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         }
       });
+      // Attach column resizers to any tables loaded/created inside the editors
+      const tables = Array.from(container.querySelectorAll('.rich-text-editor table')) as HTMLTableElement[];
+      tables.forEach((table) => {
+        if (table.dataset.resizersAttached === 'true') return;
+        attachTableResizers(table);
+      });
     };
     normalizeImages();
     const observer = new MutationObserver(() => normalizeImages());
