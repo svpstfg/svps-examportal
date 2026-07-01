@@ -189,19 +189,27 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
     toast.success('Content pasted with formatting preserved!');
   };
 
+  // Serialize editor HTML while stripping the drag-to-resize handles (they are UI-only)
+  const cleanEditorHTML = (target: HTMLDivElement): string => {
+    const clone = target.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('.qb-table-resizer').forEach(el => el.remove());
+    return clone.innerHTML;
+  };
+
   const syncRichFieldState = (
     target: HTMLDivElement,
     field: 'question' | 'explanation' | 'option',
     index?: number
   ) => {
+    const html = cleanEditorHTML(target);
     if (field === 'question') {
-      setCurrentQuestion(prev => ({ ...prev, question: target.innerHTML }));
+      setCurrentQuestion(prev => ({ ...prev, question: html }));
     } else if (field === 'explanation') {
-      setCurrentQuestion(prev => ({ ...prev, explanation: target.innerHTML }));
+      setCurrentQuestion(prev => ({ ...prev, explanation: html }));
     } else if (field === 'option' && typeof index === 'number') {
       setCurrentQuestion(prev => {
         const newOptions = [...prev.options];
-        newOptions[index] = target.innerHTML;
+        newOptions[index] = html;
         return { ...prev, options: newOptions };
       });
     }
