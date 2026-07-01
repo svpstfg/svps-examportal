@@ -750,11 +750,11 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
 
   const addQuestionToTest = () => {
     // Sync from contentEditable refs before validation
-    const questionHTML = questionRichRef.current?.innerHTML || currentQuestion.question;
+    const questionHTML = questionRichRef.current ? cleanEditorHTML(questionRichRef.current) : currentQuestion.question;
     const optionsHTML = currentQuestion.options.map((opt, i) => 
-      optionRichRefs.current[i]?.innerHTML || opt
+      optionRichRefs.current[i] ? cleanEditorHTML(optionRichRefs.current[i]!) : opt
     );
-    const explanationHTML = explanationRichRef.current?.innerHTML || currentQuestion.explanation;
+    const explanationHTML = explanationRichRef.current ? cleanEditorHTML(explanationRichRef.current) : currentQuestion.explanation;
 
     if (!stripHTMLForValidation(questionHTML).trim() || 
         optionsHTML.some(opt => !stripHTMLForValidation(opt).trim())) {
