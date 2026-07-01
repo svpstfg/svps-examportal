@@ -268,15 +268,16 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
 
   // Helpers to control pasted images (resize, reorder, remove)
   const applyPastedImageLayout = (img: HTMLImageElement, image: Pick<PastedImage, 'width' | 'layout'>) => {
-    const width = Math.max(20, Math.min(100, image.width));
+    const isInline = image.layout === 'inline';
+    const width = Math.max(isInline ? 3 : 20, Math.min(100, image.width));
     img.style.width = `${width}%`;
     img.style.maxWidth = '100%';
     img.style.height = 'auto';
     img.style.display = image.layout === 'block' ? 'block' : 'inline-block';
     img.style.float = image.layout === 'horizontal-left' ? 'left' : image.layout === 'horizontal-right' ? 'right' : 'none';
-    img.style.margin = image.layout === 'block' ? '0.5rem 0' : '0.5rem 1rem 0.5rem 0';
+    img.style.margin = image.layout === 'block' ? '0.5rem 0' : isInline ? '0 0.25rem' : '0.5rem 1rem 0.5rem 0';
     img.style.clear = image.layout === 'block' ? 'both' : 'none';
-    img.style.verticalAlign = 'top';
+    img.style.verticalAlign = 'middle';
   };
 
   const updatePastedImageWidth = (id: string, width: number) => {
