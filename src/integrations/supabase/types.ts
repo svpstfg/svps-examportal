@@ -417,6 +417,7 @@ export type Database = {
           email: string
           enrolled_at: string
           id: string
+          is_locked: boolean
           name: string
           updated_at: string
         }
@@ -426,6 +427,7 @@ export type Database = {
           email: string
           enrolled_at?: string
           id?: string
+          is_locked?: boolean
           name: string
           updated_at?: string
         }
@@ -435,6 +437,7 @@ export type Database = {
           email?: string
           enrolled_at?: string
           id?: string
+          is_locked?: boolean
           name?: string
           updated_at?: string
         }

@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Crown, Search, UserPlus, Trash2, Mail, CalendarClock, Download, ShieldCheck, ShieldAlert, BadgeCheck } from "lucide-react";
+import { Users, Crown, Search, UserPlus, Trash2, Mail, CalendarClock, Download, ShieldCheck, ShieldAlert, BadgeCheck, Lock, LockOpen, Settings2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -30,6 +31,7 @@ interface StudentRow {
   id: string;
   name: string;
   email: string;
+  isLocked: boolean;
   classAssignments: ClassAssignment[];
 }
 
@@ -45,6 +47,8 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
   const [addStudentEmail, setAddStudentEmail] = useState('');
   const [addStudentName, setAddStudentName] = useState('');
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
+  const [manageClassesStudentId, setManageClassesStudentId] = useState<string | null>(null);
+  const [classModalSearch, setClassModalSearch] = useState('');
 
   interface PendingStudent {
     enrollmentId: string;
@@ -131,7 +135,7 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
 
       const { data: studentsData, error: studentsError } = await supabase
         .from('students')
-        .select('id, name, email')
+        .select('id, name, email, is_locked')
         .in('id', studentIds);
 
       if (studentsError) throw studentsError;
@@ -143,6 +147,7 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
           id: student?.id || '',
           name: student?.name || 'Unknown',
           email: student?.email || '',
+          isLocked: (student as any)?.is_locked ?? false,
           classAssignments: []
         };
 
@@ -344,6 +349,11 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
   };
 
   const handleRemoveStudent = async (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (student?.isLocked) {
+      toast.error('This student is locked. Unlock it first to delete.');
+      return;
+    }
     if (!window.confirm('Remove this student from all assigned classes? They will lose access to every class.')) return;
     try {
       const { error } = await supabase
@@ -365,6 +375,23 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
     } catch (error) {
       console.error('Error removing student:', error);
       toast.error('Failed to remove student');
+    }
+  };
+
+  const handleToggleStudentLock = async (studentId: string, currentLocked: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('students')
+        .update({ is_locked: !currentLocked } as any)
+        .eq('id', studentId);
+
+      if (error) throw error;
+
+      setStudents(prev => prev.map(s => s.id === studentId ? { ...s, isLocked: !currentLocked } : s));
+      toast.success(!currentLocked ? 'Student locked — delete disabled' : 'Student unlocked');
+    } catch (error) {
+      console.error('Error toggling student lock:', error);
+      toast.error('Failed to update lock');
     }
   };
 
@@ -546,6 +573,11 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-medium break-all">{student.name}</p>
+                          {student.isLocked && (
+                            <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                              <Lock className="h-3 w-3" /> Locked
+                            </Badge>
+                          )}
                           {student.classAssignments.some(assignment => isExpired(assignment.subscriptionExpiresAt)) && (
                             <Badge variant="destructive" className="text-xs">Expired</Badge>
                           )}
@@ -557,11 +589,31 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end sm:flex-wrap">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:flex-wrap">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="self-start sm:self-auto"
+                        onClick={() => { setManageClassesStudentId(student.id); setClassModalSearch(''); }}
+                      >
+                        <Settings2 className="h-4 w-4 mr-2" />
+                        Manage Classes
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-destructive hover:text-destructive self-start sm:self-auto"
+                        className="self-start sm:self-auto"
+                        title={student.isLocked ? 'Unlock student' : 'Lock student (prevent delete)'}
+                        onClick={() => handleToggleStudentLock(student.id, student.isLocked)}
+                      >
+                        {student.isLocked ? <Lock className="h-4 w-4 text-amber-500" /> : <LockOpen className="h-4 w-4" />}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive self-start sm:self-auto disabled:opacity-40"
+                        disabled={student.isLocked}
+                        title={student.isLocked ? 'Locked — unlock to delete' : 'Remove student'}
                         onClick={() => handleRemoveStudent(student.id)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -570,7 +622,9 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {student.classAssignments.map(assignment => (
+                    {student.classAssignments.length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">No classes assigned. Use "Manage Classes" to assign.</p>
+                    ) : student.classAssignments.map(assignment => (
                       <div key={assignment.enrollmentId} className="rounded-md border bg-background/70 p-3 space-y-2 min-w-[220px]">
                         <div className="flex items-center justify-between gap-2">
                           <Badge variant="outline">{getClassName(assignment.classId)}</Badge>
@@ -624,24 +678,6 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
                         </div>
                       </div>
                     ))}
-                  </div>
-
-                  <div className="rounded-md border p-3 space-y-2">
-                    <p className="text-sm font-medium">Assign to classes</p>
-                    <div className="flex flex-wrap gap-3">
-                      {classes.map(cls => {
-                        const isAssigned = student.classAssignments.some(assignment => assignment.classId === cls.id);
-                        return (
-                          <label key={cls.id} className="flex items-center gap-2 text-sm">
-                            <Checkbox
-                              checked={isAssigned}
-                              onCheckedChange={() => handleUpdateClassAssignment(student.id, cls.id, isAssigned)}
-                            />
-                            <span>{cls.name}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
                   </div>
                 </div>
               ))}
@@ -721,6 +757,53 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!manageClassesStudentId} onOpenChange={(open) => { if (!open) setManageClassesStudentId(null); }}>
+        <DialogContent className="max-w-md">
+          {(() => {
+            const student = students.find(s => s.id === manageClassesStudentId);
+            if (!student) return null;
+            const search = classModalSearch.trim().toLowerCase();
+            const filtered = classes.filter(c => c.name.toLowerCase().includes(search));
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Assign Classes</DialogTitle>
+                  <DialogDescription>
+                    Search and select classes to assign to <span className="font-medium">{student.name}</span>.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search classes..."
+                    value={classModalSearch}
+                    onChange={(e) => setClassModalSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <div className="max-h-72 overflow-y-auto space-y-1 mt-2">
+                  {filtered.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-6 text-center">No classes found</p>
+                  ) : filtered.map(cls => {
+                    const isAssigned = student.classAssignments.some(a => a.classId === cls.id);
+                    return (
+                      <label key={cls.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer text-sm">
+                        <Checkbox
+                          checked={isAssigned}
+                          onCheckedChange={() => handleUpdateClassAssignment(student.id, cls.id, isAssigned)}
+                        />
+                        <span>{cls.name}</span>
+                        {isAssigned && <Badge variant="outline" className="ml-auto text-xs">Assigned</Badge>}
+                      </label>
+                    );
+                  })}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

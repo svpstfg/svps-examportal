@@ -227,3 +227,15 @@ All colors MUST be HSL.
   color: hsl(var(--muted-foreground));
   pointer-events: none;
 }
+/* Question Builder table column resize handle */
+.qb-table-resizer {
+  background: transparent;
+  transition: background-color 0.15s ease;
+}
+.qb-table-resizer:hover {
+  background-color: hsl(var(--primary) / 0.5);
+}
+.rich-text-editor table.qb-table th,
+.rich-text-editor table.qb-table td {
+  position: relative;
+}

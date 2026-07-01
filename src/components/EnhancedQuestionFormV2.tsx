@@ -86,7 +86,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
     id: string;
     src: string;
     width: number; // percent
-    layout: 'block' | 'horizontal-left' | 'horizontal-right';
+    layout: 'inline' | 'block' | 'horizontal-left' | 'horizontal-right';
     field: 'question' | 'explanation' | 'option';
     index?: number;
   }
@@ -189,19 +189,27 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
     toast.success('Content pasted with formatting preserved!');
   };
 
+  // Serialize editor HTML while stripping the drag-to-resize handles (they are UI-only)
+  const cleanEditorHTML = (target: HTMLDivElement): string => {
+    const clone = target.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('.qb-table-resizer').forEach(el => el.remove());
+    return clone.innerHTML;
+  };
+
   const syncRichFieldState = (
     target: HTMLDivElement,
     field: 'question' | 'explanation' | 'option',
     index?: number
   ) => {
+    const html = cleanEditorHTML(target);
     if (field === 'question') {
-      setCurrentQuestion(prev => ({ ...prev, question: target.innerHTML }));
+      setCurrentQuestion(prev => ({ ...prev, question: html }));
     } else if (field === 'explanation') {
-      setCurrentQuestion(prev => ({ ...prev, explanation: target.innerHTML }));
+      setCurrentQuestion(prev => ({ ...prev, explanation: html }));
     } else if (field === 'option' && typeof index === 'number') {
       setCurrentQuestion(prev => {
         const newOptions = [...prev.options];
-        newOptions[index] = target.innerHTML;
+        newOptions[index] = html;
         return { ...prev, options: newOptions };
       });
     }
@@ -226,18 +234,19 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       const imageElement = document.createElement('img');
       imageElement.src = imageData;
       imageElement.alt = 'Pasted image';
-      imageElement.style.display = 'block';
+      imageElement.style.display = 'inline-block';
       imageElement.style.maxWidth = '100%';
       imageElement.style.height = 'auto';
-      imageElement.style.margin = '0.5rem 0';
+      imageElement.style.verticalAlign = 'middle';
+      imageElement.style.margin = '0 0.25rem';
       imageElement.style.borderRadius = '0.375rem';
       // assign a stable id so we can find and control this image later
       const imgId = `img-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
       imageElement.dataset.imageId = imgId;
       const defaultWidth = defaultImageWidth; // use global default
       imageElement.draggable = true;
-      setPastedImages(prev => [...prev, { id: imgId, src: imageData, width: defaultWidth, layout: 'block', field, index }]);
-      applyPastedImageLayout(imageElement, { width: defaultWidth, layout: 'block' });
+      setPastedImages(prev => [...prev, { id: imgId, src: imageData, width: defaultWidth, layout: 'inline', field, index }]);
+      applyPastedImageLayout(imageElement, { width: defaultWidth, layout: 'inline' });
 
       // attach dragstart so we can drag with mouse
       imageElement.addEventListener('dragstart', (ev: DragEvent) => {
@@ -267,15 +276,16 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
 
   // Helpers to control pasted images (resize, reorder, remove)
   const applyPastedImageLayout = (img: HTMLImageElement, image: Pick<PastedImage, 'width' | 'layout'>) => {
-    const width = Math.max(20, Math.min(100, image.width));
+    const isInline = image.layout === 'inline';
+    const width = Math.max(isInline ? 3 : 20, Math.min(100, image.width));
     img.style.width = `${width}%`;
     img.style.maxWidth = '100%';
     img.style.height = 'auto';
     img.style.display = image.layout === 'block' ? 'block' : 'inline-block';
     img.style.float = image.layout === 'horizontal-left' ? 'left' : image.layout === 'horizontal-right' ? 'right' : 'none';
-    img.style.margin = image.layout === 'block' ? '0.5rem 0' : '0.5rem 1rem 0.5rem 0';
+    img.style.margin = image.layout === 'block' ? '0.5rem 0' : isInline ? '0 0.25rem' : '0.5rem 1rem 0.5rem 0';
     img.style.clear = image.layout === 'block' ? 'both' : 'none';
-    img.style.verticalAlign = 'top';
+    img.style.verticalAlign = 'middle';
   };
 
   const updatePastedImageWidth = (id: string, width: number) => {
@@ -359,6 +369,12 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
           img.dataset.imageId = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         }
       });
+      // Attach column resizers to any tables loaded/created inside the editors
+      const tables = Array.from(container.querySelectorAll('.rich-text-editor table')) as HTMLTableElement[];
+      tables.forEach((table) => {
+        if (table.dataset.resizersAttached === 'true') return;
+        attachTableResizers(table);
+      });
     };
     normalizeImages();
     const observer = new MutationObserver(() => normalizeImages());
@@ -414,8 +430,8 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
         targetEl.appendChild(img);
       }
 
-      // ensure display style matches default layout
-      img.style.display = 'block';
+      // keep inline images inline after moving
+      if (img.style.display !== 'inline-block') img.style.display = 'block';
 
       // reorder pastedImages to match DOM order for the affected field
       const field = targetEl === questionRichRef.current ? 'question' : targetEl === explanationRichRef.current ? 'explanation' : 'option';
@@ -497,7 +513,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
 
   const handleRichInput = () => {
     if (!questionRichRef.current) return;
-    setCurrentQuestion(prev => ({ ...prev, question: questionRichRef.current!.innerHTML }));
+    setCurrentQuestion(prev => ({ ...prev, question: cleanEditorHTML(questionRichRef.current!) }));
   };
 
   // Convert text to superscript unicode
@@ -594,9 +610,10 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
 
   const attachTableResizers = (table: HTMLTableElement) => {
     if (!table.rows.length) return;
+    table.dataset.resizersAttached = 'true';
     const headerCells = Array.from(table.rows[0].cells) as HTMLTableCellElement[];
     table.style.tableLayout = 'fixed';
-    table.style.width = '100%';
+    table.style.width = table.style.width || '100%';
 
     headerCells.forEach((cell, index) => {
       if (index === headerCells.length - 1) return;
@@ -604,6 +621,15 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       const handle = document.createElement('div');
       handle.className = 'qb-table-resizer';
       handle.title = 'Drag to resize column';
+      handle.contentEditable = 'false';
+      handle.style.position = 'absolute';
+      handle.style.top = '0';
+      handle.style.right = '-4px';
+      handle.style.width = '8px';
+      handle.style.height = '100%';
+      handle.style.cursor = 'col-resize';
+      handle.style.userSelect = 'none';
+      handle.style.zIndex = '5';
       handle.addEventListener('mousedown', (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -734,11 +760,11 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
 
   const addQuestionToTest = () => {
     // Sync from contentEditable refs before validation
-    const questionHTML = questionRichRef.current?.innerHTML || currentQuestion.question;
+    const questionHTML = questionRichRef.current ? cleanEditorHTML(questionRichRef.current) : currentQuestion.question;
     const optionsHTML = currentQuestion.options.map((opt, i) => 
-      optionRichRefs.current[i]?.innerHTML || opt
+      optionRichRefs.current[i] ? cleanEditorHTML(optionRichRefs.current[i]!) : opt
     );
-    const explanationHTML = explanationRichRef.current?.innerHTML || currentQuestion.explanation;
+    const explanationHTML = explanationRichRef.current ? cleanEditorHTML(explanationRichRef.current) : currentQuestion.explanation;
 
     if (!stripHTMLForValidation(questionHTML).trim() || 
         optionsHTML.some(opt => !stripHTMLForValidation(opt).trim())) {
@@ -1080,13 +1106,30 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                       <div className="flex-1">
                         <input
                           type="range"
-                          min={20}
+                          min={3}
                           max={100}
-                          step={5}
+                          step={1}
                           value={p.width}
                           onChange={(e) => updatePastedImageWidth(p.id, parseInt(e.target.value))}
                         />
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-xs">Layout</Label>
+                            <Select
+                              value={p.layout}
+                              onValueChange={(value) => updatePastedImageLayout(p.id, value as PastedImage['layout'])}
+                            >
+                              <SelectTrigger className="h-8 w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="inline">Inline (same line)</SelectItem>
+                                <SelectItem value="block">Block</SelectItem>
+                                <SelectItem value="horizontal-left">Horizontal Left</SelectItem>
+                                <SelectItem value="horizontal-right">Horizontal Right</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                           <Button size="sm" variant="outline" onClick={() => movePastedImage(p.id, 'left')}>
                             <ChevronUp className="h-4 w-4" />
                           </Button>
@@ -1166,9 +1209,9 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                             <div className="flex-1">
                               <input
                                 type="range"
-                                min={20}
+                                min={3}
                                 max={100}
-                                step={5}
+                                step={1}
                                 value={p.width}
                                 onChange={(e) => updatePastedImageWidth(p.id, parseInt(e.target.value))}
                               />
@@ -1183,6 +1226,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
+                                      <SelectItem value="inline">Inline (same line)</SelectItem>
                                       <SelectItem value="block">Block</SelectItem>
                                       <SelectItem value="horizontal-left">Horizontal Left</SelectItem>
                                       <SelectItem value="horizontal-right">Horizontal Right</SelectItem>
@@ -1272,9 +1316,9 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                       <div className="flex-1">
                         <input
                           type="range"
-                          min={20}
+                          min={3}
                           max={100}
-                          step={5}
+                          step={1}
                           value={p.width}
                           onChange={(e) => updatePastedImageWidth(p.id, parseInt(e.target.value))}
                         />
