@@ -573,6 +573,11 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-medium break-all">{student.name}</p>
+                          {student.isLocked && (
+                            <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                              <Lock className="h-3 w-3" /> Locked
+                            </Badge>
+                          )}
                           {student.classAssignments.some(assignment => isExpired(assignment.subscriptionExpiresAt)) && (
                             <Badge variant="destructive" className="text-xs">Expired</Badge>
                           )}
@@ -584,11 +589,31 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end sm:flex-wrap">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:flex-wrap">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="self-start sm:self-auto"
+                        onClick={() => { setManageClassesStudentId(student.id); setClassModalSearch(''); }}
+                      >
+                        <Settings2 className="h-4 w-4 mr-2" />
+                        Manage Classes
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-destructive hover:text-destructive self-start sm:self-auto"
+                        className="self-start sm:self-auto"
+                        title={student.isLocked ? 'Unlock student' : 'Lock student (prevent delete)'}
+                        onClick={() => handleToggleStudentLock(student.id, student.isLocked)}
+                      >
+                        {student.isLocked ? <Lock className="h-4 w-4 text-amber-500" /> : <LockOpen className="h-4 w-4" />}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive self-start sm:self-auto disabled:opacity-40"
+                        disabled={student.isLocked}
+                        title={student.isLocked ? 'Locked — unlock to delete' : 'Remove student'}
                         onClick={() => handleRemoveStudent(student.id)}
                       >
                         <Trash2 className="h-4 w-4" />
