@@ -1185,9 +1185,9 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                             <div className="flex-1">
                               <input
                                 type="range"
-                                min={20}
+                                min={3}
                                 max={100}
-                                step={5}
+                                step={1}
                                 value={p.width}
                                 onChange={(e) => updatePastedImageWidth(p.id, parseInt(e.target.value))}
                               />
