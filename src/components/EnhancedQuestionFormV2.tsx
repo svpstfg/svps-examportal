@@ -610,9 +610,10 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
 
   const attachTableResizers = (table: HTMLTableElement) => {
     if (!table.rows.length) return;
+    table.dataset.resizersAttached = 'true';
     const headerCells = Array.from(table.rows[0].cells) as HTMLTableCellElement[];
     table.style.tableLayout = 'fixed';
-    table.style.width = '100%';
+    table.style.width = table.style.width || '100%';
 
     headerCells.forEach((cell, index) => {
       if (index === headerCells.length - 1) return;
@@ -620,6 +621,15 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       const handle = document.createElement('div');
       handle.className = 'qb-table-resizer';
       handle.title = 'Drag to resize column';
+      handle.contentEditable = 'false';
+      handle.style.position = 'absolute';
+      handle.style.top = '0';
+      handle.style.right = '-4px';
+      handle.style.width = '8px';
+      handle.style.height = '100%';
+      handle.style.cursor = 'col-resize';
+      handle.style.userSelect = 'none';
+      handle.style.zIndex = '5';
       handle.addEventListener('mousedown', (event) => {
         event.preventDefault();
         event.stopPropagation();
