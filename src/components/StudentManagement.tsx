@@ -346,6 +346,11 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
   };
 
   const handleRemoveStudent = async (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (student?.isLocked) {
+      toast.error('This student is locked. Unlock it first to delete.');
+      return;
+    }
     if (!window.confirm('Remove this student from all assigned classes? They will lose access to every class.')) return;
     try {
       const { error } = await supabase
@@ -367,6 +372,23 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
     } catch (error) {
       console.error('Error removing student:', error);
       toast.error('Failed to remove student');
+    }
+  };
+
+  const handleToggleStudentLock = async (studentId: string, currentLocked: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('students')
+        .update({ is_locked: !currentLocked } as any)
+        .eq('id', studentId);
+
+      if (error) throw error;
+
+      setStudents(prev => prev.map(s => s.id === studentId ? { ...s, isLocked: !currentLocked } : s));
+      toast.success(!currentLocked ? 'Student locked — delete disabled' : 'Student unlocked');
+    } catch (error) {
+      console.error('Error toggling student lock:', error);
+      toast.error('Failed to update lock');
     }
   };
 
