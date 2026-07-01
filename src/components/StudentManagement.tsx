@@ -30,6 +30,7 @@ interface StudentRow {
   id: string;
   name: string;
   email: string;
+  isLocked: boolean;
   classAssignments: ClassAssignment[];
 }
 
