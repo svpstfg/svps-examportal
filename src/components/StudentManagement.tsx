@@ -622,7 +622,9 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {student.classAssignments.map(assignment => (
+                    {student.classAssignments.length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">No classes assigned. Use "Manage Classes" to assign.</p>
+                    ) : student.classAssignments.map(assignment => (
                       <div key={assignment.enrollmentId} className="rounded-md border bg-background/70 p-3 space-y-2 min-w-[220px]">
                         <div className="flex items-center justify-between gap-2">
                           <Badge variant="outline">{getClassName(assignment.classId)}</Badge>
@@ -676,24 +678,6 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
                         </div>
                       </div>
                     ))}
-                  </div>
-
-                  <div className="rounded-md border p-3 space-y-2">
-                    <p className="text-sm font-medium">Assign to classes</p>
-                    <div className="flex flex-wrap gap-3">
-                      {classes.map(cls => {
-                        const isAssigned = student.classAssignments.some(assignment => assignment.classId === cls.id);
-                        return (
-                          <label key={cls.id} className="flex items-center gap-2 text-sm">
-                            <Checkbox
-                              checked={isAssigned}
-                              onCheckedChange={() => handleUpdateClassAssignment(student.id, cls.id, isAssigned)}
-                            />
-                            <span>{cls.name}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
                   </div>
                 </div>
               ))}
