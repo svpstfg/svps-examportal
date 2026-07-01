@@ -226,18 +226,19 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       const imageElement = document.createElement('img');
       imageElement.src = imageData;
       imageElement.alt = 'Pasted image';
-      imageElement.style.display = 'block';
+      imageElement.style.display = 'inline-block';
       imageElement.style.maxWidth = '100%';
       imageElement.style.height = 'auto';
-      imageElement.style.margin = '0.5rem 0';
+      imageElement.style.verticalAlign = 'middle';
+      imageElement.style.margin = '0 0.25rem';
       imageElement.style.borderRadius = '0.375rem';
       // assign a stable id so we can find and control this image later
       const imgId = `img-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
       imageElement.dataset.imageId = imgId;
       const defaultWidth = defaultImageWidth; // use global default
       imageElement.draggable = true;
-      setPastedImages(prev => [...prev, { id: imgId, src: imageData, width: defaultWidth, layout: 'block', field, index }]);
-      applyPastedImageLayout(imageElement, { width: defaultWidth, layout: 'block' });
+      setPastedImages(prev => [...prev, { id: imgId, src: imageData, width: defaultWidth, layout: 'inline', field, index }]);
+      applyPastedImageLayout(imageElement, { width: defaultWidth, layout: 'inline' });
 
       // attach dragstart so we can drag with mouse
       imageElement.addEventListener('dragstart', (ev: DragEvent) => {
