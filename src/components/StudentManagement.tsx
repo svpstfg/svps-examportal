@@ -46,6 +46,8 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
   const [addStudentEmail, setAddStudentEmail] = useState('');
   const [addStudentName, setAddStudentName] = useState('');
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
+  const [manageClassesStudentId, setManageClassesStudentId] = useState<string | null>(null);
+  const [classModalSearch, setClassModalSearch] = useState('');
 
   interface PendingStudent {
     enrollmentId: string;
