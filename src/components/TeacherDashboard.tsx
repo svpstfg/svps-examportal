@@ -70,6 +70,8 @@ export const TeacherDashboard = () => {
   const [previewingTest, setPreviewingTest] = useState<Test | null>(null);
   const [analyticsTest, setAnalyticsTest] = useState<Test | null>(null);
   const [downloadingTest, setDownloadingTest] = useState<Test | null>(null);
+  const [pdfDialogTest, setPdfDialogTest] = useState<Test | null>(null);
+  const [pdfShowOptions, setPdfShowOptions] = useState(true);
   const [participationTest, setParticipationTest] = useState<Test | null>(null);
   const [testToDelete, setTestToDelete] = useState<Test | null>(null);
   const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'upgrades' | 'share-signup'>(null);
