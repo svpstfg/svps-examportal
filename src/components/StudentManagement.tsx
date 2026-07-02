@@ -414,7 +414,10 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Bulk CSV import */}
+      {/* Bulk sign up students (Excel) — creates login accounts */}
+      <BulkStudentSignup classes={classes} onImported={loadStudents} />
+
+      {/* Bulk CSV import (records only) */}
       <BulkStudentImport classes={classes} onImported={loadStudents} />
 
       {/* Add Student */}
