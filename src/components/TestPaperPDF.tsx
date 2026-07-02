@@ -104,73 +104,71 @@ export const TestPaperPDF = ({
             Total Questions: {test.questions.length} • Duration: {test.duration} min
           </h5>
         </div> */}
+<div className="border-2 border-gray-900 rounded-xl overflow-hidden shadow-lg mb-6">
 
-        <div className="border-2 border-gray-900 rounded-xl overflow-hidden shadow-lg mb-6 bg-white">
+  {/* Top Gradient Bar */}
+  <div className="h-2 bg-gradient-to-r from-blue-800 via-sky-500 to-blue-800"></div>
 
-  {/* Top Gradient */}
-  <div className="h-2 bg-gradient-to-r from-blue-700 via-sky-500 to-blue-700"></div>
-
-  <div className="px-8 py-8 text-center">
+  <div className="bg-white px-8 py-6">
 
     {/* School Name */}
-    <h1 className="text-4xl font-extrabold uppercase tracking-wider text-gray-900">
-      SKYVIEW{" "}
-      <span className="underline decoration-blue-600 decoration-4 underline-offset-8">
-        PUBLIC
-      </span>{" "}
-      SCHOOL
+    <h1 className="text-4xl font-extrabold text-center uppercase tracking-widest text-gray-900">
+      SKYVIEW PUBLIC SCHOOL
     </h1>
 
-    {/* Subject & Class */}
-    <div className="flex justify-center flex-wrap gap-4 mt-8 mb-6">
-
-      {subjectName && (
-        <div className="px-5 py-2 rounded-full bg-blue-50 border border-blue-300 text-blue-700 font-semibold shadow-sm">
-          📘 Subject : <span className="font-bold">{subjectName}</span>
-        </div>
-      )}
-
-      {className && (
-        <div className="px-5 py-2 rounded-full bg-green-50 border border-green-300 text-green-700 font-semibold shadow-sm">
-          🎓 Class : <span className="font-bold">{className}</span>
-        </div>
-      )}
-
+    {/* Decorative Line */}
+    <div className="flex items-center justify-center mt-3 mb-5">
+      <div className="h-[2px] w-24 bg-blue-700"></div>
+      <div className="mx-3 w-3 h-3 rounded-full bg-blue-700"></div>
+      <div className="h-[2px] w-24 bg-blue-700"></div>
     </div>
 
     {/* Exam Title */}
-    {test?.title?.trim() && (
-      <div className="inline-block bg-blue-700 text-white px-10 py-3 rounded-xl shadow-lg mb-8">
-        <h2 className="text-3xl font-bold uppercase tracking-widest">
-          {test.title}
-        </h2>
-      </div>
-    )}
+    <h2 className="text-3xl font-bold text-center uppercase text-blue-800 tracking-wide">
+      {test.title}
+    </h2>
 
-    {/* Information Cards */}
-    <div className="flex justify-center gap-6 flex-wrap">
-
-      <div className="bg-gray-50 border border-gray-200 rounded-xl px-8 py-4 shadow-sm min-w-[150px]">
-        <div className="text-gray-500 text-sm font-medium">
-          📝 Questions
-        </div>
-        <div className="text-3xl font-bold text-blue-700 mt-1">
-          {test.questions.length}
-        </div>
+    {/* Subject & Class */}
+    <div className="grid grid-cols-2 gap-4 mt-6 text-lg">
+      <div className="border border-gray-300 rounded-lg p-3 bg-gray-50">
+        <span className="font-semibold text-gray-700">Subject :</span>
+        <span className="ml-2 font-bold text-blue-700 uppercase">
+          {subjectName || "____________"}
+        </span>
       </div>
 
-      <div className="bg-gray-50 border border-gray-200 rounded-xl px-8 py-4 shadow-sm min-w-[150px]">
-        <div className="text-gray-500 text-sm font-medium">
-          ⏱ Duration
-        </div>
-        <div className="text-3xl font-bold text-red-600 mt-1">
-          {test.duration} Min
-        </div>
+      <div className="border border-gray-300 rounded-lg p-3 bg-gray-50">
+        <span className="font-semibold text-gray-700">Class :</span>
+        <span className="ml-2 font-bold text-blue-700 uppercase">
+          {className || "____________"}
+        </span>
+      </div>
+    </div>
+
+    {/* Bottom Info */}
+    <div className="mt-6 border-t pt-4 flex justify-between items-center text-gray-700 font-medium">
+
+      <div>
+        <span className="font-semibold">Total Questions :</span>{" "}
+        {test.questions.length}
+      </div>
+
+      <div>
+        <span className="font-semibold">Duration :</span>{" "}
+        {test.duration} Minutes
+      </div>
+
+      <div>
+        <span className="font-semibold">Full Marks :</span>{" "}
+        {test.totalMarks || "____"}
       </div>
 
     </div>
 
   </div>
+
+  {/* Bottom Accent */}
+  <div className="h-2 bg-gradient-to-r from-blue-800 via-sky-500 to-blue-800"></div>
 
 </div>
 
