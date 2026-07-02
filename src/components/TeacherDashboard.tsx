@@ -1734,15 +1734,59 @@ export const TeacherDashboard = () => {
 
             <QuestionAnalytics test={analyticsTest} onClose={() => setAnalyticsTest(null)} />
             <TestParticipation test={participationTest} onClose={() => setParticipationTest(null)} />
-            {downloadingTest && (
-              <TestPaperPDF
-                test={downloadingTest}
-                onDone={() => {
-                  setDownloadingTest(null);
-                  toast.success("PDF downloaded");
-                }}
-              />
-            )}
+            {downloadingTest && (() => {
+              const chapter = chapters.find((item) => item.id === downloadingTest.chapterId);
+              const course = courses.find((item) => item.id === chapter?.courseId);
+              return (
+                <TestPaperPDF
+                  test={downloadingTest}
+                  subjectName={course?.name}
+                  className={getClassName(course?.classId || "")}
+                  showOptions={pdfShowOptions}
+                  onDone={() => {
+                    setDownloadingTest(null);
+                    toast.success("PDF downloaded");
+                  }}
+                />
+              );
+            })()}
+
+            <Dialog open={!!pdfDialogTest} onOpenChange={(open) => !open && setPdfDialogTest(null)}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Download Question Paper PDF</DialogTitle>
+                  <DialogDescription>
+                    Choose whether to include the MCQ options in the exported PDF.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex items-center gap-2 py-2">
+                  <Checkbox
+                    id="pdf-show-options"
+                    checked={pdfShowOptions}
+                    onCheckedChange={(v) => setPdfShowOptions(v === true)}
+                  />
+                  <Label htmlFor="pdf-show-options" className="cursor-pointer">
+                    Show MCQ options in PDF
+                  </Label>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setPdfDialogTest(null)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const t = pdfDialogTest;
+                      setPdfDialogTest(null);
+                      toast.info("Generating PDF...");
+                      setDownloadingTest(t);
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download PDF
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>
