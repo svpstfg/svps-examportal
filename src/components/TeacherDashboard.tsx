@@ -74,13 +74,14 @@ export const TeacherDashboard = () => {
   const [pdfShowOptions, setPdfShowOptions] = useState(true);
   const [participationTest, setParticipationTest] = useState<Test | null>(null);
   const [testToDelete, setTestToDelete] = useState<Test | null>(null);
-  const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'upgrades' | 'share-signup'>(null);
+  const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'upgrades' | 'share-signup' | 'email-domain'>(null);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'classes' | 'students' | 'courses' | 'chapters' | 'create-test' | 'tests'>('classes');
   const [testFilterClassId, setTestFilterClassId] = useState('');
   const [testFilterCourseId, setTestFilterCourseId] = useState('');
   const [testFilterChapterId, setTestFilterChapterId] = useState('');
+  const [emailDomain, setEmailDomain] = useState('svps.com');
   const [newCourseClassId, setNewCourseClassId] = useState('');
   const [isCreatingTest, setIsCreatingTest] = useState(false);
 
@@ -176,6 +177,16 @@ export const TeacherDashboard = () => {
 
     loadData();
   }, [user]);
+
+  useEffect(() => {
+    const stored = typeof window !== 'undefined' ? window.localStorage.getItem('svps:bulkSignupEmailDomain') : null;
+    if (stored) setEmailDomain(stored);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('svps:bulkSignupEmailDomain', emailDomain);
+  }, [emailDomain]);
 
   // Class management functions
   const handleClassCreate = async (newClass: Omit<Class, 'id' | 'createdAt'>) => {
@@ -680,6 +691,7 @@ export const TeacherDashboard = () => {
     { key: 'leaderboard' as const, label: 'Leaderboard', icon: Trophy },
     { key: 'upgrades' as const, label: 'Upgrades', icon: Sparkles },
     { key: 'share-signup' as const, label: 'Share Signup Link', icon: Share2 },
+    { key: 'email-domain' as const, label: 'Email Domain', icon: Settings2 },
   ];
 
   const renderSidebarSection = () => {
@@ -763,6 +775,52 @@ export const TeacherDashboard = () => {
                 })}
               </div>
             )}
+          </div>
+        );
+      case 'email-domain':
+        return (
+          <div className="space-y-6 max-w-2xl">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-semibold flex items-center gap-2">
+                <Settings2 className="h-6 w-6 text-primary" /> Bulk Signup Email Domain
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Set the email domain used for student login accounts created by Excel bulk signup.
+              </p>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Current login domain</CardTitle>
+                <CardDescription>
+                  Students will be created as <code>mobile@{emailDomain}</code> when using bulk Excel signup.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-end">
+                  <div className="space-y-2">
+                    <Label htmlFor="bulk-signup-domain">Email domain</Label>
+                    <Input
+                      id="bulk-signup-domain"
+                      value={emailDomain}
+                      onChange={(event) => setEmailDomain(event.target.value.trim())}
+                      placeholder="svps.com"
+                    />
+                  </div>
+                  <Button
+                    variant="secondary"
+                    type="button"
+                    onClick={() => setEmailDomain('svps.com')}
+                  >
+                    Reset default
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Only the domain portion is used. For example, entering <code>svps.com</code> creates
+                  <code>mobile@svps.com</code> accounts.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         );
       default:
@@ -1113,11 +1171,7 @@ export const TeacherDashboard = () => {
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-semibold">Manage Students</h2>
           </div>
-          <StudentManagement classes={classes} />
-        </TabsContent>
-
-        {/* Courses Tab */}
-        <TabsContent value="courses" className="space-y-6">
+          <StudentManagement classes={classes} bulkSignupEmailDomain={emailDomain} />
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-semibold">Manage Subjects</h2>
           </div>
