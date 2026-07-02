@@ -1445,7 +1445,7 @@ export const TeacherDashboard = () => {
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0"
-                          title="Download PDF (with answers)"
+                          title="Download PDF (question paper)"
                           disabled={!!downloadingTest}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1453,8 +1453,8 @@ export const TeacherDashboard = () => {
                               toast.error("No questions in this test");
                               return;
                             }
-                            toast.info("Generating PDF...");
-                            setDownloadingTest(test);
+                            setPdfShowOptions(true);
+                            setPdfDialogTest(test);
                           }}
                         >
                           <Download className="h-4 w-4" />
@@ -1469,7 +1469,7 @@ export const TeacherDashboard = () => {
                             handleDownloadTestJson(test);
                           }}
                         >
-                          <Download className="h-4 w-4" />
+                          <FileJson className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
