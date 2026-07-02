@@ -13,17 +13,13 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 // Build a synthetic student login email from a mobile number.
 const emailDomain = "svps.com";
-const legacyStudentDomain = "students.mocktest.app";
 
 const mobileToEmail = (mobile: string) => {
   const normalized = String(mobile).replace(/\D/g, "");
   return normalized ? `${normalized}@${emailDomain}` : "";
 };
 
-const normalizeEmail = (email: string) =>
-  String(email)
-    .trim()
-    .replace(new RegExp(`@${legacyStudentDomain}$`, "i"), `@${emailDomain}`);
+const normalizeEmail = (email: string) => String(email).trim();
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
