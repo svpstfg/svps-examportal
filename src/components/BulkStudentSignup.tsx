@@ -12,7 +12,6 @@ import { Class } from "@/types";
 interface Props {
   classes: Class[];
   onImported: () => void;
-  emailDomain: string;
 }
 
 interface ParsedStudent {
@@ -32,7 +31,7 @@ const pick = (row: Record<string, unknown>, keys: string[]) => {
   return "";
 };
 
-export const BulkStudentSignup = ({ classes, onImported, emailDomain }: Props) => {
+export const BulkStudentSignup = ({ classes, onImported }: Props) => {
   const [classId, setClassId] = useState<string>("");
   const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -75,7 +74,7 @@ export const BulkStudentSignup = ({ classes, onImported, emailDomain }: Props) =
       }
 
       const { data, error } = await supabase.functions.invoke("bulk-signup-students", {
-        body: { classId, students, emailDomain },
+        body: { classId, students },
       });
 
       if (error) {
@@ -121,7 +120,7 @@ export const BulkStudentSignup = ({ classes, onImported, emailDomain }: Props) =
           <code>dob</code> columns. Each student gets a login account where the{" "}
           <strong>username is their mobile number</strong> and the{" "}
           <strong>password is their date of birth</strong>. They sign in with{" "}
-          <code>&lt;mobile&gt;@{emailDomain}</code>.
+          <code>&lt;mobile&gt;@svps.com</code>.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

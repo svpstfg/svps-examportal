@@ -11,15 +11,10 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-// Build a synthetic student login email from a mobile number.
-const emailDomain = "svps.com";
-
-const mobileToEmail = (mobile: string, domain: string) => {
-  const normalized = String(mobile).replace(/\D/g, "");
-  return normalized ? `${normalized}@${domain}` : "";
-};
-
-const normalizeEmail = (email: string) => String(email).trim();
+// Build a synthetic email from a mobile number so students can log in with it.
+const emailDomain = "students.mocktest.app";
+const mobileToEmail = (mobile: string) =>
+  `${String(mobile).replace(/\D/g, "")}@${emailDomain}`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -60,10 +55,6 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const classId = body?.classId as string;
-    const rawEmailDomain = String(body?.emailDomain ?? "").trim();
-    const emailDomain = rawEmailDomain
-      ? rawEmailDomain.replace(/^@+/, "").replace(/^.*@/, "")
-      : "svps.com";
     const students = (body?.students ?? []) as Array<{
       name?: string;
       mobile?: string;
@@ -90,8 +81,7 @@ Deno.serve(async (req) => {
       const mobile = String(s.mobile ?? "").replace(/\D/g, "");
       const name = String(s.name ?? "").trim();
       const dob = String(s.dob ?? "").trim();
-      const rawEmail = mobileToEmail(mobile, emailDomain);
-      const email = normalizeEmail(rawEmail);
+      const email = mobileToEmail(mobile);
 
       if (!mobile || mobile.length < 6) {
         failed++;

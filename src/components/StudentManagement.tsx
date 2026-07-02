@@ -38,10 +38,9 @@ interface StudentRow {
 
 interface StudentManagementProps {
   classes: Class[];
-  bulkSignupEmailDomain: string;
 }
 
-export const StudentManagement = ({ classes, bulkSignupEmailDomain }: StudentManagementProps) => {
+export const StudentManagement = ({ classes }: StudentManagementProps) => {
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -417,7 +416,7 @@ export const StudentManagement = ({ classes, bulkSignupEmailDomain }: StudentMan
   return (
     <div className="space-y-6">
       {/* Bulk sign up students (Excel) — creates login accounts */}
-      <BulkStudentSignup classes={classes} onImported={loadStudents} emailDomain={bulkSignupEmailDomain} />
+      <BulkStudentSignup classes={classes} onImported={loadStudents} />
 
       {/* Bulk CSV import (records only) */}
       <BulkStudentImport classes={classes} onImported={loadStudents} />
