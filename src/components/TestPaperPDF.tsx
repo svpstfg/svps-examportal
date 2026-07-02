@@ -87,91 +87,36 @@ export const TestPaperPDF = ({
       aria-hidden
     >
       <div ref={ref} className="bg-white text-black p-6" style={{ width: "1180px" }}>
-        {/* <div className="border-2 border-black p-5 mb-0 text-center">
-            <h1 className="text-3xl font-bold uppercase tracking-wide mt-2">SKYVIEW PUBLIC SCHOOL</h1>
-          {subjectName && (
-            <h3 className="text-xl font-semibold uppercase tracking-wide text-gray-800">
-              Subject: {subjectName}
-            </h3>
-          )}
-          {className && (
-            <h3 className="text-lg font-medium tracking-wide text-gray-700 mt-1">
-              Class: {className}
-            </h3>
-          )}
-          <h4 className="text-3xl font-bold uppercase tracking-wide mt-2">{test.title}</h4>
-          <h5 className="text-sm text-gray-600 mt-2">
-            Total Questions: {test.questions.length} • Duration: {test.duration} min
-          </h5>
-        </div> */}
-<div className="border-2 border-gray-900 rounded-xl overflow-hidden shadow-lg mb-6">
+      <div className="border-2 border-black p-5 mb-0 text-center">
+  {/* Main Heading */}
+  <h1 className="text-3xl font-bold uppercase tracking-wide mt-2">
+    SKYVIEW PUBLIC SCHOOL
+  </h1>
 
-  {/* Top Gradient Bar */}
-  <div className="h-2 bg-gradient-to-r from-blue-800 via-sky-500 to-blue-800"></div>
-
-  <div className="bg-white px-8 py-6">
-
-    {/* School Name */}
-    <h1 className="text-4xl font-extrabold text-center uppercase tracking-widest text-gray-900">
-      SKYVIEW PUBLIC SCHOOL
-    </h1>
-
-    {/* Decorative Line */}
-    <div className="flex items-center justify-center mt-3 mb-5">
-      <div className="h-[2px] w-24 bg-blue-700"></div>
-      <div className="mx-3 w-3 h-3 rounded-full bg-blue-700"></div>
-      <div className="h-[2px] w-24 bg-blue-700"></div>
-    </div>
-
-    {/* Exam Title */}
-    <h2 className="text-3xl font-bold text-center uppercase text-blue-800 tracking-wide">
-      {test.title}
+  {/* Subject */}
+  {subjectName && (
+    <h2 className="text-xl font-semibold uppercase tracking-wide text-gray-800 mt-2">
+      Subject: {subjectName}
     </h2>
+  )}
 
-    {/* Subject & Class */}
-    <div className="grid grid-cols-2 gap-4 mt-6 text-lg">
-      <div className="border border-gray-300 rounded-lg p-3 bg-gray-50">
-        <span className="font-semibold text-gray-700">Subject :</span>
-        <span className="ml-2 font-bold text-blue-700 uppercase">
-          {subjectName || "____________"}
-        </span>
-      </div>
+  {/* Class */}
+  {className && (
+    <h3 className="text-lg font-medium tracking-wide text-gray-700 mt-1">
+      Class: {className}
+    </h3>
+  )}
 
-      <div className="border border-gray-300 rounded-lg p-3 bg-gray-50">
-        <span className="font-semibold text-gray-700">Class :</span>
-        <span className="ml-2 font-bold text-blue-700 uppercase">
-          {className || "____________"}
-        </span>
-      </div>
-    </div>
+  {/* Exam Title */}
+  <h4 className="text-2xl font-bold uppercase tracking-wide mt-2">
+    {test.title}
+  </h4>
 
-    {/* Bottom Info */}
-    <div className="mt-6 border-t pt-4 flex justify-between items-center text-gray-700 font-medium">
-
-      <div>
-        <span className="font-semibold">Total Questions :</span>{" "}
-        {test.questions.length}
-      </div>
-
-      <div>
-        <span className="font-semibold">Duration :</span>{" "}
-        {test.duration} Minutes
-      </div>
-
-      <div>
-        <span className="font-semibold">Full Marks :</span>{" "}
-        {test.totalMarks || "____"}
-      </div>
-
-    </div>
-
-  </div>
-
-  {/* Bottom Accent */}
-  <div className="h-2 bg-gradient-to-r from-blue-800 via-sky-500 to-blue-800"></div>
-
+  {/* Exam Details */}
+  <h5 className="text-sm font-medium text-gray-600 mt-2">
+    Total Questions: {test.questions.length} • Duration: {test.duration} min
+  </h5>
 </div>
-
         <div className="border-x-2 border-b-2 border-black grid grid-cols-2 gap-0">
           {test.questions.map((q, index) => {
             return (
