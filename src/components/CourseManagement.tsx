@@ -64,9 +64,14 @@ export const CourseManagement = ({
   };
 
   const handleDeleteCourse = (courseId: string) => {
-    if (window.confirm("Are you sure you want to delete this course? This action cannot be undone.")) {
+    const course = courses.find((c) => c.id === courseId);
+    if (course && course.chapterCount > 0) {
+      toast.error("Remove all chapters before deleting this subject.");
+      return;
+    }
+    if (window.confirm("Are you sure you want to delete this subject? This action cannot be undone.")) {
       onCourseDelete(courseId);
-      toast.success("Course deleted successfully!");
+      toast.success("Subject deleted successfully!");
     }
   };
 
