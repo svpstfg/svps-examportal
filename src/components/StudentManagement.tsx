@@ -17,6 +17,7 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Class } from "@/types";
 import { BulkStudentImport } from "./BulkStudentImport";
+import { BulkStudentSignup } from "./BulkStudentSignup";
 import { downloadCSV } from "@/lib/csv";
 
 interface ClassAssignment {
