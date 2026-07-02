@@ -18,8 +18,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Plus, BookOpen, Clock, Users, Edit, Trash2, Image, GraduationCap, FolderOpen, CalendarIcon, Eye, Copy, Crown, FileText, BarChart3, Trophy, Download, UsersRound, MessageCircle, Megaphone, FileQuestion, Sparkles, LayoutDashboard, Share2, Lock } from "lucide-react";
+import { Plus, BookOpen, Clock, Users, Edit, Trash2, Image, GraduationCap, FolderOpen, CalendarIcon, Eye, Copy, Crown, FileText, BarChart3, Trophy, Download, UsersRound, MessageCircle, Megaphone, FileQuestion, Sparkles, LayoutDashboard, Share2, Lock, FileJson } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
   Sidebar,
   SidebarContent,
@@ -69,6 +70,8 @@ export const TeacherDashboard = () => {
   const [previewingTest, setPreviewingTest] = useState<Test | null>(null);
   const [analyticsTest, setAnalyticsTest] = useState<Test | null>(null);
   const [downloadingTest, setDownloadingTest] = useState<Test | null>(null);
+  const [pdfDialogTest, setPdfDialogTest] = useState<Test | null>(null);
+  const [pdfShowOptions, setPdfShowOptions] = useState(true);
   const [participationTest, setParticipationTest] = useState<Test | null>(null);
   const [testToDelete, setTestToDelete] = useState<Test | null>(null);
   const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'upgrades' | 'share-signup'>(null);
@@ -1442,7 +1445,7 @@ export const TeacherDashboard = () => {
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0"
-                          title="Download PDF (with answers)"
+                          title="Download PDF (question paper)"
                           disabled={!!downloadingTest}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1450,8 +1453,8 @@ export const TeacherDashboard = () => {
                               toast.error("No questions in this test");
                               return;
                             }
-                            toast.info("Generating PDF...");
-                            setDownloadingTest(test);
+                            setPdfShowOptions(true);
+                            setPdfDialogTest(test);
                           }}
                         >
                           <Download className="h-4 w-4" />
@@ -1466,7 +1469,7 @@ export const TeacherDashboard = () => {
                             handleDownloadTestJson(test);
                           }}
                         >
-                          <Download className="h-4 w-4" />
+                          <FileJson className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
@@ -1731,15 +1734,59 @@ export const TeacherDashboard = () => {
 
             <QuestionAnalytics test={analyticsTest} onClose={() => setAnalyticsTest(null)} />
             <TestParticipation test={participationTest} onClose={() => setParticipationTest(null)} />
-            {downloadingTest && (
-              <TestPaperPDF
-                test={downloadingTest}
-                onDone={() => {
-                  setDownloadingTest(null);
-                  toast.success("PDF downloaded");
-                }}
-              />
-            )}
+            {downloadingTest && (() => {
+              const chapter = chapters.find((item) => item.id === downloadingTest.chapterId);
+              const course = courses.find((item) => item.id === chapter?.courseId);
+              return (
+                <TestPaperPDF
+                  test={downloadingTest}
+                  subjectName={course?.name}
+                  className={getClassName(course?.classId || "")}
+                  showOptions={pdfShowOptions}
+                  onDone={() => {
+                    setDownloadingTest(null);
+                    toast.success("PDF downloaded");
+                  }}
+                />
+              );
+            })()}
+
+            <Dialog open={!!pdfDialogTest} onOpenChange={(open) => !open && setPdfDialogTest(null)}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Download Question Paper PDF</DialogTitle>
+                  <DialogDescription>
+                    Choose whether to include the MCQ options in the exported PDF.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex items-center gap-2 py-2">
+                  <Checkbox
+                    id="pdf-show-options"
+                    checked={pdfShowOptions}
+                    onCheckedChange={(v) => setPdfShowOptions(v === true)}
+                  />
+                  <Label htmlFor="pdf-show-options" className="cursor-pointer">
+                    Show MCQ options in PDF
+                  </Label>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setPdfDialogTest(null)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const t = pdfDialogTest;
+                      setPdfDialogTest(null);
+                      toast.info("Generating PDF...");
+                      setDownloadingTest(t);
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download PDF
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>

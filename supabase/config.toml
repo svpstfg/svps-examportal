@@ -2,3 +2,6 @@ project_id = "jqnzprikajnjufyuamtt"
 
 [functions.manage-student-verification]
 verify_jwt = true
+
+[functions.bulk-signup-students]
+verify_jwt = true
