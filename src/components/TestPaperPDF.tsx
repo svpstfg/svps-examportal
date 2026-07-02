@@ -88,20 +88,21 @@ export const TestPaperPDF = ({
     >
       <div ref={ref} className="bg-white text-black p-6" style={{ width: "1180px" }}>
         <div className="border-2 border-black p-5 mb-0 text-center">
+            <h1 className="text-3xl font-bold uppercase tracking-wide mt-2">SKYVIEW PUBLIC SCHOOL</h1>
           {subjectName && (
-            <p className="text-xl font-semibold uppercase tracking-wide text-gray-800">
+            <h3 className="text-xl font-semibold uppercase tracking-wide text-gray-800">
               Subject: {subjectName}
-            </p>
+            </h3>
           )}
           {className && (
-            <p className="text-lg font-medium tracking-wide text-gray-700 mt-1">
+            <h3 className="text-lg font-medium tracking-wide text-gray-700 mt-1">
               Class: {className}
-            </p>
+            </h3>
           )}
-          <h1 className="text-3xl font-bold uppercase tracking-wide mt-2">{test.title}</h1>
-          <p className="text-sm text-gray-600 mt-2">
+          <h4 className="text-3xl font-bold uppercase tracking-wide mt-2">{test.title}</h4>
+          <h5 className="text-sm text-gray-600 mt-2">
             Total Questions: {test.questions.length} • Duration: {test.duration} min
-          </p>
+          </h5>
         </div>
 
         <div className="border-x-2 border-b-2 border-black grid grid-cols-2 gap-0">
