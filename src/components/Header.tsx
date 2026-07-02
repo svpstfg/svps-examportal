@@ -52,7 +52,7 @@ export const Header = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                EduTest Pro
+                Skyview Test Pro
               </h1>
               <p className="text-sm text-muted-foreground">Advanced Mock Testing Platform</p>
             </div>
