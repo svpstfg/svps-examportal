@@ -198,6 +198,12 @@ export const CourseManagement = ({
                                 <Button
                                   size="sm"
                                   variant="outline"
+                                  disabled={course.chapterCount > 0}
+                                  title={
+                                    course.chapterCount > 0
+                                      ? "Remove all chapters before deleting this subject"
+                                      : "Delete subject"
+                                  }
                                   onClick={() => handleDeleteCourse(course.id)}
                                 >
                                   <Trash2 className="h-3 w-3" />
