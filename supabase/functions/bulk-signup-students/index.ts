@@ -11,10 +11,12 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-// Build a synthetic email from a mobile number so students can log in with it.
+// Build a synthetic student login email from a mobile number.
 const emailDomain = "svps.com";
-const mobileToEmail = (mobile: string) =>
-  `${String(mobile).replace(/\D/g, "")}@${emailDomain}`;
+const mobileToEmail = (mobile: string) => {
+  const normalized = String(mobile).replace(/\D/g, "");
+  return normalized ? `${normalized}@${emailDomain}` : "";
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
