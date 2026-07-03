@@ -680,6 +680,7 @@ export const TeacherDashboard = () => {
     { key: 'notices' as const, label: 'Notices', icon: Megaphone },
     { key: 'leaderboard' as const, label: 'Leaderboard', icon: Trophy },
     { key: 'upgrades' as const, label: 'Upgrades', icon: Sparkles },
+    { key: 'users' as const, label: 'User Management', icon: UsersRound },
     { key: 'share-signup' as const, label: 'Share Signup Link', icon: Share2 },
   ];
 
