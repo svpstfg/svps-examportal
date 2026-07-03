@@ -47,6 +47,7 @@ import { TestEditor } from "@/components/TestEditor";
 import { TestPreview } from "@/components/TestPreview";
 import { TestPaperPDF } from "@/components/TestPaperPDF";
 import { StudentManagement } from "@/components/StudentManagement";
+import { UserManagement } from "@/components/UserManagement";
 import { UpgradeRequestsManager } from "@/components/UpgradeRequestsManager";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
