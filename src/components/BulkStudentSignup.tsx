@@ -139,7 +139,8 @@ export const BulkStudentSignup = ({ classes, onImported }: Props) => {
           <code>dob</code> columns. Each student gets a login account where the{" "}
           <strong>username is their mobile number</strong> and the{" "}
           <strong>password is their date of birth</strong>. They sign in with{" "}
-          <code>&lt;mobile&gt;@svps.com</code>.
+          <code>&lt;mobile&gt;@{domain}</code>. Change this domain in{" "}
+          <strong>User Management</strong>.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
