@@ -715,6 +715,8 @@ export const TeacherDashboard = () => {
         );
       case 'upgrades':
         return <UpgradeRequestsManager />;
+      case 'users':
+        return <UserManagement classes={classes} />;
       case 'share-signup':
         return (
           <div className="space-y-6">
