@@ -35,7 +35,26 @@ export const BulkStudentSignup = ({ classes, onImported }: Props) => {
   const [classId, setClassId] = useState<string>("");
   const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [domain, setDomain] = useState("svps.com");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) return;
+      const { data } = await supabase
+        .from("teacher_settings")
+        .select("student_email_domain")
+        .eq("teacher_id", uid)
+        .maybeSingle();
+      if (active && data?.student_email_domain) setDomain(data.student_email_domain);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || !files[0]) return;
