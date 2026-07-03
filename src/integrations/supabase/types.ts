@@ -451,6 +451,30 @@ export type Database = {
           },
         ]
       }
+      teacher_settings: {
+        Row: {
+          created_at: string
+          id: string
+          student_email_domain: string
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          student_email_domain?: string
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          student_email_domain?: string
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       test_attempts: {
         Row: {
           answers: number[]

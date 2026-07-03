@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -35,7 +35,26 @@ export const BulkStudentSignup = ({ classes, onImported }: Props) => {
   const [classId, setClassId] = useState<string>("");
   const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [domain, setDomain] = useState("svps.com");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) return;
+      const { data } = await supabase
+        .from("teacher_settings")
+        .select("student_email_domain")
+        .eq("teacher_id", uid)
+        .maybeSingle();
+      if (active && data?.student_email_domain) setDomain(data.student_email_domain);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || !files[0]) return;
@@ -120,7 +139,8 @@ export const BulkStudentSignup = ({ classes, onImported }: Props) => {
           <code>dob</code> columns. Each student gets a login account where the{" "}
           <strong>username is their mobile number</strong> and the{" "}
           <strong>password is their date of birth</strong>. They sign in with{" "}
-          <code>&lt;mobile&gt;@svps.com</code>.
+          <code>&lt;mobile&gt;@{domain}</code>. Change this domain in{" "}
+          <strong>User Management</strong>.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

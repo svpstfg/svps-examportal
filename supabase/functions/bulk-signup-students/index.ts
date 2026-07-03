@@ -12,9 +12,18 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 // Build a synthetic email from a mobile number so students can log in with it.
-const emailDomain = "students.mocktest.app";
-const mobileToEmail = (mobile: string) =>
-  `${String(mobile).replace(/\D/g, "")}@${emailDomain}`;
+const DEFAULT_DOMAIN = "svps.com";
+const sanitizeDomain = (d: unknown) => {
+  const cleaned = String(d ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/^@/, "")
+    .replace(/\/.*$/, "");
+  return /^[a-z0-9.-]+\.[a-z]{2,}$/.test(cleaned) ? cleaned : DEFAULT_DOMAIN;
+};
+const mobileToEmail = (mobile: string, domain: string) =>
+  `${String(mobile).replace(/\D/g, "")}@${domain}`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -66,6 +75,15 @@ Deno.serve(async (req) => {
       return json({ error: "No students provided" }, 400);
     }
 
+    // Resolve the email domain: teacher's saved setting is authoritative,
+    // falling back to any domain passed in the request, then the default.
+    const { data: settingRow } = await admin
+      .from("teacher_settings")
+      .select("student_email_domain")
+      .eq("teacher_id", user.id)
+      .maybeSingle();
+    const domain = sanitizeDomain(settingRow?.student_email_domain ?? body?.domain);
+
     const results: Array<{
       mobile: string;
       email: string;
@@ -81,7 +99,7 @@ Deno.serve(async (req) => {
       const mobile = String(s.mobile ?? "").replace(/\D/g, "");
       const name = String(s.name ?? "").trim();
       const dob = String(s.dob ?? "").trim();
-      const email = mobileToEmail(mobile);
+      const email = mobileToEmail(mobile, domain);
 
       if (!mobile || mobile.length < 6) {
         failed++;
@@ -161,7 +179,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return json({ success: true, created, skipped, failed, results });
+    return json({ success: true, created, skipped, failed, domain, results });
   } catch (err) {
     console.error("bulk-signup-students error:", err);
     return json({ error: String((err as Error)?.message ?? err) }, 500);

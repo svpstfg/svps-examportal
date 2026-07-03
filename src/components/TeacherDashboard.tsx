@@ -47,6 +47,7 @@ import { TestEditor } from "@/components/TestEditor";
 import { TestPreview } from "@/components/TestPreview";
 import { TestPaperPDF } from "@/components/TestPaperPDF";
 import { StudentManagement } from "@/components/StudentManagement";
+import { UserManagement } from "@/components/UserManagement";
 import { UpgradeRequestsManager } from "@/components/UpgradeRequestsManager";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -74,7 +75,7 @@ export const TeacherDashboard = () => {
   const [pdfShowOptions, setPdfShowOptions] = useState(true);
   const [participationTest, setParticipationTest] = useState<Test | null>(null);
   const [testToDelete, setTestToDelete] = useState<Test | null>(null);
-  const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'upgrades' | 'share-signup'>(null);
+  const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'upgrades' | 'share-signup' | 'users'>(null);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'classes' | 'students' | 'courses' | 'chapters' | 'create-test' | 'tests'>('classes');
@@ -679,6 +680,7 @@ export const TeacherDashboard = () => {
     { key: 'notices' as const, label: 'Notices', icon: Megaphone },
     { key: 'leaderboard' as const, label: 'Leaderboard', icon: Trophy },
     { key: 'upgrades' as const, label: 'Upgrades', icon: Sparkles },
+    { key: 'users' as const, label: 'User Management', icon: UsersRound },
     { key: 'share-signup' as const, label: 'Share Signup Link', icon: Share2 },
   ];
 
@@ -713,6 +715,8 @@ export const TeacherDashboard = () => {
         );
       case 'upgrades':
         return <UpgradeRequestsManager />;
+      case 'users':
+        return <UserManagement classes={classes} />;
       case 'share-signup':
         return (
           <div className="space-y-6">
