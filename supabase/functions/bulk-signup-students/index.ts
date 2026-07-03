@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
       const mobile = String(s.mobile ?? "").replace(/\D/g, "");
       const name = String(s.name ?? "").trim();
       const dob = String(s.dob ?? "").trim();
-      const email = mobileToEmail(mobile);
+      const email = mobileToEmail(mobile, domain);
 
       if (!mobile || mobile.length < 6) {
         failed++;
