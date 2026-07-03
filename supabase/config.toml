@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.bulk-signup-students]
 verify_jwt = true
+
+[functions.manage-users]
+verify_jwt = true
