@@ -53,7 +53,78 @@ Deno.serve(async (req) => {
     const email = (body?.email as string)?.toLowerCase()?.trim();
 
     if (!action) return json({ error: "action is required" }, 400);
+
+    // Build a full auth map (paginated): email -> { id, confirmed, banned }
+    const buildAuthMap = async () => {
+      const map = new Map<
+        string,
+        { id: string; confirmed: boolean; banned: boolean }
+      >();
+      let page = 1;
+      // deno-lint-ignore no-constant-condition
+      while (true) {
+        const { data, error } = await admin.auth.admin.listUsers({
+          page,
+          perPage: 1000,
+        });
+        if (error) throw error;
+        for (const u of data.users) {
+          if (!u.email) continue;
+          const bannedUntil = (u as { banned_until?: string }).banned_until;
+          const banned = !!bannedUntil && new Date(bannedUntil) > new Date();
+          map.set(u.email.toLowerCase(), {
+            id: u.id,
+            confirmed: !!u.email_confirmed_at,
+            banned,
+          });
+        }
+        if (data.users.length < 1000) break;
+        page += 1;
+      }
+      return map;
+    };
+
+    // List all students in the teacher's classes with account state
+    if (action === "list") {
+      const classIds: string[] = body?.classIds ?? [];
+      if (!Array.isArray(classIds) || classIds.length === 0) {
+        return json({ users: [] });
+      }
+      const { data: enrollments } = await admin
+        .from("student_enrollments")
+        .select("student_id, class_id")
+        .in("class_id", classIds);
+      const studentIds = [
+        ...new Set((enrollments ?? []).map((e) => e.student_id)),
+      ];
+      if (studentIds.length === 0) return json({ users: [] });
+
+      const { data: studentsData } = await admin
+        .from("students")
+        .select("id, name, email")
+        .in("id", studentIds);
+
+      const authMap = await buildAuthMap();
+      const users = (studentsData ?? []).map((s) => {
+        const info = s.email ? authMap.get(s.email.toLowerCase()) : undefined;
+        const classIdsForStudent = (enrollments ?? [])
+          .filter((e) => e.student_id === s.id)
+          .map((e) => e.class_id);
+        return {
+          id: s.id,
+          name: s.name,
+          email: s.email,
+          classIds: classIdsForStudent,
+          hasAccount: !!info,
+          confirmed: info?.confirmed ?? false,
+          blocked: info?.banned ?? false,
+        };
+      });
+      return json({ users });
+    }
+
     if (!email) return json({ error: "email is required" }, 400);
+
 
     // Look up the auth user id for the given email (paginated)
     const findUserByEmail = async (target: string) => {
