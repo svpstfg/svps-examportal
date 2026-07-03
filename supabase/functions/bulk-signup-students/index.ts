@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return json({ success: true, created, skipped, failed, results });
+    return json({ success: true, created, skipped, failed, domain, results });
   } catch (err) {
     console.error("bulk-signup-students error:", err);
     return json({ error: String((err as Error)?.message ?? err) }, 500);
