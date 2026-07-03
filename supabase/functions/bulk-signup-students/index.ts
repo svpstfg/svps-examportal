@@ -75,6 +75,15 @@ Deno.serve(async (req) => {
       return json({ error: "No students provided" }, 400);
     }
 
+    // Resolve the email domain: teacher's saved setting is authoritative,
+    // falling back to any domain passed in the request, then the default.
+    const { data: settingRow } = await admin
+      .from("teacher_settings")
+      .select("student_email_domain")
+      .eq("teacher_id", user.id)
+      .maybeSingle();
+    const domain = sanitizeDomain(settingRow?.student_email_domain ?? body?.domain);
+
     const results: Array<{
       mobile: string;
       email: string;
