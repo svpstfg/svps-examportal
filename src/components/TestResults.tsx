@@ -362,22 +362,43 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
           const answered = ans !== undefined && ans !== null && ans >= 0;
           const correct = answered && ans === q.correctAnswer;
           const t = analysisRow.questionTimes[i] ?? 0;
-          const perMark = correct ? 1 : 0;
+          const statusBg = correct ? 'background-color:#d1fae5' : answered ? 'background-color:#fee2e2' : 'background-color:#f3f4f6';
+          const statusIcon = correct ? '✓' : !answered ? '⚠' : '✗';
+          const statusColor = correct ? 'color:#059669' : !answered ? 'color:#7c2d12' : 'color:#dc2626';
+          
           const optionsHtml = (q.options || [])
             .map((opt, oi) => {
               const isUser = oi === ans;
               const isCorrect = oi === q.correctAnswer;
-              const cls = isCorrect ? 'font-weight:600;color:green' : isUser && !isCorrect ? 'text-decoration:line-through;color:red' : '';
-              return `<div style="margin-bottom:4px; ${cls}">(${String.fromCharCode(65 + oi)}) ${opt}</div>`;
+              let optBg = '';
+              let optClass = '';
+              if (isCorrect) {
+                optBg = 'background-color:#dcfce7;border:1px solid #86efac;';
+                optClass = 'font-weight:600;color:#15803d';
+              } else if (isUser && !isCorrect) {
+                optBg = 'background-color:#fee2e2;border:1px solid #fca5a5;';
+                optClass = 'text-decoration:line-through;color:#991b1b';
+              } else {
+                optBg = 'border:1px solid #e5e7eb;';
+              }
+              return `<div style="margin-bottom:3px;padding:2px 4px;${optBg}${optClass};font-size:11px">(${String.fromCharCode(65 + oi)}) ${opt}${isCorrect ? ' <span style="color:#059669">✓</span>' : isUser && !isCorrect ? ' <span style="color:#dc2626">✗</span>' : ''}</div>`;
             })
             .join("");
 
           return `
-            <div style="margin-bottom:12px;">
-              <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Q${i + 1}. ${q.question}</div>
-              <div style="margin-left:8px">${optionsHtml}</div>
-              <div style="margin-top:6px;font-size:12px;color:#444">Answer: ${answered ? String.fromCharCode(65 + ans) : 'Not answered'} • ${correct ? 'Correct' : 'Wrong'} • Time: ${formatDuration(t)}</div>
-              <div style="font-size:12px;color:#333">Grade: ${perMark} / 1</div>
+            <div style="padding:8px;border:1px solid #e5e7eb;margin-bottom:0;font-size:10px;${statusBg}">
+              <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px">
+                <div style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background-color:#333;color:white;font-weight:bold;font-size:9px;flex-shrink:0">${i + 1}</div>
+                <div style="flex:1">
+                  <div style="font-weight:600;margin-bottom:2px;line-height:1.2">${q.question}</div>
+                </div>
+                <span style="font-weight:bold;padding:2px 4px;border-radius:3px;${statusColor};background-color:#f5f5f5;font-size:8px">${statusIcon}</span>
+              </div>
+              <div style="margin-left:26px">${optionsHtml}</div>
+              <div style="margin-left:26px;margin-top:3px;font-size:9px;color:#4b5563">
+                <span style="display:inline-block;background-color:#f0f0f0;padding:2px 4px;border-radius:2px;margin-right:4px">Time: ${formatDuration(t)}</span>
+                <span style="display:inline-block;background-color:#f0f0f0;padding:2px 4px;border-radius:2px">Remark: ${correct ? 'Well done' : !answered ? 'Needs practice' : 'Needs practice'}</span>
+              </div>
             </div>`;
         })
         .join("");
@@ -389,7 +410,9 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
           <p style="margin:0 0 6px 0; color:#555">Test: ${selectedTest.title} • Class: ${className}</p>
           <p style="margin:0 0 12px 0; color:#555">Marks: ${overallMarks} / ${fullMarks} • Score: ${analysisRow.score}% • Total time: ${formatDuration(analysisRow.timeSpent)}</p>
           <div style="margin:8px 0;padding:12px;border:1px solid #eee;background:#fafafa">${aiReport ? `<h3 style=\"margin:0 0 8px 0\">AI Analysis</h3><pre style=\"white-space:pre-wrap; font-size:12px;\">${aiReport}</pre>` : ''}</div>
-          ${questionsHtml}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:2px solid #000;border-collapse:collapse">
+            ${questionsHtml}
+          </div>
           <p style="font-size:10px;color:#888;margin-top:12px">Generated on ${new Date().toLocaleString()}</p>
         </div>
       `;

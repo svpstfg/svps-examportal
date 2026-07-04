@@ -230,53 +230,74 @@ export const ClassLeaderboard = ({ classes, currentStudentEmail, defaultClassId,
                             return;
                           }
 
-                          const payloadQuestions = (test.questions || []).map((q: any, i: number) => {
-                            const ans = (attempt.answers || [])[i];
-                            const answered = ans !== undefined && ans !== null && ans >= 0;
-                            return {
-                              index: i,
-                              question: q.question || "",
-                              correct: answered && ans === q.correctAnswer,
-                              answered,
-                              timeSec: (attempt.question_times || [])[i] || 0,
-                            };
-                          });
+                          // Build questions HTML in 2-column grid format
+                          const questionsHtml = (test.questions || [])
+                            .map((q: any, i: number) => {
+                              const ans = (attempt.answers || [])[i];
+                              const answered = ans !== undefined && ans !== null && ans >= 0;
+                              const correct = answered && ans === q.correctAnswer;
+                              const t = (attempt.question_times || [])[i] || 0;
+                              const statusBg = correct ? 'background-color:#d1fae5' : answered ? 'background-color:#fee2e2' : 'background-color:#f3f4f6';
+                              const statusIcon = correct ? '✓' : !answered ? '⚠' : '✗';
+                              const statusColor = correct ? 'color:#059669' : !answered ? 'color:#7c2d12' : 'color:#dc2626';
+                              
+                              const optionsHtml = (q.options || [])
+                                .map((opt: string, oi: number) => {
+                                  const isUser = oi === ans;
+                                  const isCorrect = oi === q.correctAnswer;
+                                  let optBg = '';
+                                  let optClass = '';
+                                  if (isCorrect) {
+                                    optBg = 'background-color:#dcfce7;border:1px solid #86efac;';
+                                    optClass = 'font-weight:600;color:#15803d';
+                                  } else if (isUser && !isCorrect) {
+                                    optBg = 'background-color:#fee2e2;border:1px solid #fca5a5;';
+                                    optClass = 'text-decoration:line-through;color:#991b1b';
+                                  } else {
+                                    optBg = 'border:1px solid #e5e7eb;';
+                                  }
+                                  return `<div style="margin-bottom:3px;padding:2px 4px;${optBg}${optClass};font-size:11px">(${String.fromCharCode(65 + oi)}) ${opt}${isCorrect ? ' <span style="color:#059669">✓</span>' : isUser && !isCorrect ? ' <span style="color:#dc2626">✗</span>' : ''}</div>`;
+                                })
+                                .join("");
 
-                          const { data, error } = await supabase.functions.invoke("student-analysis", {
-                            body: {
-                              studentName: r.name,
-                              testTitle: test.title,
-                              subject: undefined,
-                              className: className,
-                              scorePct: attempt.score,
-                              fullMarks: (test.questions || []).length,
-                              marksObtained: Math.round(((test.questions || []).length * attempt.score) / 100),
-                              totalTimeSec: attempt.time_spent || 0,
-                              questions: payloadQuestions,
-                            },
-                          });
+                              return `
+                                <div style="padding:8px;border:1px solid #e5e7eb;margin-bottom:0;font-size:10px;${statusBg}">
+                                  <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px">
+                                    <div style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background-color:#333;color:white;font-weight:bold;font-size:9px;flex-shrink:0">${i + 1}</div>
+                                    <div style="flex:1">
+                                      <div style="font-weight:600;margin-bottom:2px;line-height:1.2">${q.question || ''}</div>
+                                    </div>
+                                    <span style="font-weight:bold;padding:2px 4px;border-radius:3px;${statusColor};background-color:#f5f5f5;font-size:8px">${statusIcon}</span>
+                                  </div>
+                                  <div style="margin-left:26px">${optionsHtml}</div>
+                                  <div style="margin-left:26px;margin-top:3px;font-size:9px;color:#4b5563">
+                                    <span style="display:inline-block;background-color:#f0f0f0;padding:2px 4px;border-radius:2px;margin-right:4px">Time: ${Math.floor(t / 60)}m ${t % 60}s</span>
+                                    <span style="display:inline-block;background-color:#f0f0f0;padding:2px 4px;border-radius:2px">Remark: ${correct ? 'Well done' : !answered ? 'Needs practice' : 'Needs practice'}</span>
+                                  </div>
+                                </div>`;
+                            })
+                            .join("");
 
-                          if (error) {
-                            const msg = (await error.context?.json?.())?.error;
-                            throw new Error(msg || error.message);
-                          }
-                          if (data?.error) throw new Error(data.error);
-
-                          const report = data?.report || "No report generated.";
-
-                          // render simple printable report and generate PDF
+                          // render printable report and generate PDF
                           const container = document.createElement("div");
                           container.style.position = "fixed";
                           container.style.left = "-9999px";
-                          container.style.width = "800px";
+                          container.style.width = "900px";
                           container.style.background = "white";
                           container.style.color = "black";
                           container.style.padding = "24px";
+                          
+                          const fullMarks = (test.questions || []).length;
+                          const marksObtained = Math.round((fullMarks * attempt.score) / 100);
+                          
                           container.innerHTML = `
                             <div style="font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#111">
                               <h1 style="font-size:20px;margin-bottom:8px;">Analysis Report — ${r.name}</h1>
-                              <p style="margin:0 0 12px 0; color:#555">Test: ${test.title} • Class: ${className}</p>
-                              <pre style="white-space:pre-wrap;font-size:12px;line-height:1.4">${report}</pre>
+                              <p style="margin:0 0 6px 0; color:#555">Test: ${test.title} • Class: ${className}</p>
+                              <p style="margin:0 0 12px 0; color:#555">Marks: ${marksObtained} / ${fullMarks} • Score: ${attempt.score}% • Total time: ${Math.floor(attempt.time_spent / 60)}m ${attempt.time_spent % 60}s</p>
+                              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:2px solid #000;border-collapse:collapse">
+                                ${questionsHtml}
+                              </div>
                               <p style="font-size:10px;color:#888;margin-top:12px">Generated on ${new Date().toLocaleString()}</p>
                             </div>
                           `;
