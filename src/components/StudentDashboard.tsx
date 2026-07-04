@@ -44,6 +44,9 @@ export const StudentDashboard = () => {
   const [viewingAnswerSheet, setViewingAnswerSheet] = useState<{ attempt: TestAttempt; test: Test } | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  // Per-question time tracking (seconds spent on each question)
+  const questionTimesRef = useRef<number[]>([]);
+  const questionStartRef = useRef<number>(Date.now());
 
   const handleDownloadResultPdf = async () => {
     const node = resultRef.current;
@@ -331,6 +334,21 @@ export const StudentDashboard = () => {
     return () => clearInterval(id);
   }, [isTestActive, currentTest, student, selectedAnswers, currentQuestionIndex, timeLeft]);
 
+  // Accrue time spent per question as the student navigates between questions.
+  useEffect(() => {
+    if (!isTestActive) return;
+    questionStartRef.current = Date.now();
+    const idx = currentQuestionIndex;
+    return () => {
+      const spent = Math.round((Date.now() - questionStartRef.current) / 1000);
+      if (questionTimesRef.current[idx] !== undefined) {
+        questionTimesRef.current[idx] += spent;
+      }
+    };
+  }, [currentQuestionIndex, isTestActive]);
+
+
+
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -396,6 +414,8 @@ export const StudentDashboard = () => {
       }
     }
 
+    questionTimesRef.current = new Array(test.questions.length).fill(0);
+    questionStartRef.current = Date.now();
     setCurrentTest(test);
     setCurrentQuestionIndex(savedIndex);
     setSelectedAnswers(savedAnswers || new Array(test.questions.length).fill(-1));
@@ -434,6 +454,14 @@ export const StudentDashboard = () => {
     const percentage = Math.round((score / currentTest.questions.length) * 100);
     const timeSpent = (currentTest.duration * 60) - timeLeft;
 
+    // Record time spent on the final active question before submitting.
+    const finalSpent = Math.round((Date.now() - questionStartRef.current) / 1000);
+    if (questionTimesRef.current[currentQuestionIndex] !== undefined) {
+      questionTimesRef.current[currentQuestionIndex] += finalSpent;
+    }
+    questionStartRef.current = Date.now();
+    const questionTimes = questionTimesRef.current.slice(0, currentTest.questions.length);
+
     try {
       const { data, error } = await supabase
         .from('test_attempts')
@@ -442,7 +470,8 @@ export const StudentDashboard = () => {
           student_id: student.id,
           answers: selectedAnswers,
           score: percentage,
-          time_spent: timeSpent
+          time_spent: timeSpent,
+          question_times: questionTimes,
         })
         .select()
         .single();
