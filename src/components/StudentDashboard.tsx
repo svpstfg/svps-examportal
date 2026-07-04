@@ -454,6 +454,14 @@ export const StudentDashboard = () => {
     const percentage = Math.round((score / currentTest.questions.length) * 100);
     const timeSpent = (currentTest.duration * 60) - timeLeft;
 
+    // Record time spent on the final active question before submitting.
+    const finalSpent = Math.round((Date.now() - questionStartRef.current) / 1000);
+    if (questionTimesRef.current[currentQuestionIndex] !== undefined) {
+      questionTimesRef.current[currentQuestionIndex] += finalSpent;
+    }
+    questionStartRef.current = Date.now();
+    const questionTimes = questionTimesRef.current.slice(0, currentTest.questions.length);
+
     try {
       const { data, error } = await supabase
         .from('test_attempts')
@@ -462,7 +470,8 @@ export const StudentDashboard = () => {
           student_id: student.id,
           answers: selectedAnswers,
           score: percentage,
-          time_spent: timeSpent
+          time_spent: timeSpent,
+          question_times: questionTimes,
         })
         .select()
         .single();
