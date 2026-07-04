@@ -491,6 +491,7 @@ export const StudentDashboard = () => {
         score: data.score,
         completedAt: new Date(data.completed_at),
         timeSpent: data.time_spent,
+        questionTimes: data.question_times || [],
       };
 
       setAttempts([...attempts, attempt]);

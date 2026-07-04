@@ -74,6 +74,7 @@ export interface TestAttempt {
   score: number;
   completedAt: Date;
   timeSpent: number;
+  questionTimes?: number[];
 }
 
 export interface Teacher {

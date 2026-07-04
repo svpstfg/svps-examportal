@@ -41,6 +41,7 @@ const StudentHistory = () => {
           score: a.score,
           completedAt: new Date(a.completed_at),
           timeSpent: a.time_spent,
+          questionTimes: (a.question_times as any) || [],
         }));
 
         const testIds = Array.from(new Set(transformed.map((a) => a.testId)));

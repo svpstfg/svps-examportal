@@ -25,10 +25,18 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack }: AnswerSh
     return total + (answer === test.questions[index]?.correctAnswer ? 1 : 0);
   }, 0);
 
+  const questionTimes = attempt.questionTimes || [];
+
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}m ${remainingSeconds}s`;
+  };
+
+  const getQuestionRemark = (isCorrect: boolean, timeSpent: number, answered: boolean) => {
+    if (!answered || !isCorrect) return "Needs practice";
+    if (timeSpent <= 30) return "Quick and accurate";
+    return "Well done";
   };
 
   const handleDownloadPDF = async () => {
@@ -140,6 +148,8 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack }: AnswerSh
           {test.questions.map((question, index) => {
             const userAnswer = attempt.answers[index];
             const isCorrect = userAnswer === question.correctAnswer;
+            const timeSpent = questionTimes[index] || 0;
+            const answered = userAnswer !== undefined && userAnswer !== null && userAnswer >= 0;
 
             return (
               <div key={question.id || index} className={`p-3 border border-gray-200`}>
@@ -188,6 +198,15 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack }: AnswerSh
                 {userAnswer === -1 && (
                   <p className="ml-7 mt-1 text-[9px] text-gray-500 italic">⚠ Not Answered</p>
                 )}
+
+                <div className="ml-7 mt-2 flex flex-wrap items-center gap-2 text-[9px]">
+                  <div className="rounded bg-gray-100 px-2 py-1 text-gray-700">
+                    <span className="font-semibold">Time:</span> {formatTime(timeSpent)}
+                  </div>
+                  <div className={`rounded px-2 py-1 ${!isCorrect || !answered ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>
+                    <span className="font-semibold">Remark:</span> {getQuestionRemark(isCorrect, timeSpent, answered)}
+                  </div>
+                </div>
 
                 {question.explanation && (
                   <div className="ml-7 mt-2 border-l-2 border-blue-400 bg-blue-50 px-2 py-1 rounded-r">
