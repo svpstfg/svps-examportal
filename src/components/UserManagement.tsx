@@ -33,6 +33,7 @@ import {
   Save,
   Loader2,
 } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Class } from "@/types";
@@ -56,6 +57,7 @@ export const UserManagement = ({ classes }: Props) => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [busyEmail, setBusyEmail] = useState<string | null>(null);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   const [domain, setDomain] = useState("svps.com");
   const [domainInput, setDomainInput] = useState("svps.com");
@@ -109,6 +111,15 @@ export const UserManagement = ({ classes }: Props) => {
     loadDomain();
     loadUsers();
   }, [loadDomain, loadUsers]);
+
+  useEffect(() => {
+    // default open for all classes that have members
+    const map: Record<string, boolean> = {};
+    classes.forEach((c) => {
+      map[c.id] = true;
+    });
+    setOpenGroups(map);
+  }, [classes]);
 
   const saveDomain = async () => {
     const cleaned = domainInput
@@ -362,14 +373,33 @@ export const UserManagement = ({ classes }: Props) => {
             <div className="space-y-6">
               {groupedByClass.map((g) => (
                 <div key={g.id} className="space-y-3">
-                  <div className="flex items-center gap-2">
+                  <div
+                    className="flex items-center gap-2 cursor-pointer"
+                    onClick={() => setOpenGroups((prev) => ({ ...prev, [g.id]: !prev[g.id] }))}
+                    role="button"
+                    aria-expanded={!!openGroups[g.id]}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setOpenGroups((prev) => ({ ...prev, [g.id]: !prev[g.id] }));
+                      }
+                    }}
+                  >
+                    {openGroups[g.id] ? (
+                      <ChevronDown className="h-4 w-4 text-primary" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    )}
                     <UsersRound className="h-4 w-4 text-primary" />
                     <h3 className="text-sm font-semibold">{g.name}</h3>
                     <Badge variant="outline">{g.members.length}</Badge>
                   </div>
-                  <div className="space-y-3">
-                    {g.members.map((u) => renderUserCard(u))}
-                  </div>
+                  {openGroups[g.id] && (
+                    <div className="space-y-3">
+                      {g.members.map((u) => renderUserCard(u))}
+                    </div>
+                  )}
                 </div>
               ))}
 
