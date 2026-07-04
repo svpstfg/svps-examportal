@@ -6,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Trophy, Medal, Crown, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadCSV } from "@/lib/csv";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { Class } from "@/types";
 
 interface LeaderboardRow {
@@ -30,6 +32,7 @@ export const ClassLeaderboard = ({ classes, currentStudentEmail, defaultClassId,
   const [classId, setClassId] = useState<string>(defaultClassId || classes[0]?.id || "");
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [downloadingStudent, setDownloadingStudent] = useState<string | null>(null);
 
   useEffect(() => {
     if (defaultClassId && defaultClassId !== "all") setClassId(defaultClassId);
@@ -195,6 +198,117 @@ export const ClassLeaderboard = ({ classes, currentStudentEmail, defaultClassId,
                     >
                       Avg {r.avgScore}%
                     </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const sid = r.studentId;
+                        setDownloadingStudent(sid);
+                        try {
+                          // load latest attempt for student
+                          const { data: attempts } = await supabase
+                            .from("test_attempts")
+                            .select("*")
+                            .eq("student_id", sid)
+                            .order("completed_at", { ascending: false })
+                            .limit(1);
+                          const attempt = (attempts || [])[0];
+                          if (!attempt) {
+                            alert("No attempts found for this student.");
+                            return;
+                          }
+
+                          const { data: testRows } = await supabase
+                            .from("tests")
+                            .select("*")
+                            .eq("id", attempt.test_id)
+                            .limit(1);
+                          const test = (testRows || [])[0];
+                          if (!test) {
+                            alert("Test information not found.");
+                            return;
+                          }
+
+                          const payloadQuestions = (test.questions || []).map((q: any, i: number) => {
+                            const ans = (attempt.answers || [])[i];
+                            const answered = ans !== undefined && ans !== null && ans >= 0;
+                            return {
+                              index: i,
+                              question: q.question || "",
+                              correct: answered && ans === q.correctAnswer,
+                              answered,
+                              timeSec: (attempt.question_times || [])[i] || 0,
+                            };
+                          });
+
+                          const { data, error } = await supabase.functions.invoke("student-analysis", {
+                            body: {
+                              studentName: r.name,
+                              testTitle: test.title,
+                              subject: undefined,
+                              className: className,
+                              scorePct: attempt.score,
+                              fullMarks: (test.questions || []).length,
+                              marksObtained: Math.round(((test.questions || []).length * attempt.score) / 100),
+                              totalTimeSec: attempt.time_spent || 0,
+                              questions: payloadQuestions,
+                            },
+                          });
+
+                          if (error) {
+                            const msg = (await error.context?.json?.())?.error;
+                            throw new Error(msg || error.message);
+                          }
+                          if (data?.error) throw new Error(data.error);
+
+                          const report = data?.report || "No report generated.";
+
+                          // render simple printable report and generate PDF
+                          const container = document.createElement("div");
+                          container.style.position = "fixed";
+                          container.style.left = "-9999px";
+                          container.style.width = "800px";
+                          container.style.background = "white";
+                          container.style.color = "black";
+                          container.style.padding = "24px";
+                          container.innerHTML = `
+                            <div style="font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#111">
+                              <h1 style="font-size:20px;margin-bottom:8px;">Analysis Report — ${r.name}</h1>
+                              <p style="margin:0 0 12px 0; color:#555">Test: ${test.title} • Class: ${className}</p>
+                              <pre style="white-space:pre-wrap;font-size:12px;line-height:1.4">${report}</pre>
+                              <p style="font-size:10px;color:#888;margin-top:12px">Generated on ${new Date().toLocaleString()}</p>
+                            </div>
+                          `;
+                          document.body.appendChild(container);
+
+                          await document.fonts.ready;
+                          const canvas = await html2canvas(container, { scale: 2, backgroundColor: "#ffffff" });
+                          const imgData = canvas.toDataURL("image/png");
+                          const pdf = new jsPDF("p", "mm", "a4");
+                          const pdfWidth = pdf.internal.pageSize.getWidth();
+                          const pdfHeight = pdf.internal.pageSize.getHeight();
+                          const ratio = pdfWidth / canvas.width;
+                          const totalPdfHeight = canvas.height * ratio;
+                          let position = 0;
+                          let remaining = totalPdfHeight;
+                          while (remaining > 0) {
+                            if (position > 0) pdf.addPage();
+                            pdf.addImage(imgData, "PNG", 0, -position, pdfWidth, totalPdfHeight);
+                            position += pdfHeight;
+                            remaining -= pdfHeight;
+                          }
+                          pdf.save(`${r.name.replace(/\s+/g, "_")}_analysis.pdf`);
+                          document.body.removeChild(container);
+                        } catch (err: any) {
+                          alert(err?.message || "Failed to generate report");
+                        } finally {
+                          setDownloadingStudent(null);
+                        }
+                      }}
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </div>
               );
