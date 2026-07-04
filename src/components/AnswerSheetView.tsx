@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Download, CheckCircle, AlertCircle, Clock, Trophy, Target, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { Test, TestAttempt, Question } from "@/types";
-import { getQuestionRemark, isAnswered, isAnswerCorrect } from "@/lib/answers";
+import { getQuestionRemark, isAnswered, isAnswerCorrect, normalizeQuestionTime } from "@/lib/answers";
 import { RichTextDisplay } from "./RichTextDisplay";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -26,7 +26,7 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack }: AnswerSh
     return total + (answer === test.questions[index]?.correctAnswer ? 1 : 0);
   }, 0);
 
-  const questionTimes = attempt.questionTimes || [];
+  const questionTimes = (attempt.questionTimes || []).map(normalizeQuestionTime);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -143,7 +143,7 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack }: AnswerSh
           {test.questions.map((question, index) => {
             const userAnswer = attempt.answers[index];
             const isCorrect = isAnswerCorrect(userAnswer, question.correctAnswer);
-            const timeSpent = questionTimes[index] || 0;
+            const timeSpent = normalizeQuestionTime(questionTimes[index] ?? 0);
             const answered = isAnswered(userAnswer);
 
             return (

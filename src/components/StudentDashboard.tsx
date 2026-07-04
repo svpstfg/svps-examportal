@@ -14,7 +14,7 @@ import { format } from "date-fns";
 import { Class, Course, Chapter, Question, Test, TestAttempt, Student } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { RichTextDisplay } from "./RichTextDisplay";
-import { isAnswered, isAnswerCorrect } from "@/lib/answers";
+import { isAnswered, isAnswerCorrect, normalizeQuestionTime } from "@/lib/answers";
 import { AnswerSheetView } from "./AnswerSheetView";
 import { useAuth } from "@/hooks/useAuth";
 import { JoinClassCard } from "./JoinClassCard";
@@ -323,6 +323,7 @@ export const StudentDashboard = () => {
             answers: selectedAnswers,
             currentIndex: currentQuestionIndex,
             timeLeft,
+            questionTimes: questionTimesRef.current.slice(0, currentTest.questions.length),
             savedAt: Date.now(),
           })
         );
@@ -335,18 +336,19 @@ export const StudentDashboard = () => {
     return () => clearInterval(id);
   }, [isTestActive, currentTest, student, selectedAnswers, currentQuestionIndex, timeLeft]);
 
-  // Accrue time spent per question as the student navigates between questions.
+  // Track time spent per question while the test is active.
   useEffect(() => {
-    if (!isTestActive) return;
-    questionStartRef.current = Date.now();
+    if (!isTestActive || !currentTest) return;
+
     const idx = currentQuestionIndex;
-    return () => {
-      const spent = Math.round((Date.now() - questionStartRef.current) / 1000);
+    const interval = window.setInterval(() => {
       if (questionTimesRef.current[idx] !== undefined) {
-        questionTimesRef.current[idx] += spent;
+        questionTimesRef.current[idx] += 1;
       }
-    };
-  }, [currentQuestionIndex, isTestActive]);
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [currentQuestionIndex, isTestActive, currentTest]);
 
 
 
@@ -385,6 +387,7 @@ export const StudentDashboard = () => {
     let savedAnswers: number[] | null = null;
     let savedIndex = 0;
     let savedTimeLeft = test.duration * 60;
+    let savedQuestionTimes: number[] = [];
     if (student) {
       try {
         const raw = localStorage.getItem(RESUME_KEY(student.id, test.id));
@@ -404,6 +407,7 @@ export const StudentDashboard = () => {
               savedAnswers = saved.answers;
               savedIndex = Math.min(saved.currentIndex || 0, test.questions.length - 1);
               savedTimeLeft = saved.timeLeft;
+              savedQuestionTimes = Array.isArray(saved.questionTimes) ? saved.questionTimes : [];
               toast.success('Resumed your previous attempt');
             } else {
               localStorage.removeItem(RESUME_KEY(student.id, test.id));
@@ -415,7 +419,9 @@ export const StudentDashboard = () => {
       }
     }
 
-    questionTimesRef.current = new Array(test.questions.length).fill(0);
+    questionTimesRef.current = savedQuestionTimes.length
+      ? savedQuestionTimes.slice(0, test.questions.length).concat(new Array(Math.max(0, test.questions.length - savedQuestionTimes.length)).fill(0))
+      : new Array(test.questions.length).fill(0);
     questionStartRef.current = Date.now();
     setCurrentTest(test);
     setCurrentQuestionIndex(savedIndex);
@@ -455,13 +461,7 @@ export const StudentDashboard = () => {
     const percentage = Math.round((score / currentTest.questions.length) * 100);
     const timeSpent = (currentTest.duration * 60) - timeLeft;
 
-    // Record time spent on the final active question before submitting.
-    const finalSpent = Math.round((Date.now() - questionStartRef.current) / 1000);
-    if (questionTimesRef.current[currentQuestionIndex] !== undefined) {
-      questionTimesRef.current[currentQuestionIndex] += finalSpent;
-    }
-    questionStartRef.current = Date.now();
-    const questionTimes = questionTimesRef.current.slice(0, currentTest.questions.length);
+    const questionTimes = questionTimesRef.current.slice(0, currentTest.questions.length).map(normalizeQuestionTime);
 
     try {
       const { data, error } = await supabase

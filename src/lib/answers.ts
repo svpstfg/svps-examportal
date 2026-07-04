@@ -15,6 +15,11 @@ export const isAnswerCorrect = (ans: unknown, correctAnswer: unknown): boolean =
   return a === c;
 };
 
+export const normalizeQuestionTime = (value: unknown): number => {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0;
+};
+
 export const getQuestionRemark = (isCorrect: boolean, timeTaken: number, answered = true) => {
   if (!answered || !isCorrect) return "Needs practice";
   if (timeTaken <= 30) return "Excellent";
@@ -26,5 +31,6 @@ export const getQuestionRemark = (isCorrect: boolean, timeTaken: number, answere
 export default {
   isAnswered,
   isAnswerCorrect,
+  normalizeQuestionTime,
   getQuestionRemark,
 };

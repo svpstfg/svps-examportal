@@ -9,7 +9,7 @@ import { downloadCSV } from "@/lib/csv";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { Class } from "@/types";
-import { getQuestionRemark, isAnswered, isAnswerCorrect } from "@/lib/answers";
+import { getQuestionRemark, isAnswered, isAnswerCorrect, normalizeQuestionTime } from "@/lib/answers";
 
 interface LeaderboardRow {
   studentId: string;
@@ -237,7 +237,7 @@ export const ClassLeaderboard = ({ classes, currentStudentEmail, defaultClassId,
                               const ans = (attempt.answers || [])[i];
                               const answered = isAnswered(ans);
                               const correct = isAnswerCorrect(ans, q.correctAnswer);
-                              const t = (attempt.question_times || [])[i] || 0;
+                              const t = normalizeQuestionTime((attempt.question_times || [])[i] ?? 0);
                               const statusIcon = correct ? '✓' : !answered ? '⚠' : '✗';
                               const statusColor = correct ? 'color:#059669' : !answered ? 'color:#7c2d12' : 'color:#dc2626';
                               const remark = getQuestionRemark(correct, t, answered);

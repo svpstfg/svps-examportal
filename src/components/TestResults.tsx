@@ -13,7 +13,7 @@ import { downloadCSV } from "@/lib/csv";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { RichTextDisplay } from "./RichTextDisplay";
-import { getQuestionRemark, isAnswered, isAnswerCorrect } from "@/lib/answers";
+import { getQuestionRemark, isAnswered, isAnswerCorrect, normalizeQuestionTime } from "@/lib/answers";
 import { Class, Question } from "@/types";
 
 interface TestRow {
@@ -317,7 +317,7 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
           question: q.question || "",
           correct: isAnswerCorrect(ans, q.correctAnswer),
           answered,
-          timeSec: analysisRow.questionTimes[i] ?? 0,
+          timeSec: normalizeQuestionTime(analysisRow.questionTimes[i] ?? 0),
         };
       });
       const { data, error } = await supabase.functions.invoke("student-analysis", {
@@ -362,7 +362,7 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
           const ans = analysisRow.answers[i];
           const answered = isAnswered(ans);
           const correct = isAnswerCorrect(ans, q.correctAnswer);
-          const t = analysisRow.questionTimes[i] ?? 0;
+          const t = normalizeQuestionTime(analysisRow.questionTimes[i] ?? 0);
           const statusIcon = correct ? '✓' : !answered ? '⚠' : '✗';
           const statusColor = correct ? 'color:#059669' : !answered ? 'color:#7c2d12' : 'color:#dc2626';
           const remark = getQuestionRemark(correct, t, answered);
@@ -640,7 +640,7 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
                     const ans = analysisRow.answers[i];
                     const answered = isAnswered(ans);
                     const correct = isAnswerCorrect(ans, q.correctAnswer);
-                    const t = analysisRow.questionTimes[i] ?? 0;
+                    const t = normalizeQuestionTime(analysisRow.questionTimes[i] ?? 0);
                     return (
                       <div key={i} className="flex items-start gap-2 rounded-md border px-3 py-2">
                         <div className="shrink-0 pt-0.5">
