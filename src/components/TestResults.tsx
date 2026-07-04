@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadCSV } from "@/lib/csv";
 import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 import { RichTextDisplay } from "./RichTextDisplay";
 import { Class, Question } from "@/types";
 
@@ -344,6 +345,75 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
     }
   };
 
+  const downloadAnalysisPDF = async () => {
+    if (!analysisRow || !selectedTest) return;
+    try {
+      const container = document.createElement("div");
+      container.style.position = "fixed";
+      container.style.left = "-9999px";
+      container.style.width = "900px";
+      container.style.background = "white";
+      container.style.color = "black";
+      container.style.padding = "24px";
+
+      const questionsHtml = questions
+        .map((q, i) => {
+          const ans = analysisRow.answers[i];
+          const answered = ans !== undefined && ans !== null && ans >= 0;
+          const correct = answered && ans === q.correctAnswer;
+          const optionsHtml = (q.options || [])
+            .map((opt, oi) => {
+              const isUser = oi === ans;
+              const isCorrect = oi === q.correctAnswer;
+              const cls = isCorrect ? 'font-weight:600;color:green' : isUser && !isCorrect ? 'text-decoration:line-through;color:red' : '';
+              return `<div style="margin-bottom:4px; ${cls}">(${String.fromCharCode(65 + oi)}) ${opt}</div>`;
+            })
+            .join("");
+
+          return `
+            <div style="margin-bottom:12px;">
+              <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Q${i + 1}. ${q.question}</div>
+              <div style="margin-left:8px">${optionsHtml}</div>
+              <div style="margin-top:6px;font-size:12px;color:#444">Answer: ${answered ? String.fromCharCode(65 + ans) : 'Not answered'} • ${correct ? 'Correct' : 'Wrong'}</div>
+            </div>`;
+        })
+        .join("");
+
+      container.innerHTML = `
+        <div style="font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#111">
+          <h1 style="font-size:20px;margin-bottom:8px;">${analysisRow.name} — Answer Sheet & Analysis</h1>
+          <p style="margin:0 0 12px 0; color:#555">Test: ${selectedTest.title} • Class: ${className}</p>
+          <div style="margin:8px 0;padding:12px;border:1px solid #eee;background:#fafafa">${aiReport ? `<h3 style=\"margin:0 0 8px 0\">AI Analysis</h3><pre style=\"white-space:pre-wrap; font-size:12px;\">${aiReport}</pre>` : ''}</div>
+          ${questionsHtml}
+          <p style="font-size:10px;color:#888;margin-top:12px">Generated on ${new Date().toLocaleString()}</p>
+        </div>
+      `;
+
+      document.body.appendChild(container);
+      await document.fonts.ready;
+      const canvas = await html2canvas(container, { scale: 2, backgroundColor: "#ffffff" });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const ratio = pdfWidth / canvas.width;
+      const totalPdfHeight = canvas.height * ratio;
+      let position = 0;
+      let remaining = totalPdfHeight;
+      while (remaining > 0) {
+        if (position > 0) pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, -position, pdfWidth, totalPdfHeight);
+        position += pdfHeight;
+        remaining -= pdfHeight;
+      }
+      pdf.save(`${analysisRow.name.replace(/\s+/g, "_")}_analysis.pdf`);
+      document.body.removeChild(container);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Failed to generate PDF");
+    }
+  };
+
   const rankIcon = (rank: number) => {
     if (rank === 1) return <Crown className="h-4 w-4 text-yellow-500" />;
     if (rank === 2) return <Medal className="h-4 w-4 text-zinc-400" />;
@@ -512,10 +582,16 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
           {analysisRow && (
             <div className="space-y-4">
               <div>
-                <Button size="sm" onClick={runAiAnalysis} disabled={aiLoading} className="gap-1">
-                  {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  {aiLoading ? "Analysing…" : "AI Analysis Report"}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" onClick={runAiAnalysis} disabled={aiLoading} className="gap-1">
+                    {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {aiLoading ? "Analysing…" : "AI Analysis Report"}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={downloadAnalysisPDF} disabled={!analysisRow} className="gap-1">
+                    <Download className="h-4 w-4" />
+                    PDF
+                  </Button>
+                </div>
               </div>
 
               {aiReport && (
