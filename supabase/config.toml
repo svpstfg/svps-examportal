@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.manage-users]
 verify_jwt = true
+
+[functions.student-analysis]
+verify_jwt = true
