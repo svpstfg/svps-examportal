@@ -65,7 +65,8 @@ export const UserManagement = ({ classes }: Props) => {
   const [newPassword, setNewPassword] = useState("");
   const [deleteUser, setDeleteUser] = useState<ManagedUser | null>(null);
 
-  const classNameById = (id: string) => classes.find((c) => c.id === id)?.name ?? "";
+
+
 
   const loadDomain = useCallback(async () => {
     const { data: auth } = await supabase.auth.getUser();
