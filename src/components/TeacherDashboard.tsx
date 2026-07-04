@@ -315,6 +315,12 @@ export const TeacherDashboard = () => {
   };
 
   const handleCourseDelete = async (courseId: string) => {
+    const target = courses.find((c) => c.id === courseId);
+    if (target && target.chapterCount > 0) {
+      toast.error('Cannot delete a subject that has chapters. Remove chapters first.');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('courses')
@@ -1200,14 +1206,20 @@ export const TeacherDashboard = () => {
           {/* Courses List */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map((course) => (
-              <Card key={course.id}>
+                <Card key={course.id}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>{course.name}</span>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => handleCourseDelete(course.id)}
+                      disabled={course.chapterCount > 0}
+                      title={
+                        course.chapterCount > 0
+                          ? 'Remove all chapters before deleting this subject'
+                          : 'Delete subject'
+                      }
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
