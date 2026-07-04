@@ -113,10 +113,10 @@ export const UserManagement = ({ classes }: Props) => {
   }, [loadDomain, loadUsers]);
 
   useEffect(() => {
-    // default open for all classes that have members
+    // default collapsed for all class groups
     const map: Record<string, boolean> = {};
     classes.forEach((c) => {
-      map[c.id] = true;
+      map[c.id] = false;
     });
     setOpenGroups(map);
   }, [classes]);
