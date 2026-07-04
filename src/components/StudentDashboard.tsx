@@ -44,6 +44,9 @@ export const StudentDashboard = () => {
   const [viewingAnswerSheet, setViewingAnswerSheet] = useState<{ attempt: TestAttempt; test: Test } | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  // Per-question time tracking (seconds spent on each question)
+  const questionTimesRef = useRef<number[]>([]);
+  const questionStartRef = useRef<number>(Date.now());
 
   const handleDownloadResultPdf = async () => {
     const node = resultRef.current;
