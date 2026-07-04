@@ -361,6 +361,8 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
           const ans = analysisRow.answers[i];
           const answered = ans !== undefined && ans !== null && ans >= 0;
           const correct = answered && ans === q.correctAnswer;
+          const t = analysisRow.questionTimes[i] ?? 0;
+          const perMark = correct ? 1 : 0;
           const optionsHtml = (q.options || [])
             .map((opt, oi) => {
               const isUser = oi === ans;
@@ -374,15 +376,18 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
             <div style="margin-bottom:12px;">
               <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Q${i + 1}. ${q.question}</div>
               <div style="margin-left:8px">${optionsHtml}</div>
-              <div style="margin-top:6px;font-size:12px;color:#444">Answer: ${answered ? String.fromCharCode(65 + ans) : 'Not answered'} • ${correct ? 'Correct' : 'Wrong'}</div>
+              <div style="margin-top:6px;font-size:12px;color:#444">Answer: ${answered ? String.fromCharCode(65 + ans) : 'Not answered'} • ${correct ? 'Correct' : 'Wrong'} • Time: ${formatDuration(t)}</div>
+              <div style="font-size:12px;color:#333">Grade: ${perMark} / 1</div>
             </div>`;
         })
         .join("");
 
+      const overallMarks = marksOf(analysisRow.score);
       container.innerHTML = `
         <div style="font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#111">
           <h1 style="font-size:20px;margin-bottom:8px;">${analysisRow.name} — Answer Sheet & Analysis</h1>
-          <p style="margin:0 0 12px 0; color:#555">Test: ${selectedTest.title} • Class: ${className}</p>
+          <p style="margin:0 0 6px 0; color:#555">Test: ${selectedTest.title} • Class: ${className}</p>
+          <p style="margin:0 0 12px 0; color:#555">Marks: ${overallMarks} / ${fullMarks} • Score: ${analysisRow.score}% • Total time: ${formatDuration(analysisRow.timeSpent)}</p>
           <div style="margin:8px 0;padding:12px;border:1px solid #eee;background:#fafafa">${aiReport ? `<h3 style=\"margin:0 0 8px 0\">AI Analysis</h3><pre style=\"white-space:pre-wrap; font-size:12px;\">${aiReport}</pre>` : ''}</div>
           ${questionsHtml}
           <p style="font-size:10px;color:#888;margin-top:12px">Generated on ${new Date().toLocaleString()}</p>
