@@ -358,77 +358,32 @@ export const UserManagement = ({ classes }: Props) => {
               No students found.
             </p>
           ) : (
-            <div className="space-y-3">
-              {filtered.map((u) => {
-                const busy = busyEmail === u.email;
-                return (
-                  <div
-                    key={u.id}
-                    className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="min-w-0 space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium truncate">
-                          {u.name || "Unnamed"}
-                        </span>
-                        {u.blocked && <Badge variant="destructive">Blocked</Badge>}
-                        {!u.hasAccount && (
-                          <Badge variant="outline">No account</Badge>
-                        )}
-                        {u.hasAccount && !u.confirmed && (
-                          <Badge variant="secondary">Unverified</Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {u.email}
-                      </p>
-                      {u.classIds.length > 0 && (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {u.classIds.map(classNameById).filter(Boolean).join(", ")}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={busy || !u.hasAccount}
-                        onClick={() => {
-                          setPwUser(u);
-                          setNewPassword("");
-                        }}
-                      >
-                        <KeyRound className="h-4 w-4 mr-1" /> Password
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={busy || !u.hasAccount}
-                        onClick={() => handleBlockToggle(u)}
-                      >
-                        {u.blocked ? (
-                          <>
-                            <ShieldCheck className="h-4 w-4 mr-1" /> Unblock
-                          </>
-                        ) : (
-                          <>
-                            <Ban className="h-4 w-4 mr-1" /> Block
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        disabled={busy}
-                        onClick={() => setDeleteUser(u)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" /> Delete
-                      </Button>
-                    </div>
+            <div className="space-y-6">
+              {groupedByClass.map((g) => (
+                <div key={g.id} className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <UsersRound className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-semibold">{g.name}</h3>
+                    <Badge variant="outline">{g.members.length}</Badge>
                   </div>
-                );
-              })}
+                  <div className="space-y-3">
+                    {g.members.map((u) => renderUserCard(u))}
+                  </div>
+                </div>
+              ))}
+
+              {ungrouped.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <UsersRound className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-sm font-semibold">Unassigned</h3>
+                    <Badge variant="outline">{ungrouped.length}</Badge>
+                  </div>
+                  <div className="space-y-3">
+                    {ungrouped.map((u) => renderUserCard(u))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
