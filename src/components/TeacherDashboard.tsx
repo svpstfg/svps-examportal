@@ -371,6 +371,11 @@ export const TeacherDashboard = () => {
   };
 
   const handleDeleteChapter = async (chapterId: string) => {
+    const chapter = chapters.find((c) => c.id === chapterId);
+    if (chapter && chapter.testCount > 0) {
+      toast.error("Remove all tests before deleting this chapter.");
+      return;
+    }
     try {
       const { error } = await supabase
         .from('chapters')
