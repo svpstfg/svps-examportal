@@ -414,6 +414,8 @@ export const StudentDashboard = () => {
       }
     }
 
+    questionTimesRef.current = new Array(test.questions.length).fill(0);
+    questionStartRef.current = Date.now();
     setCurrentTest(test);
     setCurrentQuestionIndex(savedIndex);
     setSelectedAnswers(savedAnswers || new Array(test.questions.length).fill(-1));
