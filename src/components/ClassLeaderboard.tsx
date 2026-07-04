@@ -230,6 +230,15 @@ export const ClassLeaderboard = ({ classes, currentStudentEmail, defaultClassId,
                             return;
                           }
 
+                          // Helper function for dynamic remarks
+                          const getQuestionRemark = (isCorrect: boolean, timeTaken: number) => {
+                            if (!isCorrect) return "Needs practice";
+                            if (timeTaken <= 30) return "Excellent";
+                            if (timeTaken <= 60) return "Very good";
+                            if (timeTaken <= 120) return "Good";
+                            return "Well done";
+                          };
+
                           // Build questions HTML in 2-column grid format
                           const questionsHtml = (test.questions || [])
                             .map((q: any, i: number) => {
@@ -237,42 +246,37 @@ export const ClassLeaderboard = ({ classes, currentStudentEmail, defaultClassId,
                               const answered = ans !== undefined && ans !== null && ans >= 0;
                               const correct = answered && ans === q.correctAnswer;
                               const t = (attempt.question_times || [])[i] || 0;
-                              const statusBg = correct ? 'background-color:#d1fae5' : answered ? 'background-color:#fee2e2' : 'background-color:#f3f4f6';
                               const statusIcon = correct ? '✓' : !answered ? '⚠' : '✗';
                               const statusColor = correct ? 'color:#059669' : !answered ? 'color:#7c2d12' : 'color:#dc2626';
+                              const remark = getQuestionRemark(correct, t);
                               
                               const optionsHtml = (q.options || [])
                                 .map((opt: string, oi: number) => {
                                   const isUser = oi === ans;
                                   const isCorrect = oi === q.correctAnswer;
-                                  let optBg = '';
                                   let optClass = '';
                                   if (isCorrect) {
-                                    optBg = 'background-color:#dcfce7;border:1px solid #86efac;';
                                     optClass = 'font-weight:600;color:#15803d';
                                   } else if (isUser && !isCorrect) {
-                                    optBg = 'background-color:#fee2e2;border:1px solid #fca5a5;';
                                     optClass = 'text-decoration:line-through;color:#991b1b';
-                                  } else {
-                                    optBg = 'border:1px solid #e5e7eb;';
                                   }
-                                  return `<div style="margin-bottom:3px;padding:2px 4px;${optBg}${optClass};font-size:11px">(${String.fromCharCode(65 + oi)}) ${opt}${isCorrect ? ' <span style="color:#059669">✓</span>' : isUser && !isCorrect ? ' <span style="color:#dc2626">✗</span>' : ''}</div>`;
+                                  return `<div style="margin-bottom:3px;padding:2px 4px;border:1px solid #e5e7eb;${optClass};font-size:11px">(${String.fromCharCode(65 + oi)}) ${opt}${isCorrect ? ' <span style="color:#059669">✓</span>' : isUser && !isCorrect ? ' <span style="color:#dc2626">✗</span>' : ''}</div>`;
                                 })
                                 .join("");
 
                               return `
-                                <div style="padding:8px;border:1px solid #e5e7eb;margin-bottom:0;font-size:10px;${statusBg}">
+                                <div style="padding:8px;border:1px solid #e5e7eb;margin-bottom:0;font-size:10px;">
                                   <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px">
                                     <div style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background-color:#333;color:white;font-weight:bold;font-size:9px;flex-shrink:0">${i + 1}</div>
                                     <div style="flex:1">
                                       <div style="font-weight:600;margin-bottom:2px;line-height:1.2">${q.question || ''}</div>
                                     </div>
-                                    <span style="font-weight:bold;padding:2px 4px;border-radius:3px;${statusColor};background-color:#f5f5f5;font-size:8px">${statusIcon}</span>
+                                    <span style="font-weight:bold;padding:2px 4px;border-radius:3px;${statusColor};font-size:8px">${statusIcon}</span>
                                   </div>
                                   <div style="margin-left:26px">${optionsHtml}</div>
                                   <div style="margin-left:26px;margin-top:3px;font-size:9px;color:#4b5563">
-                                    <span style="display:inline-block;background-color:#f0f0f0;padding:2px 4px;border-radius:2px;margin-right:4px">Time: ${Math.floor(t / 60)}m ${t % 60}s</span>
-                                    <span style="display:inline-block;background-color:#f0f0f0;padding:2px 4px;border-radius:2px">Remark: ${correct ? 'Well done' : !answered ? 'Needs practice' : 'Needs practice'}</span>
+                                    <span style="margin-right:8px">Time: ${Math.floor(t / 60)}m ${t % 60}s</span>
+                                    <span>Remark: <span style="color:#059669;font-weight:600">${remark}</span></span>
                                   </div>
                                 </div>`;
                             })

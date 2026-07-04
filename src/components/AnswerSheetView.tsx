@@ -35,7 +35,9 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack }: AnswerSh
 
   const getQuestionRemark = (isCorrect: boolean, timeSpent: number, answered: boolean) => {
     if (!answered || !isCorrect) return "Needs practice";
-    if (timeSpent <= 30) return "Quick and accurate";
+    if (timeSpent <= 30) return "Excellent";
+    if (timeSpent <= 60) return "Very good";
+    if (timeSpent <= 120) return "Good";
     return "Well done";
   };
 
