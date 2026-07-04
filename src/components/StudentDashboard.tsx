@@ -334,6 +334,21 @@ export const StudentDashboard = () => {
     return () => clearInterval(id);
   }, [isTestActive, currentTest, student, selectedAnswers, currentQuestionIndex, timeLeft]);
 
+  // Accrue time spent per question as the student navigates between questions.
+  useEffect(() => {
+    if (!isTestActive) return;
+    questionStartRef.current = Date.now();
+    const idx = currentQuestionIndex;
+    return () => {
+      const spent = Math.round((Date.now() - questionStartRef.current) / 1000);
+      if (questionTimesRef.current[idx] !== undefined) {
+        questionTimesRef.current[idx] += spent;
+      }
+    };
+  }, [currentQuestionIndex, isTestActive]);
+
+
+
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
