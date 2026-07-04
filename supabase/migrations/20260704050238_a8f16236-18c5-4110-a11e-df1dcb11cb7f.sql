@@ -1,0 +1,1 @@
+ALTER TABLE public.test_attempts ADD COLUMN IF NOT EXISTS question_times integer[] NOT NULL DEFAULT '{}';
