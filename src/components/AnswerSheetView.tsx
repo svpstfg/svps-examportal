@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Download, CheckCircle, AlertCircle, Clock, Trophy, Target, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { Test, TestAttempt, Question } from "@/types";
+import { getQuestionRemark, isAnswered, isAnswerCorrect } from "@/lib/answers";
 import { RichTextDisplay } from "./RichTextDisplay";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -31,14 +32,6 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack }: AnswerSh
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}m ${remainingSeconds}s`;
-  };
-
-  const getQuestionRemark = (isCorrect: boolean, timeSpent: number, answered: boolean) => {
-    if (!answered || !isCorrect) return "Needs practice";
-    if (timeSpent <= 30) return "Excellent";
-    if (timeSpent <= 60) return "Very good";
-    if (timeSpent <= 120) return "Good";
-    return "Well done";
   };
 
   const handleDownloadPDF = async () => {
@@ -149,9 +142,9 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack }: AnswerSh
         <div className="border-x-2 border-b-2 border-black grid grid-cols-2 gap-0">
           {test.questions.map((question, index) => {
             const userAnswer = attempt.answers[index];
-            const isCorrect = userAnswer === question.correctAnswer;
+            const isCorrect = isAnswerCorrect(userAnswer, question.correctAnswer);
             const timeSpent = questionTimes[index] || 0;
-            const answered = userAnswer !== undefined && userAnswer !== null && userAnswer >= 0;
+            const answered = isAnswered(userAnswer);
 
             return (
               <div key={question.id || index} className={`p-3 border border-gray-200`}>
@@ -177,8 +170,8 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack }: AnswerSh
                 {/* Options */}
                 <div className="ml-7 space-y-1">
                   {question.options.map((option, optIndex) => {
-                    const isCorrectOption = optIndex === question.correctAnswer;
-                    const isUserAnswer = optIndex === userAnswer;
+                    const isCorrectOption = Number(question.correctAnswer) === optIndex;
+                    const isUserAnswer = Number(userAnswer) === optIndex;
                     const isWrongPick = isUserAnswer && !isCorrect;
 
                     let optionClass = "flex items-center gap-1.5 py-0.5 px-2 rounded text-[10px]";
@@ -197,7 +190,7 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack }: AnswerSh
                   })}
                 </div>
 
-                {userAnswer === -1 && (
+                {!answered && (
                   <p className="ml-7 mt-1 text-[9px] text-gray-500 italic">⚠ Not Answered</p>
                 )}
 

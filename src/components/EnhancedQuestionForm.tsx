@@ -314,7 +314,7 @@ export const EnhancedQuestionForm: React.FC<EnhancedQuestionFormProps> = ({
                           <p 
                             key={optIndex} 
                             className={`text-sm flex items-center gap-2 ${
-                              optIndex === question.correctAnswer 
+                              Number(question.correctAnswer) === optIndex 
                                 ? 'text-green-600 font-medium bg-green-50 dark:bg-green-950/20 px-2 py-1 rounded' 
                                 : 'text-muted-foreground'
                             }`}
@@ -323,7 +323,7 @@ export const EnhancedQuestionForm: React.FC<EnhancedQuestionFormProps> = ({
                               {String.fromCharCode(65 + optIndex)}:
                             </span>
                             {option} 
-                            {optIndex === question.correctAnswer && (
+                            {Number(question.correctAnswer) === optIndex && (
                               <span className="text-green-600 font-bold">✓</span>
                             )}
                           </p>

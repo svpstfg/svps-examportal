@@ -1400,7 +1400,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
 
                         {question.options.map((option, optIndex) => (
                           <div key={optIndex} className={`p-2 rounded ${
-                            optIndex === question.correctAnswer 
+                            Number(question.correctAnswer) === optIndex 
                               ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800' 
                               : 'bg-muted/50'
                           }`}>
@@ -1410,9 +1410,9 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                               </span>
                               <RichTextDisplay 
                                 content={option} 
-                                className={optIndex === question.correctAnswer ? 'font-medium text-green-700 dark:text-green-300' : ''} 
+                                className={Number(question.correctAnswer) === optIndex ? 'font-medium text-green-700 dark:text-green-300' : ''} 
                               />
-                              {optIndex === question.correctAnswer && (
+                              {Number(question.correctAnswer) === optIndex && (
                                 <span className="text-green-600 font-bold">✓</span>
                               )}
                             </div>

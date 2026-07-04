@@ -9,6 +9,7 @@ import { downloadCSV } from "@/lib/csv";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { Class } from "@/types";
+import { getQuestionRemark, isAnswered, isAnswerCorrect } from "@/lib/answers";
 
 interface LeaderboardRow {
   studentId: string;
@@ -230,30 +231,21 @@ export const ClassLeaderboard = ({ classes, currentStudentEmail, defaultClassId,
                             return;
                           }
 
-                          // Helper function for dynamic remarks
-                          const getQuestionRemark = (isCorrect: boolean, timeTaken: number) => {
-                            if (!isCorrect) return "Needs practice";
-                            if (timeTaken <= 30) return "Excellent";
-                            if (timeTaken <= 60) return "Very good";
-                            if (timeTaken <= 120) return "Good";
-                            return "Well done";
-                          };
-
                           // Build questions HTML in 2-column grid format
                           const questionsHtml = (test.questions || [])
                             .map((q: any, i: number) => {
                               const ans = (attempt.answers || [])[i];
-                              const answered = ans !== undefined && ans !== null && ans >= 0;
-                              const correct = answered && ans === q.correctAnswer;
+                              const answered = isAnswered(ans);
+                              const correct = isAnswerCorrect(ans, q.correctAnswer);
                               const t = (attempt.question_times || [])[i] || 0;
                               const statusIcon = correct ? '✓' : !answered ? '⚠' : '✗';
                               const statusColor = correct ? 'color:#059669' : !answered ? 'color:#7c2d12' : 'color:#dc2626';
-                              const remark = getQuestionRemark(correct, t);
+                              const remark = getQuestionRemark(correct, t, answered);
                               
                               const optionsHtml = (q.options || [])
                                 .map((opt: string, oi: number) => {
-                                  const isUser = oi === ans;
-                                  const isCorrect = oi === q.correctAnswer;
+                                  const isUser = Number(ans) === oi;
+                                  const isCorrect = Number(q.correctAnswer) === oi;
                                   let optClass = '';
                                   if (isCorrect) {
                                     optClass = 'font-weight:600;color:#15803d';

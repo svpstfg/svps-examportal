@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, ArrowLeft, CheckCircle, AlertCircle } from "lucide-react";
 import { Test, Question } from "@/types";
 import { RichTextDisplay } from "./RichTextDisplay";
+import { isAnswered, isAnswerCorrect } from "@/lib/answers";
 
 interface TestPreviewProps {
   test: Test;
@@ -30,7 +31,7 @@ export const TestPreview = ({ test, onClose }: TestPreviewProps) => {
 
   if (showResults) {
     const score = selectedAnswers.reduce((total, answer, index) => {
-      return total + (answer === test.questions[index].correctAnswer ? 1 : 0);
+      return total + (Number(answer) === Number(test.questions[index].correctAnswer) ? 1 : 0);
     }, 0);
     const percentage = test.questions.length > 0 ? Math.round((score / test.questions.length) * 100) : 0;
 
@@ -69,9 +70,9 @@ export const TestPreview = ({ test, onClose }: TestPreviewProps) => {
               <CardTitle>Detailed Review</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {test.questions.map((q, index) => {
+                {test.questions.map((q, index) => {
                 const userAnswer = selectedAnswers[index];
-                const isCorrect = userAnswer === q.correctAnswer;
+                const isCorrect = isAnswerCorrect(userAnswer, q.correctAnswer);
 
                 return (
                   <div key={q.id} className="border rounded-lg p-4">
@@ -88,17 +89,17 @@ export const TestPreview = ({ test, onClose }: TestPreviewProps) => {
                             <div
                               key={optIndex}
                               className={`p-2 rounded border ${
-                                optIndex === q.correctAnswer
-                                  ? 'bg-green-500/10 border-green-500'
-                                  : optIndex === userAnswer && !isCorrect
-                                  ? 'bg-destructive/10 border-destructive'
-                                  : 'bg-muted'
-                              }`}
+                                  Number(q.correctAnswer) === optIndex
+                                    ? 'bg-green-500/10 border-green-500'
+                                    : Number(userAnswer) === optIndex && !isCorrect
+                                    ? 'bg-destructive/10 border-destructive'
+                                    : 'bg-muted'
+                                }`}
                             >
                               <span className="font-semibold mr-2">{String.fromCharCode(65 + optIndex)}.</span>
                               <RichTextDisplay content={option} />
-                              {optIndex === q.correctAnswer && <Badge className="ml-2">Correct</Badge>}
-                              {optIndex === userAnswer && userAnswer !== q.correctAnswer && (
+                              {Number(q.correctAnswer) === optIndex && <Badge className="ml-2">Correct</Badge>}
+                              {Number(userAnswer) === optIndex && Number(userAnswer) !== Number(q.correctAnswer) && (
                                 <Badge variant="destructive" className="ml-2">Your Answer</Badge>
                               )}
                             </div>

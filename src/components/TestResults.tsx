@@ -13,6 +13,7 @@ import { downloadCSV } from "@/lib/csv";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { RichTextDisplay } from "./RichTextDisplay";
+import { getQuestionRemark, isAnswered, isAnswerCorrect } from "@/lib/answers";
 import { Class, Question } from "@/types";
 
 interface TestRow {
@@ -310,11 +311,11 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
     try {
       const payloadQuestions = questions.map((q, i) => {
         const ans = analysisRow.answers[i];
-        const answered = ans !== undefined && ans !== null && ans >= 0;
+        const answered = isAnswered(ans);
         return {
           index: i,
           question: q.question || "",
-          correct: answered && ans === q.correctAnswer,
+          correct: isAnswerCorrect(ans, q.correctAnswer),
           answered,
           timeSec: analysisRow.questionTimes[i] ?? 0,
         };
@@ -345,14 +346,6 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
     }
   };
 
-  const getQuestionRemark = (isCorrect: boolean, timeTaken: number) => {
-    if (!isCorrect) return "Needs practice";
-    if (timeTaken <= 30) return "Excellent";
-    if (timeTaken <= 60) return "Very good";
-    if (timeTaken <= 120) return "Good";
-    return "Well done";
-  };
-
   const downloadAnalysisPDF = async () => {
     if (!analysisRow || !selectedTest) return;
     try {
@@ -367,17 +360,17 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
       const questionsHtml = questions
         .map((q, i) => {
           const ans = analysisRow.answers[i];
-          const answered = ans !== undefined && ans !== null && ans >= 0;
-          const correct = answered && ans === q.correctAnswer;
+          const answered = isAnswered(ans);
+          const correct = isAnswerCorrect(ans, q.correctAnswer);
           const t = analysisRow.questionTimes[i] ?? 0;
           const statusIcon = correct ? '✓' : !answered ? '⚠' : '✗';
           const statusColor = correct ? 'color:#059669' : !answered ? 'color:#7c2d12' : 'color:#dc2626';
-          const remark = getQuestionRemark(correct, t);
+          const remark = getQuestionRemark(correct, t, answered);
           
           const optionsHtml = (q.options || [])
             .map((opt, oi) => {
-              const isUser = oi === ans;
-              const isCorrect = oi === q.correctAnswer;
+              const isUser = Number(ans) === oi;
+              const isCorrect = Number(q.correctAnswer) === oi;
               let optClass = '';
               if (isCorrect) {
                 optClass = 'font-weight:600;color:#15803d';
@@ -645,8 +638,8 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
                 <div className="space-y-1.5">
                   {questions.map((q, i) => {
                     const ans = analysisRow.answers[i];
-                    const answered = ans !== undefined && ans !== null && ans >= 0;
-                    const correct = answered && ans === q.correctAnswer;
+                    const answered = isAnswered(ans);
+                    const correct = isAnswerCorrect(ans, q.correctAnswer);
                     const t = analysisRow.questionTimes[i] ?? 0;
                     return (
                       <div key={i} className="flex items-start gap-2 rounded-md border px-3 py-2">

@@ -54,10 +54,11 @@ export const QuestionAnalytics = ({ test, onClose }: Props) => {
       let correct = 0;
       for (const a of attempts) {
         const ans = a.answers[qi];
-        if (ans === undefined || ans === null || ans < 0) continue;
+        const n = Number(ans);
+        if (ans === undefined || ans === null || Number.isNaN(n) || n < 0) continue;
         total++;
-        if (ans >= 0 && ans < optionCounts.length) optionCounts[ans]++;
-        if (ans === q.correctAnswer) correct++;
+        if (n >= 0 && n < optionCounts.length) optionCounts[n]++;
+        if (n === Number(q.correctAnswer)) correct++;
       }
       return {
         index: qi,

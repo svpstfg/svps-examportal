@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { Class, Course, Chapter, Question, Test, TestAttempt, Student } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { RichTextDisplay } from "./RichTextDisplay";
+import { isAnswered, isAnswerCorrect } from "@/lib/answers";
 import { AnswerSheetView } from "./AnswerSheetView";
 import { useAuth } from "@/hooks/useAuth";
 import { JoinClassCard } from "./JoinClassCard";
@@ -798,7 +799,7 @@ export const StudentDashboard = () => {
                   <div>
                     <div className="text-3xl font-bold text-accent">
                       {selectedAnswers.filter((answer, index) => 
-                        answer === currentTest.questions[index].correctAnswer
+                        Number(answer) === Number(currentTest.questions[index].correctAnswer)
                       ).length}/{currentTest.questions.length}
                     </div>
                     <p className="text-muted-foreground">Correct Answers</p>
@@ -821,7 +822,7 @@ export const StudentDashboard = () => {
               <CardContent className="space-y-6">
                 {currentTest.questions.map((question, index) => {
                   const userAnswer = selectedAnswers[index];
-                  const isCorrect = userAnswer === question.correctAnswer;
+                  const isCorrect = isAnswerCorrect(userAnswer, question.correctAnswer);
                   
                   return (
                     <div key={question.id} className="border rounded-lg p-4">
@@ -841,21 +842,21 @@ export const StudentDashboard = () => {
                               <div
                                 key={optIndex}
                                 className={`p-2 rounded border ${
-                                  optIndex === question.correctAnswer
-                                    ? 'bg-success/10 border-success'
-                                    : optIndex === userAnswer && !isCorrect
-                                    ? 'bg-destructive/10 border-destructive'
-                                    : 'bg-muted'
-                                }`}
+                                    Number(question.correctAnswer) === optIndex
+                                      ? 'bg-success/10 border-success'
+                                      : Number(userAnswer) === optIndex && !isCorrect
+                                      ? 'bg-destructive/10 border-destructive'
+                                      : 'bg-muted'
+                                  }`}
                               >
                                 <span className="font-semibold mr-2">
                                   {String.fromCharCode(65 + optIndex)}.
                                 </span>
                                 <RichTextDisplay content={option} />
-                                {optIndex === question.correctAnswer && (
+                                {Number(question.correctAnswer) === optIndex && (
                                   <Badge variant="default" className="ml-2">Correct</Badge>
                                 )}
-                                {optIndex === userAnswer && userAnswer !== question.correctAnswer && (
+                                {Number(userAnswer) === optIndex && Number(userAnswer) !== Number(question.correctAnswer) && (
                                   <Badge variant="destructive" className="ml-2">Your Answer</Badge>
                                 )}
                               </div>
