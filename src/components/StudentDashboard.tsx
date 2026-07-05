@@ -14,7 +14,7 @@ import { format } from "date-fns";
 import { Class, Course, Chapter, Question, Test, TestAttempt, Student } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { RichTextDisplay } from "./RichTextDisplay";
-import { isAnswered, isAnswerCorrect, normalizeQuestionTime } from "@/lib/answers";
+import { isAnswered, isAnswerCorrect, normalizeQuestionTime, getQuestionRemark } from "@/lib/answers";
 import { AnswerSheetView } from "./AnswerSheetView";
 import { useAuth } from "@/hooks/useAuth";
 import { JoinClassCard } from "./JoinClassCard";
@@ -48,6 +48,14 @@ export const StudentDashboard = () => {
   // Per-question time tracking (seconds spent on each question)
   const questionTimesRef = useRef<number[]>([]);
   const questionStartRef = useRef<number>(Date.now());
+  // Refs used to persist an "unfinished" record if the student leaves mid-test
+  const isTestActiveRef = useRef(false);
+  const submittedRef = useRef(false);
+  const abandonSavedRef = useRef(false);
+  const selectedAnswersRef = useRef<number[]>([]);
+  const timeLeftRef = useRef(0);
+  const currentTestRef = useRef<Test | null>(null);
+  const studentRef = useRef<Student | null>(null);
 
   const handleDownloadResultPdf = async () => {
     const node = resultRef.current;
@@ -211,6 +219,7 @@ export const StudentDashboard = () => {
           .from('test_attempts')
           .select('*')
           .eq('student_id', studentData.id)
+          .eq('status', 'completed')
           .order('completed_at', { ascending: false });
 
         // Render dashboard ASAP — don't block on full data load
@@ -273,7 +282,9 @@ export const StudentDashboard = () => {
           answers: a.answers || [],
           score: a.score,
           completedAt: new Date(a.completed_at),
-          timeSpent: a.time_spent
+          timeSpent: a.time_spent,
+          questionTimes: (a.question_times as any) || [],
+          status: ((a as any).status as 'completed' | 'unfinished') || 'completed',
         })) || [];
 
         setClasses(transformedClasses);
@@ -350,6 +361,61 @@ export const StudentDashboard = () => {
     return () => window.clearInterval(interval);
   }, [currentQuestionIndex, isTestActive, currentTest]);
 
+  // Keep refs in sync so the abandon handler always has the latest values.
+  useEffect(() => { isTestActiveRef.current = isTestActive; }, [isTestActive]);
+  useEffect(() => { selectedAnswersRef.current = selectedAnswers; }, [selectedAnswers]);
+  useEffect(() => { timeLeftRef.current = timeLeft; }, [timeLeft]);
+  useEffect(() => { currentTestRef.current = currentTest; }, [currentTest]);
+  useEffect(() => { studentRef.current = student; }, [student]);
+
+  // Record an "unfinished" attempt when a student leaves mid-test without submitting.
+  const saveUnfinishedAttempt = () => {
+    const t = currentTestRef.current;
+    const s = studentRef.current;
+    if (!t || !s) return;
+    if (!isTestActiveRef.current || submittedRef.current || abandonSavedRef.current) return;
+    abandonSavedRef.current = true;
+
+    const answers = (selectedAnswersRef.current && selectedAnswersRef.current.length)
+      ? selectedAnswersRef.current
+      : new Array(t.questions.length).fill(-1);
+    const score = answers.reduce(
+      (total, answer, index) => total + (answer === t.questions[index]?.correctAnswer ? 1 : 0),
+      0
+    );
+    const percentage = t.questions.length ? Math.round((score / t.questions.length) * 100) : 0;
+    const timeSpent = Math.max(0, t.duration * 60 - timeLeftRef.current);
+    const questionTimes = questionTimesRef.current
+      .slice(0, t.questions.length)
+      .map(normalizeQuestionTime);
+
+    // Fire-and-forget; best effort on unmount / tab close.
+    supabase
+      .from('test_attempts')
+      .insert({
+        test_id: t.id,
+        student_id: s.id,
+        answers,
+        score: percentage,
+        time_spent: timeSpent,
+        question_times: questionTimes,
+        status: 'unfinished',
+      } as any)
+      .then(() => {}, () => {});
+  };
+
+  useEffect(() => {
+    const handler = () => saveUnfinishedAttempt();
+    window.addEventListener('beforeunload', handler);
+    return () => {
+      window.removeEventListener('beforeunload', handler);
+      saveUnfinishedAttempt();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
+
 
 
   const formatTime = (seconds: number) => {
@@ -423,6 +489,14 @@ export const StudentDashboard = () => {
       ? savedQuestionTimes.slice(0, test.questions.length).concat(new Array(Math.max(0, test.questions.length - savedQuestionTimes.length)).fill(0))
       : new Array(test.questions.length).fill(0);
     questionStartRef.current = Date.now();
+    // Reset abandon-tracking for the new attempt
+    submittedRef.current = false;
+    abandonSavedRef.current = false;
+    isTestActiveRef.current = true;
+    currentTestRef.current = test;
+    studentRef.current = student;
+    selectedAnswersRef.current = savedAnswers || new Array(test.questions.length).fill(-1);
+    timeLeftRef.current = savedTimeLeft;
     setCurrentTest(test);
     setCurrentQuestionIndex(savedIndex);
     setSelectedAnswers(savedAnswers || new Array(test.questions.length).fill(-1));
@@ -454,6 +528,10 @@ export const StudentDashboard = () => {
   const handleSubmitTest = async () => {
     if (!currentTest || !student) return;
 
+    // Mark as submitted so the abandon handler does not also record it as unfinished.
+    submittedRef.current = true;
+    isTestActiveRef.current = false;
+
     const score = selectedAnswers.reduce((total, answer, index) => {
       return total + (answer === currentTest.questions[index].correctAnswer ? 1 : 0);
     }, 0);
@@ -473,7 +551,8 @@ export const StudentDashboard = () => {
           score: percentage,
           time_spent: timeSpent,
           question_times: questionTimes,
-        })
+          status: 'completed',
+        } as any)
         .select()
         .single();
 
@@ -493,6 +572,7 @@ export const StudentDashboard = () => {
         completedAt: new Date(data.completed_at),
         timeSpent: data.time_spent,
         questionTimes: data.question_times || [],
+        status: 'completed',
       };
 
       setAttempts([...attempts, attempt]);
@@ -823,6 +903,9 @@ export const StudentDashboard = () => {
                 {currentTest.questions.map((question, index) => {
                   const userAnswer = selectedAnswers[index];
                   const isCorrect = isAnswerCorrect(userAnswer, question.correctAnswer);
+                  const answered = isAnswered(userAnswer);
+                  const qTime = normalizeQuestionTime((currentAttempt.questionTimes || [])[index] ?? 0);
+
                   
                   return (
                     <div key={question.id} className="border rounded-lg p-4">
@@ -861,6 +944,15 @@ export const StudentDashboard = () => {
                                 )}
                               </div>
                             ))}
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 mb-3 text-xs">
+                            <Badge variant="secondary" className="gap-1">
+                              <Clock className="h-3 w-3" /> Time to solve: {formatTime(qTime)}
+                            </Badge>
+                            <Badge variant={isCorrect && answered ? "default" : "outline"}>
+                              {getQuestionRemark(isCorrect, qTime, answered)}
+                            </Badge>
                           </div>
 
                           <div className="bg-muted/50 p-3 rounded">

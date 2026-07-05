@@ -483,6 +483,7 @@ export type Database = {
           id: string
           question_times: number[]
           score: number
+          status: string
           student_id: string
           test_id: string
           time_spent: number
@@ -494,6 +495,7 @@ export type Database = {
           id?: string
           question_times?: number[]
           score: number
+          status?: string
           student_id: string
           test_id: string
           time_spent: number
@@ -505,6 +507,7 @@ export type Database = {
           id?: string
           question_times?: number[]
           score?: number
+          status?: string
           student_id?: string
           test_id?: string
           time_spent?: number

@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Download, CheckCircle, AlertCircle, Clock, Trophy, Target, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, CheckCircle, AlertCircle, Clock, Trophy, Target, Loader2, Sparkles } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Test, TestAttempt, Question } from "@/types";
 import { getQuestionRemark, isAnswered, isAnswerCorrect, normalizeQuestionTime } from "@/lib/answers";
 import { RichTextDisplay } from "./RichTextDisplay";
@@ -16,11 +18,16 @@ interface AnswerSheetViewProps {
   test: Test;
   studentName: string;
   onBack: () => void;
+  /** Optional context passed to the AI analysis */
+  subject?: string;
+  className?: string;
 }
 
-export const AnswerSheetView = ({ attempt, test, studentName, onBack }: AnswerSheetViewProps) => {
+export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, className }: AnswerSheetViewProps) => {
   const printRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
+  const [aiReport, setAiReport] = useState<string>("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   const correctCount = attempt.answers.reduce((total, answer, index) => {
     return total + (answer === test.questions[index]?.correctAnswer ? 1 : 0);
@@ -75,14 +82,59 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack }: AnswerSh
     }
   };
 
+  const runAiAnalysis = async () => {
+    setAiLoading(true);
+    setAiReport("");
+    try {
+      const payloadQuestions = test.questions.map((q, i) => {
+        const ans = attempt.answers[i];
+        return {
+          index: i,
+          question: q.question || "",
+          correct: isAnswerCorrect(ans, q.correctAnswer),
+          answered: isAnswered(ans),
+          timeSec: normalizeQuestionTime(questionTimes[i] ?? 0),
+        };
+      });
+      const { data, error } = await supabase.functions.invoke("student-analysis", {
+        body: {
+          studentName,
+          testTitle: test.title,
+          subject,
+          className,
+          scorePct: attempt.score,
+          fullMarks: test.questions.length,
+          marksObtained: correctCount,
+          totalTimeSec: attempt.timeSpent,
+          questions: payloadQuestions,
+        },
+      });
+      if (error) {
+        const msg = (await error.context?.json?.())?.error;
+        throw new Error(msg || error.message);
+      }
+      if (data?.error) throw new Error(data.error);
+      setAiReport(data?.report || "No report generated.");
+      toast.success("AI report ready");
+    } catch (err: any) {
+      toast.error(err.message || "AI analysis failed");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
         <Button variant="outline" size="sm" onClick={onBack}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Dashboard
         </Button>
         <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={runAiAnalysis} disabled={aiLoading}>
+            {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            {aiLoading ? "Analysing..." : "AI Report"}
+          </Button>
           <Button variant="outline" onClick={() => window.print()}>
             🖨️ Print
           </Button>
@@ -93,14 +145,49 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack }: AnswerSh
         </div>
       </div>
 
+      {/* On-screen AI report (also captured into the PDF) */}
+      {aiReport && (
+        <div className="mb-6 rounded-lg border border-primary/30 bg-primary/5 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <h3 className="font-semibold text-sm">AI Performance Report</h3>
+          </div>
+          <div className="text-sm space-y-1 text-foreground">
+            {aiReport.split("\n").map((line, idx) => {
+              const t = line.trim();
+              if (!t) return <div key={idx} className="h-1" />;
+              if (t.startsWith("## ")) return <h4 key={idx} className="font-semibold mt-2">{t.replace(/^##\s*/, "")}</h4>;
+              if (t.startsWith("# ")) return <h3 key={idx} className="font-bold text-base mt-2">{t.replace(/^#\s*/, "")}</h3>;
+              if (t.startsWith("- ") || t.startsWith("* ")) return <li key={idx} className="ml-4 list-disc">{t.replace(/^[-*]\s*/, "")}</li>;
+              return <p key={idx}>{t}</p>;
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Printable exam paper layout */}
       <div ref={printRef} className="bg-white text-black">
+        {aiReport && (
+          <div className="border-2 border-black border-b-0 p-4">
+            <h3 className="font-bold text-sm uppercase tracking-wide mb-2">AI Performance Report</h3>
+            <div className="text-[11px] leading-snug space-y-1 text-black">
+              {aiReport.split("\n").map((line, idx) => {
+                const t = line.trim();
+                if (!t) return <div key={idx} className="h-1" />;
+                if (t.startsWith("## ")) return <p key={idx} className="font-bold mt-1">{t.replace(/^##\s*/, "")}</p>;
+                if (t.startsWith("# ")) return <p key={idx} className="font-bold mt-1">{t.replace(/^#\s*/, "")}</p>;
+                if (t.startsWith("- ") || t.startsWith("* ")) return <p key={idx} className="ml-3">• {t.replace(/^[-*]\s*/, "")}</p>;
+                return <p key={idx}>{t}</p>;
+              })}
+            </div>
+          </div>
+        )}
         {/* Exam Header */}
         <div className="border-2 border-black p-6 mb-0">
           <div className="text-center mb-4">
             <h1 className="text-2xl font-bold uppercase tracking-wide">{test.title}</h1>
             <div className="w-24 h-0.5 bg-black mx-auto my-2"></div>
-            <p className="text-sm text-gray-600">Answer Sheet & Performance Report</p>
+            <p className="text-sm text-gray-800 font-medium">Answer Sheet &amp; Performance Report</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-sm border-t border-gray-300 pt-4">
@@ -120,15 +207,15 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack }: AnswerSh
           <div className="grid grid-cols-3 divide-x divide-gray-300 text-center">
             <div className="px-4">
               <div className="text-3xl font-bold">{attempt.score}%</div>
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mt-1">Score Obtained</p>
+              <p className="text-xs text-gray-700 font-semibold uppercase tracking-wide mt-1">Score Obtained</p>
             </div>
             <div className="px-4">
               <div className="text-3xl font-bold">{correctCount}/{test.questions.length}</div>
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mt-1">Correct Answers</p>
+              <p className="text-xs text-gray-700 font-semibold uppercase tracking-wide mt-1">Correct Answers</p>
             </div>
             <div className="px-4">
               <div className="text-3xl font-bold">{formatTime(attempt.timeSpent)}</div>
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mt-1">Time Taken</p>
+              <p className="text-xs text-gray-700 font-semibold uppercase tracking-wide mt-1">Total Time Taken</p>
             </div>
           </div>
         </div>
@@ -191,22 +278,23 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack }: AnswerSh
                 </div>
 
                 {!answered && (
-                  <p className="ml-7 mt-1 text-[9px] text-gray-500 italic">⚠ Not Answered</p>
+                  <p className="ml-7 mt-1 text-[9px] text-red-700 font-semibold italic">⚠ Not Answered</p>
                 )}
 
                 <div className="ml-7 mt-2 flex flex-wrap items-center gap-2 text-[9px]">
-                  <div className="rounded bg-gray-100 px-2 py-1 text-gray-700">
-                    <span className="font-semibold">Time:</span> {formatTime(timeSpent)}
+                  <div className="rounded bg-gray-900 px-2 py-1 text-white font-semibold flex items-center gap-1">
+                    <Clock className="h-2.5 w-2.5" />
+                    <span>Time to solve:</span> {formatTime(timeSpent)}
                   </div>
-                  <div className={`rounded px-2 py-1 ${!isCorrect || !answered ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>
-                    <span className="font-semibold">Remark:</span> {getQuestionRemark(isCorrect, timeSpent, answered)}
+                  <div className={`rounded px-2 py-1 font-semibold ${!isCorrect || !answered ? 'bg-amber-100 text-amber-900' : 'bg-green-100 text-green-900'}`}>
+                    <span className="font-bold">Remark:</span> {getQuestionRemark(isCorrect, timeSpent, answered)}
                   </div>
                 </div>
 
                 {question.explanation && (
-                  <div className="ml-7 mt-2 border-l-2 border-blue-400 bg-blue-50 px-2 py-1 rounded-r">
-                    <p className="font-semibold text-[8px] text-blue-800 mb-0.5">EXPLANATION</p>
-                    <RichTextDisplay content={question.explanation} className="text-gray-700 text-[9px] leading-snug" />
+                  <div className="ml-7 mt-2 border-l-2 border-blue-500 bg-blue-50 px-2 py-1 rounded-r">
+                    <p className="font-bold text-[8px] text-blue-900 mb-0.5">EXPLANATION</p>
+                    <RichTextDisplay content={question.explanation} className="text-gray-900 text-[9px] leading-snug" />
                   </div>
                 )}
               </div>
@@ -215,8 +303,8 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack }: AnswerSh
         </div>
 
         {/* Footer */}
-        <div className="border-x-2 border-b-2 border-black px-4 py-3 bg-gray-50 text-center">
-          <p className="text-[10px] text-gray-400">Generated on {format(new Date(), "dd MMM yyyy, hh:mm a")} • This is a computer-generated document</p>
+        <div className="border-x-2 border-b-2 border-black px-4 py-3 bg-gray-100 text-center">
+          <p className="text-[10px] text-gray-700 font-medium">Generated on {format(new Date(), "dd MMM yyyy, hh:mm a")} • This is a computer-generated document</p>
         </div>
       </div>
     </div>

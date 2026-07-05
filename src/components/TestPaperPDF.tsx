@@ -95,25 +95,25 @@ export const TestPaperPDF = ({
 
   {/* Subject */}
   {subjectName && (
-    <h2 className="text-xl font-semibold uppercase tracking-wide text-gray-800 mt-2">
+    <h2 className="text-xl font-bold uppercase tracking-wide text-black mt-2">
       Subject: {subjectName}
     </h2>
   )}
 
   {/* Class */}
   {className && (
-    <h3 className="text-lg font-medium tracking-wide text-gray-700 mt-1">
+    <h3 className="text-lg font-bold tracking-wide text-black mt-1">
       Class: {className}
     </h3>
   )}
 
   {/* Exam Title */}
-  <h4 className="text-2xl font-bold uppercase tracking-wide mt-2">
+  <h4 className="text-2xl font-bold uppercase tracking-wide text-black mt-2">
     {test.title}
   </h4>
 
   {/* Exam Details */}
-  <h5 className="text-sm font-medium text-gray-600 mt-2">
+  <h5 className="text-sm font-semibold text-black mt-2">
     Total Questions: {test.questions.length} • Duration: {test.duration} min
   </h5>
 </div>

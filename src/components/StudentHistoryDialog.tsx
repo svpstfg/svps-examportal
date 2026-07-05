@@ -43,6 +43,7 @@ export const StudentHistoryDialog = ({ studentId, studentName, open, onClose }: 
           completedAt: new Date(a.completed_at),
           timeSpent: a.time_spent,
           questionTimes: (a.question_times as any) || [],
+          status: ((a as any).status as 'completed' | 'unfinished') || 'completed',
         }));
 
         const testIds = Array.from(new Set(transformed.map((a) => a.testId)));
@@ -134,6 +135,9 @@ export const StudentHistoryDialog = ({ studentId, studentName, open, onClose }: 
                       >
                         <TableCell className="font-medium">
                           {test?.title || "(deleted test)"}
+                          {a.status === "unfinished" && (
+                            <Badge variant="destructive" className="ml-2 text-[10px]">Unfinished</Badge>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge variant={a.score >= 80 ? "default" : a.score >= 50 ? "secondary" : "outline"}>
