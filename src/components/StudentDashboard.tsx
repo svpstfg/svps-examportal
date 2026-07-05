@@ -361,6 +361,61 @@ export const StudentDashboard = () => {
     return () => window.clearInterval(interval);
   }, [currentQuestionIndex, isTestActive, currentTest]);
 
+  // Keep refs in sync so the abandon handler always has the latest values.
+  useEffect(() => { isTestActiveRef.current = isTestActive; }, [isTestActive]);
+  useEffect(() => { selectedAnswersRef.current = selectedAnswers; }, [selectedAnswers]);
+  useEffect(() => { timeLeftRef.current = timeLeft; }, [timeLeft]);
+  useEffect(() => { currentTestRef.current = currentTest; }, [currentTest]);
+  useEffect(() => { studentRef.current = student; }, [student]);
+
+  // Record an "unfinished" attempt when a student leaves mid-test without submitting.
+  const saveUnfinishedAttempt = () => {
+    const t = currentTestRef.current;
+    const s = studentRef.current;
+    if (!t || !s) return;
+    if (!isTestActiveRef.current || submittedRef.current || abandonSavedRef.current) return;
+    abandonSavedRef.current = true;
+
+    const answers = (selectedAnswersRef.current && selectedAnswersRef.current.length)
+      ? selectedAnswersRef.current
+      : new Array(t.questions.length).fill(-1);
+    const score = answers.reduce(
+      (total, answer, index) => total + (answer === t.questions[index]?.correctAnswer ? 1 : 0),
+      0
+    );
+    const percentage = t.questions.length ? Math.round((score / t.questions.length) * 100) : 0;
+    const timeSpent = Math.max(0, t.duration * 60 - timeLeftRef.current);
+    const questionTimes = questionTimesRef.current
+      .slice(0, t.questions.length)
+      .map(normalizeQuestionTime);
+
+    // Fire-and-forget; best effort on unmount / tab close.
+    supabase
+      .from('test_attempts')
+      .insert({
+        test_id: t.id,
+        student_id: s.id,
+        answers,
+        score: percentage,
+        time_spent: timeSpent,
+        question_times: questionTimes,
+        status: 'unfinished',
+      } as any)
+      .then(() => {}, () => {});
+  };
+
+  useEffect(() => {
+    const handler = () => saveUnfinishedAttempt();
+    window.addEventListener('beforeunload', handler);
+    return () => {
+      window.removeEventListener('beforeunload', handler);
+      saveUnfinishedAttempt();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
+
 
 
   const formatTime = (seconds: number) => {
