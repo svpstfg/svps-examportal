@@ -75,6 +75,7 @@ export interface TestAttempt {
   completedAt: Date;
   timeSpent: number;
   questionTimes?: number[];
+  status?: 'completed' | 'unfinished';
 }
 
 export interface Teacher {
