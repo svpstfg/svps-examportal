@@ -392,7 +392,7 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
                 <span style="font-weight:bold;padding:2px 4px;border-radius:3px;${statusColor};font-size:8px">${statusIcon}</span>
               </div>
               <div style="margin-left:26px">${optionsHtml}</div>
-              <div style="margin-left:26px;margin-top:3px;font-size:9px;color:#4b5563">
+              <div style="margin-left:26px;margin-top:3px;font-size:9px;color:#111827">
                 <span style="margin-right:8px">Time: ${formatDuration(t)}</span>
                 <span>Remark: <span style="color:#059669;font-weight:600">${remark}</span></span>
               </div>
@@ -404,13 +404,13 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
       container.innerHTML = `
         <div style="font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#111">
           <h1 style="font-size:20px;margin-bottom:8px;">${analysisRow.name} — Answer Sheet & Analysis</h1>
-          <p style="margin:0 0 6px 0; color:#555">Test: ${selectedTest.title} • Class: ${className}</p>
-          <p style="margin:0 0 12px 0; color:#555">Marks: ${overallMarks} / ${fullMarks} • Score: ${analysisRow.score}% • Total time: ${formatDuration(analysisRow.timeSpent)}</p>
+          <p style="margin:0 0 6px 0; color:#1f2937">Test: ${selectedTest.title} • Class: ${className}</p>
+          <p style="margin:0 0 12px 0; color:#1f2937">Marks: ${overallMarks} / ${fullMarks} • Score: ${analysisRow.score}% • Total time: ${formatDuration(analysisRow.timeSpent)}</p>
           <div style="margin:8px 0;padding:12px;border:1px solid #eee;background:#fafafa">${aiReport ? `<h3 style=\"margin:0 0 8px 0\">AI Analysis</h3><pre style=\"white-space:pre-wrap; font-size:12px;\">${aiReport}</pre>` : ''}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:2px solid #000;border-collapse:collapse">
             ${questionsHtml}
           </div>
-          <p style="font-size:10px;color:#888;margin-top:12px">Generated on ${new Date().toLocaleString()}</p>
+          <p style="font-size:10px;color:#374151;margin-top:12px">Generated on ${new Date().toLocaleString()}</p>
         </div>
       `;
 
