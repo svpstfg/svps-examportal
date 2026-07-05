@@ -946,6 +946,15 @@ export const StudentDashboard = () => {
                             ))}
                           </div>
 
+                          <div className="flex flex-wrap items-center gap-2 mb-3 text-xs">
+                            <Badge variant="secondary" className="gap-1">
+                              <Clock className="h-3 w-3" /> Time to solve: {formatTime(qTime)}
+                            </Badge>
+                            <Badge variant={isCorrect && answered ? "default" : "outline"}>
+                              {getQuestionRemark(isCorrect, qTime, answered)}
+                            </Badge>
+                          </div>
+
                           <div className="bg-muted/50 p-3 rounded">
                             <p className="text-sm font-medium mb-1">Explanation:</p>
                             <RichTextDisplay content={question.explanation} className="text-sm" />
