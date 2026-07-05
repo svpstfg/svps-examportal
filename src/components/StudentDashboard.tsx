@@ -528,6 +528,10 @@ export const StudentDashboard = () => {
   const handleSubmitTest = async () => {
     if (!currentTest || !student) return;
 
+    // Mark as submitted so the abandon handler does not also record it as unfinished.
+    submittedRef.current = true;
+    isTestActiveRef.current = false;
+
     const score = selectedAnswers.reduce((total, answer, index) => {
       return total + (answer === currentTest.questions[index].correctAnswer ? 1 : 0);
     }, 0);
@@ -547,7 +551,8 @@ export const StudentDashboard = () => {
           score: percentage,
           time_spent: timeSpent,
           question_times: questionTimes,
-        })
+          status: 'completed',
+        } as any)
         .select()
         .single();
 
