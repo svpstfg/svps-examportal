@@ -903,6 +903,9 @@ export const StudentDashboard = () => {
                 {currentTest.questions.map((question, index) => {
                   const userAnswer = selectedAnswers[index];
                   const isCorrect = isAnswerCorrect(userAnswer, question.correctAnswer);
+                  const answered = isAnswered(userAnswer);
+                  const qTime = normalizeQuestionTime((currentAttempt.questionTimes || [])[index] ?? 0);
+
                   
                   return (
                     <div key={question.id} className="border rounded-lg p-4">
