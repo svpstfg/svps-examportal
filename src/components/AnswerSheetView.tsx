@@ -278,22 +278,23 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
                 </div>
 
                 {!answered && (
-                  <p className="ml-7 mt-1 text-[9px] text-gray-500 italic">⚠ Not Answered</p>
+                  <p className="ml-7 mt-1 text-[9px] text-red-700 font-semibold italic">⚠ Not Answered</p>
                 )}
 
                 <div className="ml-7 mt-2 flex flex-wrap items-center gap-2 text-[9px]">
-                  <div className="rounded bg-gray-100 px-2 py-1 text-gray-700">
-                    <span className="font-semibold">Time:</span> {formatTime(timeSpent)}
+                  <div className="rounded bg-gray-900 px-2 py-1 text-white font-semibold flex items-center gap-1">
+                    <Clock className="h-2.5 w-2.5" />
+                    <span>Time to solve:</span> {formatTime(timeSpent)}
                   </div>
-                  <div className={`rounded px-2 py-1 ${!isCorrect || !answered ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>
-                    <span className="font-semibold">Remark:</span> {getQuestionRemark(isCorrect, timeSpent, answered)}
+                  <div className={`rounded px-2 py-1 font-semibold ${!isCorrect || !answered ? 'bg-amber-100 text-amber-900' : 'bg-green-100 text-green-900'}`}>
+                    <span className="font-bold">Remark:</span> {getQuestionRemark(isCorrect, timeSpent, answered)}
                   </div>
                 </div>
 
                 {question.explanation && (
-                  <div className="ml-7 mt-2 border-l-2 border-blue-400 bg-blue-50 px-2 py-1 rounded-r">
-                    <p className="font-semibold text-[8px] text-blue-800 mb-0.5">EXPLANATION</p>
-                    <RichTextDisplay content={question.explanation} className="text-gray-700 text-[9px] leading-snug" />
+                  <div className="ml-7 mt-2 border-l-2 border-blue-500 bg-blue-50 px-2 py-1 rounded-r">
+                    <p className="font-bold text-[8px] text-blue-900 mb-0.5">EXPLANATION</p>
+                    <RichTextDisplay content={question.explanation} className="text-gray-900 text-[9px] leading-snug" />
                   </div>
                 )}
               </div>
