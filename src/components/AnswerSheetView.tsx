@@ -207,15 +207,15 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
           <div className="grid grid-cols-3 divide-x divide-gray-300 text-center">
             <div className="px-4">
               <div className="text-3xl font-bold">{attempt.score}%</div>
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mt-1">Score Obtained</p>
+              <p className="text-xs text-gray-700 font-semibold uppercase tracking-wide mt-1">Score Obtained</p>
             </div>
             <div className="px-4">
               <div className="text-3xl font-bold">{correctCount}/{test.questions.length}</div>
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mt-1">Correct Answers</p>
+              <p className="text-xs text-gray-700 font-semibold uppercase tracking-wide mt-1">Correct Answers</p>
             </div>
             <div className="px-4">
               <div className="text-3xl font-bold">{formatTime(attempt.timeSpent)}</div>
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mt-1">Time Taken</p>
+              <p className="text-xs text-gray-700 font-semibold uppercase tracking-wide mt-1">Total Time Taken</p>
             </div>
           </div>
         </div>
