@@ -14,7 +14,7 @@ import { format } from "date-fns";
 import { Class, Course, Chapter, Question, Test, TestAttempt, Student } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { RichTextDisplay } from "./RichTextDisplay";
-import { isAnswered, isAnswerCorrect, normalizeQuestionTime } from "@/lib/answers";
+import { isAnswered, isAnswerCorrect, normalizeQuestionTime, getQuestionRemark } from "@/lib/answers";
 import { AnswerSheetView } from "./AnswerSheetView";
 import { useAuth } from "@/hooks/useAuth";
 import { JoinClassCard } from "./JoinClassCard";
