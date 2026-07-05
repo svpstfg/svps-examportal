@@ -82,14 +82,59 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
     }
   };
 
+  const runAiAnalysis = async () => {
+    setAiLoading(true);
+    setAiReport("");
+    try {
+      const payloadQuestions = test.questions.map((q, i) => {
+        const ans = attempt.answers[i];
+        return {
+          index: i,
+          question: q.question || "",
+          correct: isAnswerCorrect(ans, q.correctAnswer),
+          answered: isAnswered(ans),
+          timeSec: normalizeQuestionTime(questionTimes[i] ?? 0),
+        };
+      });
+      const { data, error } = await supabase.functions.invoke("student-analysis", {
+        body: {
+          studentName,
+          testTitle: test.title,
+          subject,
+          className,
+          scorePct: attempt.score,
+          fullMarks: test.questions.length,
+          marksObtained: correctCount,
+          totalTimeSec: attempt.timeSpent,
+          questions: payloadQuestions,
+        },
+      });
+      if (error) {
+        const msg = (await error.context?.json?.())?.error;
+        throw new Error(msg || error.message);
+      }
+      if (data?.error) throw new Error(data.error);
+      setAiReport(data?.report || "No report generated.");
+      toast.success("AI report ready");
+    } catch (err: any) {
+      toast.error(err.message || "AI analysis failed");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
         <Button variant="outline" size="sm" onClick={onBack}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Dashboard
         </Button>
         <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={runAiAnalysis} disabled={aiLoading}>
+            {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            {aiLoading ? "Analysing..." : "AI Report"}
+          </Button>
           <Button variant="outline" onClick={() => window.print()}>
             🖨️ Print
           </Button>
