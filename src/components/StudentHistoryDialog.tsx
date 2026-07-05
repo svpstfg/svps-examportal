@@ -135,6 +135,9 @@ export const StudentHistoryDialog = ({ studentId, studentName, open, onClose }: 
                       >
                         <TableCell className="font-medium">
                           {test?.title || "(deleted test)"}
+                          {a.status === "unfinished" && (
+                            <Badge variant="destructive" className="ml-2 text-[10px]">Unfinished</Badge>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge variant={a.score >= 80 ? "default" : a.score >= 50 ? "secondary" : "outline"}>
