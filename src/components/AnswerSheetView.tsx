@@ -303,8 +303,8 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
         </div>
 
         {/* Footer */}
-        <div className="border-x-2 border-b-2 border-black px-4 py-3 bg-gray-50 text-center">
-          <p className="text-[10px] text-gray-400">Generated on {format(new Date(), "dd MMM yyyy, hh:mm a")} • This is a computer-generated document</p>
+        <div className="border-x-2 border-b-2 border-black px-4 py-3 bg-gray-100 text-center">
+          <p className="text-[10px] text-gray-700 font-medium">Generated on {format(new Date(), "dd MMM yyyy, hh:mm a")} • This is a computer-generated document</p>
         </div>
       </div>
     </div>
