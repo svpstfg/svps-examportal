@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Download, CheckCircle, AlertCircle, Clock, Trophy, Target, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, CheckCircle, AlertCircle, Clock, Trophy, Target, Loader2, Sparkles } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Test, TestAttempt, Question } from "@/types";
 import { getQuestionRemark, isAnswered, isAnswerCorrect, normalizeQuestionTime } from "@/lib/answers";
 import { RichTextDisplay } from "./RichTextDisplay";
@@ -16,11 +18,16 @@ interface AnswerSheetViewProps {
   test: Test;
   studentName: string;
   onBack: () => void;
+  /** Optional context passed to the AI analysis */
+  subject?: string;
+  className?: string;
 }
 
-export const AnswerSheetView = ({ attempt, test, studentName, onBack }: AnswerSheetViewProps) => {
+export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, className }: AnswerSheetViewProps) => {
   const printRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
+  const [aiReport, setAiReport] = useState<string>("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   const correctCount = attempt.answers.reduce((total, answer, index) => {
     return total + (answer === test.questions[index]?.correctAnswer ? 1 : 0);
