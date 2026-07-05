@@ -262,7 +262,7 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
     doc.text("Test Marks List", pageWidth / 2, y, { align: "center" });
     y += 8;
     doc.setFontSize(11);
-    doc.setTextColor(90);
+    doc.setTextColor(30);
     if (subject) { doc.text(`Subject: ${subject}`, pageWidth / 2, y, { align: "center" }); y += 6; }
     doc.text(selectedTest.title, pageWidth / 2, y, { align: "center" });
     y += 6;
