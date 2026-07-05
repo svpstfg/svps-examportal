@@ -159,8 +159,9 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
 
         const { data: attempts } = await supabase
           .from("test_attempts")
-          .select("student_id, score, answers, question_times, time_spent, completed_at")
-          .eq("test_id", testId);
+          .select("student_id, score, answers, question_times, time_spent, completed_at, status")
+          .eq("test_id", testId)
+          .eq("status", "completed");
 
         const studentIds = [...new Set((attempts || []).map((a) => a.student_id))];
         if (!studentIds.length) {
