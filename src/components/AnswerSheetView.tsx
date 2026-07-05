@@ -145,14 +145,49 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
         </div>
       </div>
 
+      {/* On-screen AI report (also captured into the PDF) */}
+      {aiReport && (
+        <div className="mb-6 rounded-lg border border-primary/30 bg-primary/5 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <h3 className="font-semibold text-sm">AI Performance Report</h3>
+          </div>
+          <div className="text-sm space-y-1 text-foreground">
+            {aiReport.split("\n").map((line, idx) => {
+              const t = line.trim();
+              if (!t) return <div key={idx} className="h-1" />;
+              if (t.startsWith("## ")) return <h4 key={idx} className="font-semibold mt-2">{t.replace(/^##\s*/, "")}</h4>;
+              if (t.startsWith("# ")) return <h3 key={idx} className="font-bold text-base mt-2">{t.replace(/^#\s*/, "")}</h3>;
+              if (t.startsWith("- ") || t.startsWith("* ")) return <li key={idx} className="ml-4 list-disc">{t.replace(/^[-*]\s*/, "")}</li>;
+              return <p key={idx}>{t}</p>;
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Printable exam paper layout */}
       <div ref={printRef} className="bg-white text-black">
+        {aiReport && (
+          <div className="border-2 border-black border-b-0 p-4">
+            <h3 className="font-bold text-sm uppercase tracking-wide mb-2">AI Performance Report</h3>
+            <div className="text-[11px] leading-snug space-y-1 text-black">
+              {aiReport.split("\n").map((line, idx) => {
+                const t = line.trim();
+                if (!t) return <div key={idx} className="h-1" />;
+                if (t.startsWith("## ")) return <p key={idx} className="font-bold mt-1">{t.replace(/^##\s*/, "")}</p>;
+                if (t.startsWith("# ")) return <p key={idx} className="font-bold mt-1">{t.replace(/^#\s*/, "")}</p>;
+                if (t.startsWith("- ") || t.startsWith("* ")) return <p key={idx} className="ml-3">• {t.replace(/^[-*]\s*/, "")}</p>;
+                return <p key={idx}>{t}</p>;
+              })}
+            </div>
+          </div>
+        )}
         {/* Exam Header */}
         <div className="border-2 border-black p-6 mb-0">
           <div className="text-center mb-4">
             <h1 className="text-2xl font-bold uppercase tracking-wide">{test.title}</h1>
             <div className="w-24 h-0.5 bg-black mx-auto my-2"></div>
-            <p className="text-sm text-gray-600">Answer Sheet & Performance Report</p>
+            <p className="text-sm text-gray-800 font-medium">Answer Sheet &amp; Performance Report</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-sm border-t border-gray-300 pt-4">
