@@ -211,6 +211,7 @@ export const StudentDashboard = () => {
           .from('test_attempts')
           .select('*')
           .eq('student_id', studentData.id)
+          .eq('status', 'completed')
           .order('completed_at', { ascending: false });
 
         // Render dashboard ASAP — don't block on full data load
