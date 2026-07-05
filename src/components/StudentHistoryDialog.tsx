@@ -43,6 +43,7 @@ export const StudentHistoryDialog = ({ studentId, studentName, open, onClose }: 
           completedAt: new Date(a.completed_at),
           timeSpent: a.time_spent,
           questionTimes: (a.question_times as any) || [],
+          status: ((a as any).status as 'completed' | 'unfinished') || 'completed',
         }));
 
         const testIds = Array.from(new Set(transformed.map((a) => a.testId)));
