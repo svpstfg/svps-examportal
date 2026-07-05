@@ -274,7 +274,9 @@ export const StudentDashboard = () => {
           answers: a.answers || [],
           score: a.score,
           completedAt: new Date(a.completed_at),
-          timeSpent: a.time_spent
+          timeSpent: a.time_spent,
+          questionTimes: (a.question_times as any) || [],
+          status: ((a as any).status as 'completed' | 'unfinished') || 'completed',
         })) || [];
 
         setClasses(transformedClasses);
