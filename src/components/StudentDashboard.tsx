@@ -489,6 +489,14 @@ export const StudentDashboard = () => {
       ? savedQuestionTimes.slice(0, test.questions.length).concat(new Array(Math.max(0, test.questions.length - savedQuestionTimes.length)).fill(0))
       : new Array(test.questions.length).fill(0);
     questionStartRef.current = Date.now();
+    // Reset abandon-tracking for the new attempt
+    submittedRef.current = false;
+    abandonSavedRef.current = false;
+    isTestActiveRef.current = true;
+    currentTestRef.current = test;
+    studentRef.current = student;
+    selectedAnswersRef.current = savedAnswers || new Array(test.questions.length).fill(-1);
+    timeLeftRef.current = savedTimeLeft;
     setCurrentTest(test);
     setCurrentQuestionIndex(savedIndex);
     setSelectedAnswers(savedAnswers || new Array(test.questions.length).fill(-1));
