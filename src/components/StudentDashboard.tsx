@@ -48,6 +48,14 @@ export const StudentDashboard = () => {
   // Per-question time tracking (seconds spent on each question)
   const questionTimesRef = useRef<number[]>([]);
   const questionStartRef = useRef<number>(Date.now());
+  // Refs used to persist an "unfinished" record if the student leaves mid-test
+  const isTestActiveRef = useRef(false);
+  const submittedRef = useRef(false);
+  const abandonSavedRef = useRef(false);
+  const selectedAnswersRef = useRef<number[]>([]);
+  const timeLeftRef = useRef(0);
+  const currentTestRef = useRef<Test | null>(null);
+  const studentRef = useRef<Student | null>(null);
 
   const handleDownloadResultPdf = async () => {
     const node = resultRef.current;
