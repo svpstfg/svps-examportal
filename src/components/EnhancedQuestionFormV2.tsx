@@ -8,11 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Type, Calculator, AlignLeft, Trash2, Image as ImageIcon, Upload, Download, FileJson, Pencil, Save, X, ChevronUp, ChevronDown, Table as TableIcon } from 'lucide-react';
+import { Plus, Type, Calculator, AlignLeft, Trash2, Image as ImageIcon, Upload, Download, FileJson, Pencil, Save, X, ChevronUp, ChevronDown, Table as TableIcon, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Question } from '@/types';
 import { MathSymbolToolbar, processMathText, convertToUnicode, processRichTextPaste } from './MathFormulaProcessor';
 import { ImageUploadField } from './ImageUploadField';
+import { supabase } from '@/integrations/supabase/client';
 
 interface EnhancedQuestionFormV2Props {
   onAddQuestion: (question: Question) => void;
