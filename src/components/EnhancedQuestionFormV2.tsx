@@ -861,13 +861,17 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
           norm.options = keys.map((k) => String(norm.options[k] ?? norm.options[k.toLowerCase()] ?? ''));
         }
 
-        // Answer: support letter (A/B/C/D) -> index, numeric index, or exact option text
-        if (norm.correctAnswer === undefined || norm.correctAnswer === null || norm.correctAnswer === '') {
-          const ans = q.answer ?? q.correct ?? q.correct_answer ?? q.correctAnswer ?? q.correctanswer;
+        // Answer: support letter (A/B/C/D) -> index, numeric index, or exact option text.
+        // Resolve whenever the provided answer is not already a valid 0-3 index number.
+        const providedAnswer = norm.correctAnswer;
+        const isValidIndex =
+          typeof providedAnswer === 'number' && providedAnswer >= 0 && providedAnswer <= 3;
+        if (!isValidIndex) {
+          const ans = providedAnswer ?? q.answer ?? q.correct ?? q.correct_answer ?? q.correctanswer;
           const opts = Array.isArray(norm.options) ? norm.options.map((o: any) => String(o ?? '').trim()) : [];
           if (typeof ans === 'string') {
             const trimmedAns = ans.trim();
-            // 1) Exact match against option text (handles "9000", "7.5°", "₹20", etc.)
+            // 1) Exact match against option text (handles "4,290,673", "9000", "₹20", etc.)
             let matchIndex = opts.findIndex((opt: string) => opt === trimmedAns);
             // 2) Case-insensitive match
             if (matchIndex < 0) {
@@ -889,6 +893,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
             }
           }
         }
+
 
         // Explanation: prefer explanation, else combine explanation_en + explanation_bn
         if (!norm.explanation) {
