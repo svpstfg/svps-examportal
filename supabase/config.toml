@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.student-analysis]
 verify_jwt = true
+
+[functions.questions-from-images]
+verify_jwt = true
