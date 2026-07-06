@@ -829,6 +829,98 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
     URL.revokeObjectURL(url);
   };
 
+  // Shared: normalize an array of question objects (any supported format) and add them.
+  // Returns counts so callers can show feedback.
+  const importQuestionsFromArray = (arr: any[]): { added: number; skipped: number } => {
+    let added = 0;
+    let skipped = 0;
+    arr.forEach((q: any, i: number) => {
+      // Normalize alternate formats (e.g. question_en/question_bn, options as {A,B,C,D}, answer as letter)
+      const norm: any = { ...q };
+
+      // Question text: prefer question, else combine question_en + question_bn
+      if (!norm.question) {
+        const qEn = typeof q.question_en === 'string' ? q.question_en.trim() : '';
+        const qBn = typeof q.question_bn === 'string' ? q.question_bn.trim() : '';
+        if (qEn || qBn) {
+          norm.question = [qEn, qBn].filter(Boolean).join('<br/>');
+        }
+      }
+
+      // Options: support object {A,B,C,D} -> array
+      if (!Array.isArray(norm.options) && norm.options && typeof norm.options === 'object') {
+        const keys = ['A', 'B', 'C', 'D'];
+        norm.options = keys.map((k) => String(norm.options[k] ?? norm.options[k.toLowerCase()] ?? ''));
+      }
+
+      // Answer: support letter (A/B/C/D) -> index, numeric index, or exact option text.
+      // Resolve whenever the provided answer is not already a valid 0-3 index number.
+      const providedAnswer = norm.correctAnswer;
+      const isValidIndex =
+        typeof providedAnswer === 'number' && providedAnswer >= 0 && providedAnswer <= 3;
+      if (!isValidIndex) {
+        const ans = providedAnswer ?? q.answer ?? q.correct ?? q.correct_answer ?? q.correctanswer;
+        const opts = Array.isArray(norm.options) ? norm.options.map((o: any) => String(o ?? '').trim()) : [];
+        if (typeof ans === 'string') {
+          const trimmedAns = ans.trim();
+          // 1) Exact match against option text (handles "4,290,673", "9000", "₹20", etc.)
+          let matchIndex = opts.findIndex((opt: string) => opt === trimmedAns);
+          // 2) Case-insensitive match
+          if (matchIndex < 0) {
+            matchIndex = opts.findIndex((opt: string) => opt.toLowerCase() === trimmedAns.toLowerCase());
+          }
+          if (matchIndex >= 0) {
+            norm.correctAnswer = matchIndex;
+          } else if (/^[A-D]$/i.test(trimmedAns)) {
+            norm.correctAnswer = ['A', 'B', 'C', 'D'].indexOf(trimmedAns.toUpperCase());
+          } else if (/^[0-3]$/.test(trimmedAns)) {
+            norm.correctAnswer = Number(trimmedAns);
+          }
+        } else if (typeof ans === 'number') {
+          if (ans >= 0 && ans <= 3) {
+            norm.correctAnswer = ans;
+          } else {
+            const matchIndex = opts.findIndex((opt: string) => opt === String(ans));
+            if (matchIndex >= 0) norm.correctAnswer = matchIndex;
+          }
+        }
+      }
+
+      // Explanation: prefer explanation, else combine explanation_en + explanation_bn
+      if (!norm.explanation) {
+        const eEn = typeof q.explanation_en === 'string' ? q.explanation_en.trim() : '';
+        const eBn = typeof q.explanation_bn === 'string' ? q.explanation_bn.trim() : '';
+        if (eEn || eBn) {
+          norm.explanation = [eEn, eBn].filter(Boolean).join('<br/>');
+        }
+      }
+
+      const questionText = typeof norm.question === 'string' ? norm.question.trim() : '';
+      const options = Array.isArray(norm.options) ? norm.options.map((o: any) => String(o ?? '')) : [];
+      const correct = Number(norm.correctAnswer);
+      if (!questionText || options.length !== 4 || options.some((o: string) => !o.trim()) || isNaN(correct) || correct < 0 || correct > 3) {
+        skipped++;
+        console.warn(`Skipping question ${i + 1}: invalid format`);
+        return;
+      }
+      const newQ: Question = {
+        id: `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+        question: questionText,
+        questionImage: typeof norm.questionImage === 'string' ? norm.questionImage : '',
+        options,
+        optionImages: Array.isArray(norm.optionImages) && norm.optionImages.length === 4
+          ? norm.optionImages.map((u: any) => String(u ?? ''))
+          : ['', '', '', ''],
+        correctAnswer: correct,
+        explanation: typeof norm.explanation === 'string' ? norm.explanation : '',
+        explanationImage: typeof norm.explanationImage === 'string' ? norm.explanationImage : '',
+      };
+      onAddQuestion(newQ);
+      added++;
+    });
+    return { added, skipped };
+  };
+
   const handleJSONImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -841,94 +933,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
         return;
       }
 
-      let added = 0;
-      let skipped = 0;
-      arr.forEach((q: any, i: number) => {
-        // Normalize alternate formats (e.g. question_en/question_bn, options as {A,B,C,D}, answer as letter)
-        const norm: any = { ...q };
-
-        // Question text: prefer question, else combine question_en + question_bn
-        if (!norm.question) {
-          const qEn = typeof q.question_en === 'string' ? q.question_en.trim() : '';
-          const qBn = typeof q.question_bn === 'string' ? q.question_bn.trim() : '';
-          if (qEn || qBn) {
-            norm.question = [qEn, qBn].filter(Boolean).join('<br/>');
-          }
-        }
-
-        // Options: support object {A,B,C,D} -> array
-        if (!Array.isArray(norm.options) && norm.options && typeof norm.options === 'object') {
-          const keys = ['A', 'B', 'C', 'D'];
-          norm.options = keys.map((k) => String(norm.options[k] ?? norm.options[k.toLowerCase()] ?? ''));
-        }
-
-        // Answer: support letter (A/B/C/D) -> index, numeric index, or exact option text.
-        // Resolve whenever the provided answer is not already a valid 0-3 index number.
-        const providedAnswer = norm.correctAnswer;
-        const isValidIndex =
-          typeof providedAnswer === 'number' && providedAnswer >= 0 && providedAnswer <= 3;
-        if (!isValidIndex) {
-          const ans = providedAnswer ?? q.answer ?? q.correct ?? q.correct_answer ?? q.correctanswer;
-          const opts = Array.isArray(norm.options) ? norm.options.map((o: any) => String(o ?? '').trim()) : [];
-          if (typeof ans === 'string') {
-            const trimmedAns = ans.trim();
-            // 1) Exact match against option text (handles "4,290,673", "9000", "₹20", etc.)
-            let matchIndex = opts.findIndex((opt: string) => opt === trimmedAns);
-            // 2) Case-insensitive match
-            if (matchIndex < 0) {
-              matchIndex = opts.findIndex((opt: string) => opt.toLowerCase() === trimmedAns.toLowerCase());
-            }
-            if (matchIndex >= 0) {
-              norm.correctAnswer = matchIndex;
-            } else if (/^[A-D]$/i.test(trimmedAns)) {
-              norm.correctAnswer = ['A', 'B', 'C', 'D'].indexOf(trimmedAns.toUpperCase());
-            } else if (/^[0-3]$/.test(trimmedAns)) {
-              norm.correctAnswer = Number(trimmedAns);
-            }
-          } else if (typeof ans === 'number') {
-            if (ans >= 0 && ans <= 3) {
-              norm.correctAnswer = ans;
-            } else {
-              const matchIndex = opts.findIndex((opt: string) => opt === String(ans));
-              if (matchIndex >= 0) norm.correctAnswer = matchIndex;
-            }
-          }
-        }
-
-
-        // Explanation: prefer explanation, else combine explanation_en + explanation_bn
-        if (!norm.explanation) {
-          const eEn = typeof q.explanation_en === 'string' ? q.explanation_en.trim() : '';
-          const eBn = typeof q.explanation_bn === 'string' ? q.explanation_bn.trim() : '';
-          if (eEn || eBn) {
-            norm.explanation = [eEn, eBn].filter(Boolean).join('<br/>');
-          }
-        }
-
-        const questionText = typeof norm.question === 'string' ? norm.question.trim() : '';
-        const options = Array.isArray(norm.options) ? norm.options.map((o: any) => String(o ?? '')) : [];
-        const correct = Number(norm.correctAnswer);
-        if (!questionText || options.length !== 4 || options.some((o: string) => !o.trim()) || isNaN(correct) || correct < 0 || correct > 3) {
-          skipped++;
-          console.warn(`Skipping question ${i + 1}: invalid format`);
-          return;
-        }
-        const newQ: Question = {
-          id: `${Date.now()}-${i}`,
-          question: questionText,
-          questionImage: typeof norm.questionImage === 'string' ? norm.questionImage : '',
-          options,
-          optionImages: Array.isArray(norm.optionImages) && norm.optionImages.length === 4
-            ? norm.optionImages.map((u: any) => String(u ?? ''))
-            : ['', '', '', ''],
-          correctAnswer: correct,
-          explanation: typeof norm.explanation === 'string' ? norm.explanation : '',
-          explanationImage: typeof norm.explanationImage === 'string' ? norm.explanationImage : '',
-        };
-        onAddQuestion(newQ);
-        added++;
-      });
-
+      const { added, skipped } = importQuestionsFromArray(arr);
 
       if (added > 0) toast.success(`Imported ${added} question${added > 1 ? 's' : ''}${skipped ? ` (${skipped} skipped)` : ''}`);
       else toast.error('No valid questions found in the file');
@@ -939,6 +944,96 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       if (jsonFileRef.current) jsonFileRef.current.value = '';
     }
   };
+
+  // ===== AI: Generate questions from images =====
+  const aiImageInputRef = useRef<HTMLInputElement>(null);
+  const [aiImages, setAiImages] = useState<{ id: string; src: string; name: string }[]>([]);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiCount, setAiCount] = useState<number>(0); // 0 = auto (extract all)
+  const [aiDifficulty, setAiDifficulty] = useState<string>('medium');
+  const [aiInstructions, setAiInstructions] = useState<string>('');
+
+  const readFileAsDataURL = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleAiImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const remaining = 10 - aiImages.length;
+    if (remaining <= 0) {
+      toast.error('You can upload up to 10 images');
+      return;
+    }
+    const selected = files.slice(0, remaining);
+    for (const file of selected) {
+      if (!file.type.startsWith('image/')) {
+        toast.error(`${file.name} is not an image`);
+        continue;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`${file.name} is larger than 10MB`);
+        continue;
+      }
+      try {
+        const src = await readFileAsDataURL(file);
+        setAiImages((prev) => [...prev, { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, src, name: file.name }]);
+      } catch {
+        toast.error(`Failed to read ${file.name}`);
+      }
+    }
+    if (aiImageInputRef.current) aiImageInputRef.current.value = '';
+  };
+
+  const removeAiImage = (id: string) => setAiImages((prev) => prev.filter((p) => p.id !== id));
+
+  const generateQuestionsFromImages = async () => {
+    if (!aiImages.length) {
+      toast.error('Please upload at least one image');
+      return;
+    }
+    setAiGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('questions-from-images', {
+        body: {
+          images: aiImages.map((img) => ({ url: img.src })),
+          count: aiCount,
+          difficulty: aiDifficulty,
+          instructions: aiInstructions,
+        },
+      });
+
+      if (error) {
+        console.error('AI generation error:', error);
+        const msg = (error as any)?.message || 'Failed to generate questions';
+        toast.error(msg.includes('429') ? 'Rate limit reached. Try again shortly.' : msg.includes('402') ? 'AI credits exhausted.' : 'Failed to generate questions from images');
+        return;
+      }
+
+      const questions = Array.isArray(data?.questions) ? data.questions : [];
+      if (!questions.length) {
+        toast.error('The AI could not create questions from these images.');
+        return;
+      }
+      const { added, skipped } = importQuestionsFromArray(questions);
+      if (added > 0) {
+        toast.success(`AI added ${added} question${added > 1 ? 's' : ''}${skipped ? ` (${skipped} skipped)` : ''}`);
+        setAiImages([]);
+      } else {
+        toast.error('No valid questions were generated.');
+      }
+    } catch (err) {
+      console.error('AI generation exception:', err);
+      toast.error('Failed to generate questions from images');
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
 
   return (
     <div className="space-y-6">
