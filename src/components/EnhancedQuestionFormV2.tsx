@@ -1068,6 +1068,114 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
         </CardContent>
       </Card>
 
+      {/* AI: Generate questions from images */}
+      <Card className="border-primary/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Create Questions from Images (AI)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Upload photos or screenshots of question papers or study material. AI will read them and build the best possible MCQs, then add them directly to your test.
+          </p>
+
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => aiImageInputRef.current?.click()} disabled={aiGenerating}>
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Upload Images
+            </Button>
+            <input
+              ref={aiImageInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleAiImageSelect}
+            />
+            {aiImages.length > 0 && (
+              <span className="text-xs text-muted-foreground self-center">{aiImages.length}/10 image(s) selected</span>
+            )}
+          </div>
+
+          {aiImages.length > 0 && (
+            <div className="flex flex-wrap gap-3">
+              {aiImages.map((img) => (
+                <div key={img.id} className="relative">
+                  <img src={img.src} alt={img.name} className="h-20 w-20 object-cover rounded-md border" />
+                  <button
+                    type="button"
+                    onClick={() => removeAiImage(img.id)}
+                    disabled={aiGenerating}
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 shadow"
+                    aria-label="Remove image"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm">Number of questions</Label>
+              <Select value={String(aiCount)} onValueChange={(v) => setAiCount(Number(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Auto (extract all found)</SelectItem>
+                  {[5, 10, 15, 20, 25, 30].map((n) => (
+                    <SelectItem key={n} value={String(n)}>{n} questions</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Difficulty</Label>
+              <Select value={aiDifficulty} onValueChange={setAiDifficulty}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="easy">Easy</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="hard">Hard</SelectItem>
+                  <SelectItem value="mixed">Mixed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm">Extra instructions (optional)</Label>
+            <Textarea
+              value={aiInstructions}
+              onChange={(e) => setAiInstructions(e.target.value)}
+              placeholder="e.g. Focus on chapter 3, keep options short, include numerical problems..."
+              className="min-h-[60px] resize-y"
+            />
+          </div>
+
+          <Button type="button" onClick={generateQuestionsFromImages} disabled={aiGenerating || aiImages.length === 0} className="w-full sm:w-auto">
+            {aiGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Generating questions...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Generate &amp; Add Questions
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+
       <Card ref={builderRef}>
         <div className="p-4 border-b">
           <div className="flex items-center gap-4">
