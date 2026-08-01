@@ -494,7 +494,7 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
 
       document.body.appendChild(container);
       await document.fonts.ready;
-      const canvas = await html2canvas(container, { scale: 2, backgroundColor: "#ffffff" });
+      const canvas = await html2canvas(container, { scale: Math.min(4, Math.max(3, (window.devicePixelRatio || 1) * 3)), backgroundColor: "#ffffff" });
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
