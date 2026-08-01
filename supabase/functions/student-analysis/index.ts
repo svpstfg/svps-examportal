@@ -75,6 +75,22 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid payload" }, 400);
     }
 
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const canCache = !!(p.testId && p.studentId);
+
+    if (canCache && !p.force) {
+      const { data: cached } = await admin
+        .from("student_analyses")
+        .select("report")
+        .eq("test_id", p.testId)
+        .eq("student_id", p.studentId)
+        .maybeSingle();
+      if (cached?.report) {
+        return json({ report: cached.report, cached: true });
+      }
+    }
+
+
     const lines = p.questions
       .map(
         (q) =>
