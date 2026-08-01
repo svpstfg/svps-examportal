@@ -686,16 +686,22 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
             <div className="space-y-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" onClick={runAiAnalysis} disabled={aiLoading} className="gap-1">
+                  <Button size="sm" onClick={() => runAiAnalysis(false)} disabled={aiLoading || !!aiReport} className="gap-1">
                     {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    {aiLoading ? "Analysing…" : "AI Analysis Report"}
+                    {aiLoading ? "Analysing…" : aiReport ? "Report saved" : "AI Analysis Report"}
                   </Button>
+                  {aiReport && (
+                    <Button size="sm" variant="ghost" onClick={() => runAiAnalysis(true)} disabled={aiLoading} className="gap-1">
+                      Regenerate
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" onClick={downloadAnalysisPDF} disabled={!analysisRow} className="gap-1">
                     <Download className="h-4 w-4" />
                     PDF
                   </Button>
                 </div>
               </div>
+
 
               {aiReport && (
                 <div className="rounded-lg border bg-muted/40 p-4 text-sm space-y-1">
