@@ -237,78 +237,151 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
     }
   };
 
+  /** Brief auto remark describing strong / weak points for the rank list */
+  const buildRemark = (r: MarkRow) => {
+    if (!questions.length) return "—";
+    let correct = 0;
+    let unanswered = 0;
+    let slowWrong = 0;
+    let fastWrong = 0;
+    questions.forEach((q, i) => {
+      const ans = r.answers[i];
+      const answered = isAnswered(ans);
+      const ok = isAnswerCorrect(ans, q.correctAnswer);
+      const t = normalizeQuestionTime(r.questionTimes[i] ?? 0);
+      if (ok) correct++;
+      else if (!answered) unanswered++;
+      else if (t > 90) slowWrong++;
+      else if (t <= 15) fastWrong++;
+    });
+    const pct = r.score;
+    const parts: string[] = [];
+    if (pct >= 85) parts.push("Excellent grasp of the topic");
+    else if (pct >= 70) parts.push("Strong overall performance");
+    else if (pct >= 50) parts.push("Fair understanding, needs revision");
+    else parts.push("Weak understanding, needs guided practice");
+
+    const avg = questions.length ? Math.round(r.timeSpent / questions.length) : 0;
+    if (correct && avg <= 30) parts.push("answers quickly and accurately");
+    else if (avg > 90) parts.push("slow pace, work on speed");
+
+    if (unanswered) parts.push(`${unanswered} left unanswered`);
+    if (slowWrong) parts.push(`${slowWrong} wrong after long thinking (concept gaps)`);
+    if (fastWrong) parts.push(`${fastWrong} rushed mistakes (carelessness)`);
+    return parts.join("; ") + ".";
+  };
+
   const handleExportCSV = () => {
     if (!rows.length) return;
     const exportRows = rows.map((r, i) => ({
       Rank: i + 1,
       Name: r.name,
       ...(mode === "student" ? {} : { Email: r.email }),
+      "Max Marks": fullMarks,
       "Marks Obtained": marksOf(r.score),
-      "Full Marks": fullMarks,
       "Score (%)": r.score,
       "Time Spent": formatDuration(r.timeSpent),
       Attempts: r.attempts,
+      Remarks: buildRemark(r),
     }));
     downloadCSV(`results-${(selectedTest?.title || "test").replace(/\s+/g, "_")}.csv`, exportRows);
   };
 
-  const handleExportPDF = () => {
-    if (!rows.length || !selectedTest) return;
-    const doc = new jsPDF();
+  /** Rank list PDF: Rank, Name, Max Marks, Marks Obtained, Remarks */
+  const buildRankListDoc = () => {
+    const doc = new jsPDF({ orientation: "l", unit: "mm", format: "a4" });
     const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 18;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const marginX = 12;
+    let y = 16;
 
-    doc.setFontSize(16);
-    doc.text("Test Marks List", pageWidth / 2, y, { align: "center" });
-    y += 8;
+    doc.setFontSize(17);
+    doc.setFont(undefined, "bold");
+    doc.text("Rank List", pageWidth / 2, y, { align: "center" });
+    doc.setFont(undefined, "normal");
+    y += 7;
     doc.setFontSize(11);
-    doc.setTextColor(30);
-    if (subject) { doc.text(`Subject: ${subject}`, pageWidth / 2, y, { align: "center" }); y += 6; }
-    doc.text(selectedTest.title, pageWidth / 2, y, { align: "center" });
-    y += 6;
-    doc.text(`Class: ${className}  •  Full Marks: ${fullMarks}`, pageWidth / 2, y, { align: "center" });
-    y += 10;
+    doc.setTextColor(20);
+    if (subject) { doc.text(`Subject: ${subject}`, pageWidth / 2, y, { align: "center" }); y += 5.5; }
+    doc.text(`${selectedTest?.title || ""}`, pageWidth / 2, y, { align: "center" });
+    y += 5.5;
+    doc.text(`Class: ${className}  •  Max Marks: ${fullMarks}`, pageWidth / 2, y, { align: "center" });
+    y += 9;
     doc.setTextColor(0);
 
-    // Header row
-    doc.setFontSize(10);
-    doc.setFont(undefined, "bold");
-    doc.text("Rank", 16, y);
-    doc.text("Name", 34, y);
-    doc.text("Marks", 130, y);
-    doc.text("Score", 158, y);
-    doc.text("Time", 180, y);
-    doc.setFont(undefined, "normal");
-    y += 3;
-    doc.setDrawColor(200);
-    doc.line(16, y, pageWidth - 16, y);
-    y += 6;
+    const cols = { rank: marginX, name: marginX + 14, max: marginX + 76, got: marginX + 98, remark: marginX + 122 };
+    const remarkWidth = pageWidth - marginX - cols.remark;
 
+    const header = () => {
+      doc.setFontSize(10);
+      doc.setFont(undefined, "bold");
+      doc.text("Rank", cols.rank, y);
+      doc.text("Student Name", cols.name, y);
+      doc.text("Max", cols.max, y);
+      doc.text("Obtained", cols.got, y);
+      doc.text("Remarks", cols.remark, y);
+      doc.setFont(undefined, "normal");
+      y += 2.5;
+      doc.setDrawColor(120);
+      doc.line(marginX, y, pageWidth - marginX, y);
+      y += 5;
+    };
+    header();
+
+    doc.setFontSize(9.5);
     rows.forEach((r, i) => {
-      if (y > 280) {
+      const remarkLines = doc.splitTextToSize(buildRemark(r), remarkWidth) as string[];
+      const rowHeight = Math.max(6, remarkLines.length * 4.4 + 2);
+      if (y + rowHeight > pageHeight - 14) {
         doc.addPage();
-        y = 20;
+        y = 18;
+        header();
+        doc.setFontSize(9.5);
       }
-      doc.text(String(i + 1), 16, y);
-      doc.text(r.name.slice(0, 46), 34, y);
-      doc.text(`${marksOf(r.score)}/${fullMarks}`, 130, y);
-      doc.text(`${r.score}%`, 158, y);
-      doc.text(formatDuration(r.timeSpent), 180, y);
-      y += 7;
+      doc.text(String(i + 1), cols.rank, y);
+      doc.text(doc.splitTextToSize(r.name, 58)[0], cols.name, y);
+      doc.text(String(fullMarks), cols.max, y);
+      doc.text(String(marksOf(r.score)), cols.got, y);
+      doc.text(remarkLines, cols.remark, y);
+      y += rowHeight;
+      doc.setDrawColor(220);
+      doc.line(marginX, y - 2.5, pageWidth - marginX, y - 2.5);
     });
 
-    doc.save(`results-${selectedTest.title.replace(/\s+/g, "_")}.pdf`);
+    doc.setFontSize(8);
+    doc.setTextColor(90);
+    doc.text(`Generated on ${new Date().toLocaleString()}`, marginX, pageHeight - 8);
+    return doc;
   };
 
-  const openAnalysis = (r: MarkRow) => {
+  const handleExportPDF = () => {
+    if (!rows.length || !selectedTest) return;
+    buildRankListDoc().save(`rank-list-${selectedTest.title.replace(/\s+/g, "_")}.pdf`);
+  };
+
+  const handlePrintRankList = () => {
+    if (!rows.length || !selectedTest) return;
+    buildRankListDoc().autoPrint();
+    const url = buildRankListDoc().output("bloburl");
+    window.open(url as unknown as string, "_blank");
+  };
+
+  const openAnalysis = async (r: MarkRow) => {
     setAnalysisRow(r);
     setAiReport("");
+    if (!testId) return;
+    const { data } = await supabase
+      .from("student_analyses")
+      .select("report")
+      .eq("test_id", testId)
+      .eq("student_id", r.studentId)
+      .maybeSingle();
+    if (data?.report) setAiReport(data.report);
   };
 
-  const runAiAnalysis = async () => {
+  const runAiAnalysis = async (force = false) => {
     if (!analysisRow || !selectedTest) return;
     setAiLoading(true);
-    setAiReport("");
     try {
       const payloadQuestions = questions.map((q, i) => {
         const ans = analysisRow.answers[i];
@@ -332,6 +405,9 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
           marksObtained: marksOf(analysisRow.score),
           totalTimeSec: analysisRow.timeSpent,
           questions: payloadQuestions,
+          testId: selectedTest.id,
+          studentId: analysisRow.studentId,
+          force,
         },
       });
       if (error) {
@@ -340,12 +416,14 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
       }
       if (data?.error) throw new Error(data.error);
       setAiReport(data?.report || "No report generated.");
+      toast.success(data?.cached ? "Saved report loaded (no new AI usage)" : "AI report generated and saved");
     } catch (err: any) {
       toast.error(err.message || "AI analysis failed");
     } finally {
       setAiLoading(false);
     }
   };
+
 
   const downloadAnalysisPDF = async () => {
     if (!analysisRow || !selectedTest) return;
