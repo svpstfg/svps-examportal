@@ -571,13 +571,18 @@ export const TestResults = ({ classes, mode, currentStudentEmail }: Props) => {
             <>
               <Button variant="outline" size="sm" className="h-8" onClick={handleExportPDF} disabled={!rows.length}>
                 <FileText className="h-3.5 w-3.5 mr-1" />
-                PDF
+                Rank List PDF
+              </Button>
+              <Button variant="outline" size="sm" className="h-8" onClick={handlePrintRankList} disabled={!rows.length}>
+                <Printer className="h-3.5 w-3.5 mr-1" />
+                Print
               </Button>
               <Button variant="outline" size="sm" className="h-8" onClick={handleExportCSV} disabled={!rows.length}>
                 <Download className="h-3.5 w-3.5 mr-1" />
                 CSV
               </Button>
             </>
+
           )}
           {mode === "student" && selectedTest && (
             <Button variant="outline" size="sm" className="h-8" onClick={handleExportPDF} disabled={!rows.length}>
