@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ClipboardList, Crown, Medal, Download, FileText, Eye, EyeOff, BarChart3, Clock, Sparkles, Loader2, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
+import { ClipboardList, Crown, Medal, Download, FileText, Printer, Eye, EyeOff, BarChart3, Clock, Sparkles, Loader2, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadCSV } from "@/lib/csv";
