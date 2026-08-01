@@ -365,6 +365,51 @@ export type Database = {
           },
         ]
       }
+      student_analyses: {
+        Row: {
+          created_at: string
+          id: string
+          report: string
+          score: number | null
+          student_id: string
+          test_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          report: string
+          score?: number | null
+          student_id: string
+          test_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          report?: string
+          score?: number | null
+          student_id?: string
+          test_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_analyses_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_analyses_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_enrollments: {
         Row: {
           class_id: string

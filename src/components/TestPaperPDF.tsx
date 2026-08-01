@@ -37,7 +37,7 @@ export const TestPaperPDF = ({
         await new Promise((r) => setTimeout(r, 100));
 
         const canvas = await html2canvas(node, {
-          scale: 2,
+          scale: Math.min(4, Math.max(3, (window.devicePixelRatio || 1) * 3)),
           useCORS: true,
           backgroundColor: "#ffffff",
           logging: false,
@@ -46,7 +46,7 @@ export const TestPaperPDF = ({
         });
 
         const imgData = canvas.toDataURL("image/png");
-        const pdf = new jsPDF("p", "mm", "a4");
+        const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4", compress: true });
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
         const ratio = pdfWidth / canvas.width;
@@ -56,10 +56,11 @@ export const TestPaperPDF = ({
         let remaining = totalPdfHeight;
         while (remaining > 0) {
           if (position > 0) pdf.addPage();
-          pdf.addImage(imgData, "PNG", 0, -position, pdfWidth, totalPdfHeight);
+          pdf.addImage(imgData, "PNG", 0, -position, pdfWidth, totalPdfHeight, undefined, "SLOW");
           position += pdfHeight;
           remaining -= pdfHeight;
         }
+
 
         pdf.save(`${test.title.replace(/\s+/g, "_")}_QuestionPaper.pdf`);
       } finally {

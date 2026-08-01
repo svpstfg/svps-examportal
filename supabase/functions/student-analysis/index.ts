@@ -9,6 +9,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
 interface QItem {
@@ -29,7 +30,13 @@ interface Payload {
   marksObtained: number;
   totalTimeSec: number;
   questions: QItem[];
+  /** Used to cache the report so it is only generated once */
+  testId?: string;
+  studentId?: string;
+  /** Set true to force a fresh report (overwrites the cached one) */
+  force?: boolean;
 }
+
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -67,6 +74,22 @@ Deno.serve(async (req) => {
     if (!p?.studentName || !Array.isArray(p.questions)) {
       return json({ error: "Invalid payload" }, 400);
     }
+
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const canCache = !!(p.testId && p.studentId);
+
+    if (canCache && !p.force) {
+      const { data: cached } = await admin
+        .from("student_analyses")
+        .select("report")
+        .eq("test_id", p.testId)
+        .eq("student_id", p.studentId)
+        .maybeSingle();
+      if (cached?.report) {
+        return json({ report: cached.report, cached: true });
+      }
+    }
+
 
     const lines = p.questions
       .map(
@@ -138,7 +161,25 @@ Keep the whole report under 220 words.`;
 
     const data = await aiRes.json();
     const report = data?.choices?.[0]?.message?.content ?? "";
-    return json({ report });
+
+    if (canCache && report) {
+      const { error: saveError } = await admin
+        .from("student_analyses")
+        .upsert(
+          {
+            test_id: p.testId,
+            student_id: p.studentId,
+            report,
+            score: p.scorePct,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "test_id,student_id" },
+        );
+      if (saveError) console.error("Failed to cache report", saveError);
+    }
+
+    return json({ report, cached: false });
+
   } catch (err) {
     console.error(err);
     return json({ error: (err as Error).message || "Unexpected error" }, 500);

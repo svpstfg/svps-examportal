@@ -50,12 +50,13 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
       await document.fonts.ready;
 
       const canvas = await html2canvas(content, {
-        scale: 2,
+        scale: Math.min(4, Math.max(3, (window.devicePixelRatio || 1) * 3)),
         useCORS: true,
         backgroundColor: "#ffffff",
         logging: false,
         allowTaint: true,
       });
+
 
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
@@ -107,6 +108,8 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
           marksObtained: correctCount,
           totalTimeSec: attempt.timeSpent,
           questions: payloadQuestions,
+          testId: test.id,
+          studentId: attempt.studentId,
         },
       });
       if (error) {
@@ -115,13 +118,14 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
       }
       if (data?.error) throw new Error(data.error);
       setAiReport(data?.report || "No report generated.");
-      toast.success("AI report ready");
+      toast.success(data?.cached ? "Saved AI report loaded" : "AI report ready");
     } catch (err: any) {
       toast.error(err.message || "AI analysis failed");
     } finally {
       setAiLoading(false);
     }
   };
+
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
