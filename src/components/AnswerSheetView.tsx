@@ -50,12 +50,13 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
       await document.fonts.ready;
 
       const canvas = await html2canvas(content, {
-        scale: 2,
+        scale: Math.min(4, Math.max(3, (window.devicePixelRatio || 1) * 3)),
         useCORS: true,
         backgroundColor: "#ffffff",
         logging: false,
         allowTaint: true,
       });
+
 
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
