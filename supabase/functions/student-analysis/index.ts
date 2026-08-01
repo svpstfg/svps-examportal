@@ -9,6 +9,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
 interface QItem {
@@ -29,7 +30,13 @@ interface Payload {
   marksObtained: number;
   totalTimeSec: number;
   questions: QItem[];
+  /** Used to cache the report so it is only generated once */
+  testId?: string;
+  studentId?: string;
+  /** Set true to force a fresh report (overwrites the cached one) */
+  force?: boolean;
 }
+
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
