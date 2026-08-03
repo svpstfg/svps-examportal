@@ -18,6 +18,16 @@ import { isAnswered, isAnswerCorrect, normalizeQuestionTime, getQuestionRemark }
 import { AnswerSheetView } from "./AnswerSheetView";
 import { useAuth } from "@/hooks/useAuth";
 import { JoinClassCard } from "./JoinClassCard";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+
 import { QuestionPaperDownload } from "./QuestionPaperDownload";
 import { StudentDoubtChat } from "./StudentDoubtChat";
 import { ClassLeaderboard } from "./ClassLeaderboard";
