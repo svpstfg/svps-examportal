@@ -629,6 +629,16 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
                         Manage Classes
                       </Button>
                       <Button
+                        variant="outline"
+                        size="sm"
+                        className="self-start sm:self-auto"
+                        title="Set a new password for this student"
+                        onClick={() => { setPasswordStudent({ id: student.id, name: student.name, email: student.email }); setNewPassword(''); setShowNewPassword(false); }}
+                      >
+                        <KeyRound className="h-4 w-4 mr-2" />
+                        Set Password
+                      </Button>
+                      <Button
                         variant="ghost"
                         size="sm"
                         className="self-start sm:self-auto"
