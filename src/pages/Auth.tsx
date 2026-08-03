@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { GraduationCap, BookOpen, KeyRound, Users } from 'lucide-react';
+import { GraduationCap, BookOpen, KeyRound, Users, Eye, EyeOff } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
 const Auth = () => {
@@ -18,6 +18,8 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [resolvedClassId, setResolvedClassId] = useState<string | null>(null);
