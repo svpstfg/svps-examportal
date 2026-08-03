@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Crown, Search, UserPlus, Trash2, Mail, CalendarClock, Download, ShieldCheck, ShieldAlert, BadgeCheck, Lock, LockOpen, Settings2 } from "lucide-react";
+import { Users, Crown, Search, UserPlus, Trash2, Mail, CalendarClock, Download, ShieldCheck, ShieldAlert, BadgeCheck, Lock, LockOpen, Settings2, KeyRound, Eye, EyeOff } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -50,6 +50,10 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
   const [manageClassesStudentId, setManageClassesStudentId] = useState<string | null>(null);
   const [classModalSearch, setClassModalSearch] = useState('');
+  const [passwordStudent, setPasswordStudent] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
 
   interface PendingStudent {
     enrollmentId: string;
@@ -351,33 +355,54 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
 
   const handleRemoveStudent = async (studentId: string) => {
     const student = students.find(s => s.id === studentId);
-    if (student?.isLocked) {
+    if (!student) return;
+    if (student.isLocked) {
       toast.error('This student is locked. Unlock it first to delete.');
       return;
     }
-    if (!window.confirm('Remove this student from all assigned classes? They will lose access to every class.')) return;
+    if (!window.confirm('Delete this student completely? Their login account and all class enrollments will be removed, so they can enroll again later.')) return;
     try {
-      const { error } = await supabase
-        .from('student_enrollments')
-        .delete()
-        .eq('student_id', studentId);
-
+      // Deletes the login account + student record + enrollments
+      const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: { action: 'delete', email: student.email },
+      });
       if (error) throw error;
-
-      const { error: deleteError } = await supabase
-        .from('students')
-        .delete()
-        .eq('id', studentId);
-
-      if (deleteError) throw deleteError;
+      if ((data as any)?.error) throw new Error((data as any).error);
 
       setStudents(prev => prev.filter(s => s.id !== studentId));
-      toast.success('Student removed and access revoked');
-    } catch (error) {
+      loadPending();
+      toast.success('Student and their login account deleted');
+    } catch (error: any) {
       console.error('Error removing student:', error);
-      toast.error('Failed to remove student');
+      toast.error(error?.message || 'Failed to remove student');
     }
   };
+
+  const handleSetStudentPassword = async () => {
+    if (!passwordStudent) return;
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: { action: 'change-password', email: passwordStudent.email, password: newPassword },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`Password updated for ${passwordStudent.name}`);
+      setPasswordStudent(null);
+      setNewPassword('');
+      setShowNewPassword(false);
+    } catch (error: any) {
+      console.error('Error setting password:', error);
+      toast.error(error?.message || 'Failed to update password');
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
 
   const handleToggleStudentLock = async (studentId: string, currentLocked: boolean) => {
     try {
@@ -604,6 +629,16 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
                         Manage Classes
                       </Button>
                       <Button
+                        variant="outline"
+                        size="sm"
+                        className="self-start sm:self-auto"
+                        title="Set a new password for this student"
+                        onClick={() => { setPasswordStudent({ id: student.id, name: student.name, email: student.email }); setNewPassword(''); setShowNewPassword(false); }}
+                      >
+                        <KeyRound className="h-4 w-4 mr-2" />
+                        Set Password
+                      </Button>
+                      <Button
                         variant="ghost"
                         size="sm"
                         className="self-start sm:self-auto"
@@ -806,6 +841,45 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
               </>
             );
           })()}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!passwordStudent} onOpenChange={(open) => { if (!open) { setPasswordStudent(null); setNewPassword(''); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Set New Password</DialogTitle>
+            <DialogDescription>
+              Set a new sign-in password for <span className="font-medium">{passwordStudent?.name}</span> ({passwordStudent?.email}).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="student-new-password">New password</Label>
+            <div className="relative">
+              <Input
+                id="student-new-password"
+                type={showNewPassword ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Min 6 characters"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(v => !v)}
+                aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setPasswordStudent(null)}>Cancel</Button>
+            <Button onClick={handleSetStudentPassword} disabled={savingPassword || newPassword.length < 6}>
+              <KeyRound className="h-4 w-4 mr-2" />
+              {savingPassword ? 'Saving...' : 'Update Password'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
