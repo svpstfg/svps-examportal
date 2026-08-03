@@ -355,33 +355,54 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
 
   const handleRemoveStudent = async (studentId: string) => {
     const student = students.find(s => s.id === studentId);
-    if (student?.isLocked) {
+    if (!student) return;
+    if (student.isLocked) {
       toast.error('This student is locked. Unlock it first to delete.');
       return;
     }
-    if (!window.confirm('Remove this student from all assigned classes? They will lose access to every class.')) return;
+    if (!window.confirm('Delete this student completely? Their login account and all class enrollments will be removed, so they can enroll again later.')) return;
     try {
-      const { error } = await supabase
-        .from('student_enrollments')
-        .delete()
-        .eq('student_id', studentId);
-
+      // Deletes the login account + student record + enrollments
+      const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: { action: 'delete', email: student.email },
+      });
       if (error) throw error;
-
-      const { error: deleteError } = await supabase
-        .from('students')
-        .delete()
-        .eq('id', studentId);
-
-      if (deleteError) throw deleteError;
+      if ((data as any)?.error) throw new Error((data as any).error);
 
       setStudents(prev => prev.filter(s => s.id !== studentId));
-      toast.success('Student removed and access revoked');
-    } catch (error) {
+      loadPendingStudents();
+      toast.success('Student and their login account deleted');
+    } catch (error: any) {
       console.error('Error removing student:', error);
-      toast.error('Failed to remove student');
+      toast.error(error?.message || 'Failed to remove student');
     }
   };
+
+  const handleSetStudentPassword = async () => {
+    if (!passwordStudent) return;
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: { action: 'change-password', email: passwordStudent.email, password: newPassword },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`Password updated for ${passwordStudent.name}`);
+      setPasswordStudent(null);
+      setNewPassword('');
+      setShowNewPassword(false);
+    } catch (error: any) {
+      console.error('Error setting password:', error);
+      toast.error(error?.message || 'Failed to update password');
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
 
   const handleToggleStudentLock = async (studentId: string, currentLocked: boolean) => {
     try {
