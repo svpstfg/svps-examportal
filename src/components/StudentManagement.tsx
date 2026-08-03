@@ -843,6 +843,45 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
           })()}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!passwordStudent} onOpenChange={(open) => { if (!open) { setPasswordStudent(null); setNewPassword(''); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Set New Password</DialogTitle>
+            <DialogDescription>
+              Set a new sign-in password for <span className="font-medium">{passwordStudent?.name}</span> ({passwordStudent?.email}).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="student-new-password">New password</Label>
+            <div className="relative">
+              <Input
+                id="student-new-password"
+                type={showNewPassword ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Min 6 characters"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(v => !v)}
+                aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setPasswordStudent(null)}>Cancel</Button>
+            <Button onClick={handleSetStudentPassword} disabled={savingPassword || newPassword.length < 6}>
+              <KeyRound className="h-4 w-4 mr-2" />
+              {savingPassword ? 'Saving...' : 'Update Password'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
