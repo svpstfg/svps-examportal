@@ -370,7 +370,7 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
       if ((data as any)?.error) throw new Error((data as any).error);
 
       setStudents(prev => prev.filter(s => s.id !== studentId));
-      loadPendingStudents();
+      loadPending();
       toast.success('Student and their login account deleted');
     } catch (error: any) {
       console.error('Error removing student:', error);
