@@ -1073,30 +1073,23 @@ export const StudentDashboard = () => {
   }
 
 
+  const enrolledClasses = classes.filter(c => enrolledClassIds.includes(c.id));
+  const upgradeClasses = enrolledClasses
+    .filter(c => studentTiers[c.id] !== 'pro')
+    .filter(c => selectedClassId === 'all' || c.id === selectedClassId);
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Student Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back, {student.name}!</p>
-          <p className="text-sm text-muted-foreground">{student.email}</p>
-        </div>
-      </div>
-
-
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <GraduationCap className="h-5 w-5" />
-                <span>My Classes</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {(() => {
-                const enrolledClasses = classes.filter(c => enrolledClassIds.includes(c.id));
-                return enrolledClasses.length > 0 ? (
+    <SidebarProvider style={{ "--sidebar-width": "20rem" } as React.CSSProperties}>
+      <div className="flex w-full min-h-screen">
+        <Sidebar collapsible="offcanvas">
+          <SidebarContent className="gap-0">
+            <SidebarGroup>
+              <SidebarGroupLabel className="flex items-center gap-2">
+                <GraduationCap className="h-4 w-4" />
+                My Classes
+              </SidebarGroupLabel>
+              <SidebarGroupContent className="px-2 pb-2">
+                {enrolledClasses.length > 0 ? (
                   <Select value={selectedClassId} onValueChange={setSelectedClassId}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a class" />
@@ -1109,32 +1102,58 @@ export const StudentDashboard = () => {
                     </SelectContent>
                   </Select>
                 ) : (
-                  <p className="text-muted-foreground">No classes enrolled yet</p>
-                );
-              })()}
-            </CardContent>
-          </Card>
+                  <p className="text-sm text-muted-foreground">No classes enrolled yet</p>
+                )}
+              </SidebarGroupContent>
+            </SidebarGroup>
 
-          <JoinClassCard
-            studentId={student.id}
-            studentName={student.name}
-            studentEmail={student.email}
-            onClassJoined={() => window.location.reload()}
-          />
+            <SidebarGroup>
+              <SidebarGroupLabel>Join Another Class</SidebarGroupLabel>
+              <SidebarGroupContent className="px-2 pb-2">
+                <JoinClassCard
+                  studentId={student.id}
+                  studentName={student.name}
+                  studentEmail={student.email}
+                  onClassJoined={() => window.location.reload()}
+                />
+              </SidebarGroupContent>
+            </SidebarGroup>
 
-          {/* Pro upgrade banners for free-tier classes */}
-          {classes
-            .filter(c => enrolledClassIds.includes(c.id))
-            .filter(c => studentTiers[c.id] !== 'pro')
-            .filter(c => selectedClassId === 'all' || c.id === selectedClassId)
-            .map(c => (
-              <UpgradeBanner
-                key={`upg-${c.id}`}
-                studentId={studentIdByClass[c.id] || student.id}
-                classId={c.id}
-                className={c.name}
-              />
-            ))}
+            {upgradeClasses.length > 0 && (
+              <SidebarGroup>
+                <SidebarGroupLabel className="flex items-center gap-2">
+                  <Crown className="h-4 w-4" />
+                  Upgrade to Pro
+                </SidebarGroupLabel>
+                <SidebarGroupContent className="px-2 pb-2 space-y-3">
+                  {upgradeClasses.map(c => (
+                    <UpgradeBanner
+                      key={`upg-${c.id}`}
+                      studentId={studentIdByClass[c.id] || student.id}
+                      classId={c.id}
+                      className={c.name}
+                    />
+                  ))}
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )}
+          </SidebarContent>
+        </Sidebar>
+
+        <div className="flex-1 min-w-0">
+          <div className="container mx-auto px-4 py-8">
+            <div className="mb-8 flex items-start gap-3">
+              <SidebarTrigger className="mt-1" />
+              <div>
+                <h1 className="text-3xl font-bold mb-2">Student Dashboard</h1>
+                <p className="text-muted-foreground">Welcome back, {student.name}!</p>
+                <p className="text-sm text-muted-foreground">{student.email}</p>
+              </div>
+            </div>
+
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+
 
           {/* Tests with Tabs */}
           <Card>
