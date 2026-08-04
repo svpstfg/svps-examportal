@@ -41,6 +41,7 @@ import { StudentDoubtChat } from "./StudentDoubtChat";
 import { ClassLeaderboard } from "./ClassLeaderboard";
 import { TestResults } from "./TestResults";
 import { UpgradeBanner } from "./UpgradeBanner";
+import { ReexamRequestButton } from "./ReexamRequestButton";
 
 const RESUME_KEY = (studentId: string, testId: string) => `test_progress_${studentId}_${testId}`;
 
@@ -70,6 +71,7 @@ export const StudentDashboard = () => {
   const [tests, setTests] = useState<Test[]>([]);
   const [loading, setLoading] = useState(true);
   const [attempts, setAttempts] = useState<TestAttempt[]>([]);
+  const [reexamGrants, setReexamGrants] = useState<string[]>([]);
   const [currentTest, setCurrentTest] = useState<Test | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
@@ -222,7 +224,9 @@ export const StudentDashboard = () => {
             scheduledDate: t.scheduled_date ? new Date(t.scheduled_date) : undefined,
             scheduledTime: t.scheduled_time || undefined,
             isScheduled: t.is_scheduled || false,
-            isPro: (t as any).is_pro || false
+            isPro: (t as any).is_pro || false,
+            closeAfterSchedule: (t as any).close_after_schedule || false,
+            singleAttempt: (t as any).single_attempt || false
           })) || [];
 
           setClasses(transformedClasses);
@@ -307,7 +311,9 @@ export const StudentDashboard = () => {
           scheduledDate: t.scheduled_date ? new Date(t.scheduled_date) : undefined,
           scheduledTime: t.scheduled_time || undefined,
           isScheduled: t.is_scheduled || false,
-          isPro: (t as any).is_pro || false
+          isPro: (t as any).is_pro || false,
+          closeAfterSchedule: (t as any).close_after_schedule || false,
+          singleAttempt: (t as any).single_attempt || false
         })) || [];
 
         const transformedAttempts: TestAttempt[] = attemptsRes.data?.map(a => ({
@@ -327,6 +333,15 @@ export const StudentDashboard = () => {
         setChapters(transformedChapters);
         setTests(transformedTests);
         setAttempts(transformedAttempts);
+
+        // Approved (unused) re-exam permissions
+        const { data: grantRows } = await supabase
+          .from('reexam_requests')
+          .select('test_id')
+          .eq('student_id', studentData.id)
+          .eq('status', 'approved')
+          .is('used_at', null);
+        setReexamGrants((grantRows || []).map((g: any) => g.test_id));
         
       } catch (error) {
         console.error('Error loading data:', error);
@@ -459,8 +474,31 @@ export const StudentDashboard = () => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const handleStartTest = (test: Test) => {
+  const handleStartTest = async (test: Test) => {
     console.log('Starting test:', test);
+
+    // Teacher-set access restrictions (closed after schedule / single attempt)
+    const restriction = getRestriction(test);
+    if (restriction && !reexamGrants.includes(test.id)) {
+      toast.error(
+        restriction === 'single'
+          ? 'This test allows only one attempt. Request your teacher to reopen it.'
+          : 'This test is closed after its scheduled time. Request your teacher to reopen it.'
+      );
+      return;
+    }
+    if (restriction && reexamGrants.includes(test.id) && student) {
+      const { data: consumed, error: consumeError } = await supabase.rpc('consume_reexam_grant', {
+        _test_id: test.id,
+        _student_id: student.id,
+      });
+      if (consumeError || !consumed) {
+        toast.error('Your re-exam permission is no longer valid. Please request again.');
+        setReexamGrants(prev => prev.filter(id => id !== test.id));
+        return;
+      }
+      setReexamGrants(prev => prev.filter(id => id !== test.id));
+    }
 
     // Validate test has questions
     if (!test.questions || test.questions.length === 0) {
@@ -650,6 +688,54 @@ export const StudentDashboard = () => {
     const chapter = chapters.find(ch => ch.id === chapterId);
     const course = chapter ? courses.find(c => c.id === chapter.courseId) : undefined;
     return course ? classes.find(cls => cls.id === course.classId)?.name || "Unknown Class" : "Unknown Class";
+  };
+
+  const getTestClassId = (chapterId: string) => {
+    const chapter = chapters.find(ch => ch.id === chapterId);
+    const course = chapter ? courses.find(c => c.id === chapter.courseId) : undefined;
+    return course?.classId || '';
+  };
+
+  // Teacher-set access restrictions
+  const getRestriction = (test: Test): null | 'closed' | 'single' => {
+    if (test.singleAttempt && attempts.some(a => a.testId === test.id)) return 'single';
+    if (test.closeAfterSchedule && test.isScheduled) {
+      const start = getScheduledDateTime(test);
+      if (start) {
+        const end = new Date(start.getTime() + (test.duration || 0) * 60 * 1000);
+        if (new Date() > end) return 'closed';
+      }
+    }
+    return null;
+  };
+
+  const isRestricted = (test: Test) => getRestriction(test) !== null && !reexamGrants.includes(test.id);
+
+  const renderStartButton = (test: Test, label: string) => {
+    if (isRestricted(test)) {
+      const reason = getRestriction(test);
+      return student ? (
+        <div className="flex flex-col items-end gap-1">
+          <span className="text-xs text-muted-foreground">
+            {reason === 'single' ? 'Single attempt only' : 'Closed after scheduled time'}
+          </span>
+          <ReexamRequestButton
+            testId={test.id}
+            testTitle={test.title}
+            studentId={student.id}
+            classId={getTestClassId(test.chapterId)}
+            onApproved={() => setReexamGrants(prev => prev.includes(test.id) ? prev : [...prev, test.id])}
+          />
+        </div>
+      ) : (
+        <Button size="sm" variant="outline" disabled><Lock className="h-4 w-4 mr-2" />Closed</Button>
+      );
+    }
+    return (
+      <Button size="sm" onClick={() => handleStartTest(test)}>
+        <Play className="h-4 w-4 mr-2" />{label}
+      </Button>
+    );
   };
 
 
@@ -1077,23 +1163,14 @@ export const StudentDashboard = () => {
                           </div>
                         </div>
                         
-                        <Button 
-                          size="sm"
-                          onClick={() => handleStartTest(test)}
-                          disabled={!isTestAvailable(test)}
-                        >
-                          {!isTestAvailable(test) ? (
-                            <>
-                              <Calendar className="h-4 w-4 mr-2" />
-                              {format(new Date(test.scheduledDate!), "dd MMM")}{test.scheduledTime ? ` at ${test.scheduledTime.slice(0, 5)}` : ''}
-                            </>
-                          ) : (
-                            <>
-                              <Play className="h-4 w-4 mr-2" />
-                              Start Test
-                            </>
-                          )}
-                        </Button>
+                        {!isTestAvailable(test) ? (
+                          <Button size="sm" disabled>
+                            <Calendar className="h-4 w-4 mr-2" />
+                            {format(new Date(test.scheduledDate!), "dd MMM")}{test.scheduledTime ? ` at ${test.scheduledTime.slice(0, 5)}` : ''}
+                          </Button>
+                        ) : (
+                          renderStartButton(test, "Start Test")
+                        )}
                       </div>
                     </div>
                   ))
@@ -1326,9 +1403,7 @@ export const StudentDashboard = () => {
                                 <div className="flex items-center space-x-1 text-primary"><Trophy className="h-4 w-4" /><span>{lastAttempt.score}%</span></div>
                               )}
                             </div>
-                            <Button size="sm" onClick={() => handleStartTest(test)}>
-                              <Play className="h-4 w-4 mr-2" />{hasAttempted ? "Retake" : "Start"}
-                            </Button>
+                            {renderStartButton(test, hasAttempted ? "Retake" : "Start")}
                           </div>
                         </div>
                       );
@@ -1370,9 +1445,7 @@ export const StudentDashboard = () => {
                             {!isProStudent ? (
                               <Button size="sm" variant="outline" disabled><Lock className="h-4 w-4 mr-2" />Pro Only</Button>
                             ) : (
-                              <Button size="sm" onClick={() => handleStartTest(test)}>
-                                <Play className="h-4 w-4 mr-2" />{hasAttempted ? "Retake" : "Start"}
-                              </Button>
+                              renderStartButton(test, hasAttempted ? "Retake" : "Start")
                             )}
                           </div>
                         </div>
@@ -1431,9 +1504,7 @@ export const StudentDashboard = () => {
                             ) : isLocked ? (
                               <Button size="sm" variant="outline" disabled><Lock className="h-4 w-4 mr-2" />Pro Only</Button>
                             ) : (
-                              <Button size="sm" onClick={() => handleStartTest(test)}>
-                                <Play className="h-4 w-4 mr-2" />Start
-                              </Button>
+                              renderStartButton(test, "Start")
                             )}
                           </div>
                         </div>
@@ -1480,9 +1551,7 @@ export const StudentDashboard = () => {
                                   <FileText className="h-4 w-4 mr-2" />Answer Sheet
                                 </Button>
                               )}
-                              <Button size="sm" onClick={() => handleStartTest(test)}>
-                                <Play className="h-4 w-4 mr-2" />Retake
-                              </Button>
+                              {renderStartButton(test, "Retake")}
                             </div>
                           </div>
                         </div>
