@@ -18,15 +18,23 @@ import { isAnswered, isAnswerCorrect, normalizeQuestionTime, getQuestionRemark }
 import { AnswerSheetView } from "./AnswerSheetView";
 import { useAuth } from "@/hooks/useAuth";
 import { JoinClassCard } from "./JoinClassCard";
+import { useNavigate } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
+  SidebarFooter,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarProvider,
-  SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
+import { PanelLeftClose, PanelLeftOpen, Bell, History, RefreshCw, MessageCircle } from "lucide-react";
+
 
 import { QuestionPaperDownload } from "./QuestionPaperDownload";
 import { StudentDoubtChat } from "./StudentDoubtChat";
