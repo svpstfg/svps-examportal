@@ -95,6 +95,8 @@ export const TeacherDashboard = () => {
     scheduledTime: '',
     isScheduled: false,
     isPro: false,
+    closeAfterSchedule: false,
+    singleAttempt: false,
   });
 
   // Load data from Supabase
