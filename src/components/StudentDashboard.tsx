@@ -44,8 +44,25 @@ import { UpgradeBanner } from "./UpgradeBanner";
 
 const RESUME_KEY = (studentId: string, testId: string) => `test_progress_${studentId}_${testId}`;
 
+const CollapseToggle = ({ className }: { className?: string }) => {
+  const { state, toggleSidebar, isMobile, openMobile } = useSidebar();
+  const expanded = isMobile ? openMobile : state === "expanded";
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className={className}
+      onClick={toggleSidebar}
+      aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
+    >
+      {expanded ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
+    </Button>
+  );
+};
+
 export const StudentDashboard = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [student, setStudent] = useState<Student | null>(null);
   const [classes, setClasses] = useState<Class[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -1232,7 +1249,7 @@ export const StudentDashboard = () => {
           <SidebarFooter>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Sign Out" onClick={handleSignOut}>
+                <SidebarMenuButton tooltip="Sign Out" onClick={handleLogout}>
                   <LogOut />
                   <span>Sign Out</span>
                 </SidebarMenuButton>
