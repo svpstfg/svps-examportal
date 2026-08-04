@@ -1163,23 +1163,14 @@ export const StudentDashboard = () => {
                           </div>
                         </div>
                         
-                        <Button 
-                          size="sm"
-                          onClick={() => handleStartTest(test)}
-                          disabled={!isTestAvailable(test)}
-                        >
-                          {!isTestAvailable(test) ? (
-                            <>
-                              <Calendar className="h-4 w-4 mr-2" />
-                              {format(new Date(test.scheduledDate!), "dd MMM")}{test.scheduledTime ? ` at ${test.scheduledTime.slice(0, 5)}` : ''}
-                            </>
-                          ) : (
-                            <>
-                              <Play className="h-4 w-4 mr-2" />
-                              Start Test
-                            </>
-                          )}
-                        </Button>
+                        {!isTestAvailable(test) ? (
+                          <Button size="sm" disabled>
+                            <Calendar className="h-4 w-4 mr-2" />
+                            {format(new Date(test.scheduledDate!), "dd MMM")}{test.scheduledTime ? ` at ${test.scheduledTime.slice(0, 5)}` : ''}
+                          </Button>
+                        ) : (
+                          renderStartButton(test, "Start Test")
+                        )}
                       </div>
                     </div>
                   ))
@@ -1560,9 +1551,7 @@ export const StudentDashboard = () => {
                                   <FileText className="h-4 w-4 mr-2" />Answer Sheet
                                 </Button>
                               )}
-                              <Button size="sm" onClick={() => handleStartTest(test)}>
-                                <Play className="h-4 w-4 mr-2" />Retake
-                              </Button>
+                              {renderStartButton(test, "Retake")}
                             </div>
                           </div>
                         </div>
