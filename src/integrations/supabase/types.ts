@@ -327,6 +327,70 @@ export type Database = {
           },
         ]
       }
+      reexam_requests: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          message: string | null
+          responded_at: string | null
+          status: string
+          student_id: string
+          teacher_id: string
+          test_id: string
+          updated_at: string
+          used_at: string | null
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          responded_at?: string | null
+          status?: string
+          student_id: string
+          teacher_id: string
+          test_id: string
+          updated_at?: string
+          used_at?: string | null
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          responded_at?: string | null
+          status?: string
+          student_id?: string
+          teacher_id?: string
+          test_id?: string
+          updated_at?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reexam_requests_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reexam_requests_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reexam_requests_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       slides: {
         Row: {
           chapter_id: string | null
@@ -577,6 +641,7 @@ export type Database = {
       tests: {
         Row: {
           chapter_id: string
+          close_after_schedule: boolean
           created_at: string
           duration: number
           id: string
@@ -587,11 +652,13 @@ export type Database = {
           results_published: boolean
           scheduled_date: string | null
           scheduled_time: string | null
+          single_attempt: boolean
           title: string
           updated_at: string
         }
         Insert: {
           chapter_id: string
+          close_after_schedule?: boolean
           created_at?: string
           duration: number
           id?: string
@@ -602,11 +669,13 @@ export type Database = {
           results_published?: boolean
           scheduled_date?: string | null
           scheduled_time?: string | null
+          single_attempt?: boolean
           title: string
           updated_at?: string
         }
         Update: {
           chapter_id?: string
+          close_after_schedule?: boolean
           created_at?: string
           duration?: number
           id?: string
@@ -617,6 +686,7 @@ export type Database = {
           results_published?: boolean
           scheduled_date?: string | null
           scheduled_time?: string | null
+          single_attempt?: boolean
           title?: string
           updated_at?: string
         }
@@ -719,6 +789,10 @@ export type Database = {
       approve_upgrade_request: {
         Args: { _duration_days?: number; _request_id: string }
         Returns: undefined
+      }
+      consume_reexam_grant: {
+        Args: { _student_id: string; _test_id: string }
+        Returns: boolean
       }
       find_class_by_invite_code: {
         Args: { _invite_code: string }
