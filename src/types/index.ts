@@ -48,6 +48,8 @@ export interface Test {
   isScheduled: boolean;
   isPro: boolean;
   isLocked?: boolean;
+  closeAfterSchedule?: boolean;
+  singleAttempt?: boolean;
 }
 
 export interface StudentEnrollment {
