@@ -1546,6 +1546,7 @@ export const StudentDashboard = () => {
           </Card>
 
           {/* Class Leaderboard */}
+          <div id="leaderboard" />
           {classes.filter(c => enrolledClassIds.includes(c.id)).length > 0 && (
             <ClassLeaderboard
               classes={classes.filter(c => enrolledClassIds.includes(c.id))}
@@ -1564,6 +1565,7 @@ export const StudentDashboard = () => {
           )}
 
           {/* Doubt Clearing Section */}
+          <div id="doubt-chat" />
           <StudentDoubtChat
             studentIds={allStudentIds}
             enrolledClassIds={enrolledClassIds}
@@ -1572,7 +1574,7 @@ export const StudentDashboard = () => {
 
 
           {attempts.length > 0 && (
-            <Card>
+            <Card id="test-history">
               <CardHeader>
                 <CardTitle>Recent Results</CardTitle>
                 <CardDescription className="text-xs">Click to view answer sheet</CardDescription>
