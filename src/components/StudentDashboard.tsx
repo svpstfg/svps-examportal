@@ -1445,7 +1445,7 @@ export const StudentDashboard = () => {
                             {!isProStudent ? (
                               <Button size="sm" variant="outline" disabled><Lock className="h-4 w-4 mr-2" />Pro Only</Button>
                             ) : (
-                              {renderStartButton(test, hasAttempted ? "Retake" : "Start")}
+                              renderStartButton(test, hasAttempted ? "Retake" : "Start")
                             )}
                           </div>
                         </div>
@@ -1504,7 +1504,7 @@ export const StudentDashboard = () => {
                             ) : isLocked ? (
                               <Button size="sm" variant="outline" disabled><Lock className="h-4 w-4 mr-2" />Pro Only</Button>
                             ) : (
-                              {renderStartButton(test, "Start")}
+                              renderStartButton(test, "Start")
                             )}
                           </div>
                         </div>
