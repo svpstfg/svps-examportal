@@ -49,6 +49,8 @@ import { TestPaperPDF } from "@/components/TestPaperPDF";
 import { StudentManagement } from "@/components/StudentManagement";
 import { UserManagement } from "@/components/UserManagement";
 import { UpgradeRequestsManager } from "@/components/UpgradeRequestsManager";
+import { ReexamRequestsManager } from "@/components/ReexamRequestsManager";
+import { KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -75,7 +77,7 @@ export const TeacherDashboard = () => {
   const [pdfShowOptions, setPdfShowOptions] = useState(true);
   const [participationTest, setParticipationTest] = useState<Test | null>(null);
   const [testToDelete, setTestToDelete] = useState<Test | null>(null);
-  const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'upgrades' | 'share-signup' | 'users'>(null);
+  const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'upgrades' | 'reexams' | 'share-signup' | 'users'>(null);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'classes' | 'students' | 'courses' | 'chapters' | 'create-test' | 'tests'>('classes');
@@ -162,7 +164,9 @@ export const TeacherDashboard = () => {
           scheduledTime: t.scheduled_time || undefined,
           isScheduled: t.is_scheduled || false,
           isPro: (t as any).is_pro || false,
-          isLocked: (t as any).is_locked || true
+          isLocked: (t as any).is_locked || true,
+          closeAfterSchedule: (t as any).close_after_schedule || false,
+          singleAttempt: (t as any).single_attempt || false
         })) || [];
 
         setClasses(transformedClasses);
@@ -424,7 +428,9 @@ export const TeacherDashboard = () => {
           scheduled_date: newTest.scheduledDate?.toISOString().split('T')[0],
           scheduled_time: newTest.scheduledTime || null,
           is_scheduled: newTest.isScheduled,
-          is_pro: newTest.isPro
+          is_pro: newTest.isPro,
+          close_after_schedule: newTest.closeAfterSchedule,
+          single_attempt: newTest.singleAttempt
         } as any)
         .select()
         .single();
@@ -441,7 +447,9 @@ export const TeacherDashboard = () => {
         scheduledDate: data.scheduled_date ? new Date(data.scheduled_date) : undefined,
         scheduledTime: data.scheduled_time || undefined,
         isScheduled: data.is_scheduled || false,
-        isPro: (data as any).is_pro || false
+        isPro: (data as any).is_pro || false,
+        closeAfterSchedule: (data as any).close_after_schedule || false,
+        singleAttempt: (data as any).single_attempt || false
       };
 
       setTests(prev => [transformedTest, ...prev]);
@@ -455,6 +463,8 @@ export const TeacherDashboard = () => {
         scheduledTime: '',
         isScheduled: false,
         isPro: false,
+        closeAfterSchedule: false,
+        singleAttempt: false,
       });
       toast.success('Test created successfully!');
     } catch (error) {
@@ -533,6 +543,8 @@ export const TeacherDashboard = () => {
       isScheduled: test.isScheduled,
       isPro: test.isPro,
       isLocked: test.isLocked || false,
+      closeAfterSchedule: test.closeAfterSchedule || false,
+      singleAttempt: test.singleAttempt || false,
     };
 
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -693,6 +705,7 @@ export const TeacherDashboard = () => {
     { key: 'notices' as const, label: 'Notices', icon: Megaphone },
     { key: 'leaderboard' as const, label: 'Leaderboard', icon: Trophy },
     { key: 'upgrades' as const, label: 'Upgrades', icon: Sparkles },
+    { key: 'reexams' as const, label: 'Re-exam Requests', icon: KeyRound },
     { key: 'users' as const, label: 'User Management', icon: UsersRound },
     { key: 'share-signup' as const, label: 'Share Signup Link', icon: Share2 },
   ];
@@ -728,6 +741,8 @@ export const TeacherDashboard = () => {
         );
       case 'upgrades':
         return <UpgradeRequestsManager />;
+      case 'reexams':
+        return <ReexamRequestsManager />;
       case 'users':
         return <UserManagement classes={classes} />;
       case 'share-signup':
@@ -1682,6 +1697,30 @@ export const TeacherDashboard = () => {
                   <Label htmlFor="pro-test" className="flex items-center space-x-1">
                     <Crown className="h-4 w-4 text-warning" />
                     <span>Pro-only test (only available to Pro students)</span>
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="close-after-schedule"
+                    checked={newTest.closeAfterSchedule}
+                    onChange={(e) => setNewTest(prev => ({ ...prev, closeAfterSchedule: e.target.checked }))}
+                  />
+                  <Label htmlFor="close-after-schedule" className="flex items-center space-x-1">
+                    <span>Close test after the scheduled time (students must request access)</span>
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="single-attempt"
+                    checked={newTest.singleAttempt}
+                    onChange={(e) => setNewTest(prev => ({ ...prev, singleAttempt: e.target.checked }))}
+                  />
+                  <Label htmlFor="single-attempt" className="flex items-center space-x-1">
+                    <span>Allow only one attempt (no retake unless teacher approves)</span>
                   </Label>
                 </div>
 
