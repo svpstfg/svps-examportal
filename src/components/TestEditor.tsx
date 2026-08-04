@@ -82,7 +82,9 @@ export const TestEditor = ({ test, chapters, courses, classes, onSave, onCancel 
           scheduled_time: editingTest.scheduledTime || null,
           is_scheduled: editingTest.isScheduled,
           is_pro: editingTest.isPro,
-        })
+          close_after_schedule: editingTest.closeAfterSchedule ?? false,
+          single_attempt: editingTest.singleAttempt ?? false,
+        } as any)
         .eq('id', editingTest.id);
 
       if (error) throw error;
@@ -182,6 +184,31 @@ export const TestEditor = ({ test, chapters, courses, classes, onSave, onCancel 
                   onChange={(e) => setEditingTest(prev => ({ ...prev, isScheduled: e.target.checked }))}
                 />
                 <Label htmlFor="schedule-test">Schedule this test</Label>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="close-after-schedule-edit"
+                  checked={!!editingTest.closeAfterSchedule}
+                  onChange={(e) => setEditingTest(prev => ({ ...prev, closeAfterSchedule: e.target.checked }))}
+                />
+                <Label htmlFor="close-after-schedule-edit">
+                  Close test after the scheduled time (students must request access)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="single-attempt-edit"
+                  checked={!!editingTest.singleAttempt}
+                  onChange={(e) => setEditingTest(prev => ({ ...prev, singleAttempt: e.target.checked }))}
+                />
+                <Label htmlFor="single-attempt-edit">
+                  Allow only one attempt (no retake unless teacher approves)
+                </Label>
               </div>
             </div>
 
