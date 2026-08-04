@@ -1097,11 +1097,83 @@ export const StudentDashboard = () => {
     .filter(c => selectedClassId === 'all' || c.id === selectedClassId);
 
   return (
-    <SidebarProvider style={{ "--sidebar-width": "20rem" } as React.CSSProperties}>
+    <SidebarProvider defaultOpen={false} style={{ "--sidebar-width": "20rem" } as React.CSSProperties}>
       <div className="flex w-full min-h-screen">
-        <Sidebar collapsible="offcanvas">
+        <Sidebar collapsible="icon">
+          <SidebarHeader className="gap-2">
+            <div className="flex items-center gap-2 px-1">
+              <div className="h-8 w-8 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
+                <GraduationCap className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+                <p className="font-bold text-sm truncate">Skyview Test Pro</p>
+                <p className="text-[11px] text-muted-foreground truncate">Advanced Mock Testing Platform</p>
+              </div>
+            </div>
+            <CollapseToggle />
+          </SidebarHeader>
+
           <SidebarContent className="gap-0">
             <SidebarGroup>
+              <SidebarGroupLabel>Menu</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton tooltip="Dashboard" onClick={() => navigate('/student')}>
+                      <Target />
+                      <span>Dashboard</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton tooltip="Notifications" onClick={() => navigate('/notifications')}>
+                      <Bell />
+                      <span>Notifications</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton tooltip="My Profile" onClick={() => navigate('/profile')}>
+                      <User />
+                      <span>My Profile</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      tooltip="Test History"
+                      onClick={() => document.getElementById('test-history')?.scrollIntoView({ behavior: 'smooth' })}
+                    >
+                      <History />
+                      <span>Test History ({attempts.length})</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      tooltip="Leaderboard"
+                      onClick={() => document.getElementById('leaderboard')?.scrollIntoView({ behavior: 'smooth' })}
+                    >
+                      <Trophy />
+                      <span>Leaderboard</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      tooltip="Ask a Doubt"
+                      onClick={() => document.getElementById('doubt-chat')?.scrollIntoView({ behavior: 'smooth' })}
+                    >
+                      <MessageCircle />
+                      <span>Ask a Doubt</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton tooltip="Refresh" onClick={() => window.location.reload()}>
+                      <RefreshCw />
+                      <span>Refresh Data</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarGroup className="group-data-[collapsible=icon]:hidden">
               <SidebarGroupLabel className="flex items-center gap-2">
                 <GraduationCap className="h-4 w-4" />
                 My Classes
@@ -1125,7 +1197,7 @@ export const StudentDashboard = () => {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            <SidebarGroup>
+            <SidebarGroup className="group-data-[collapsible=icon]:hidden">
               <SidebarGroupLabel>Join Another Class</SidebarGroupLabel>
               <SidebarGroupContent className="px-2 pb-2">
                 <JoinClassCard
@@ -1138,7 +1210,7 @@ export const StudentDashboard = () => {
             </SidebarGroup>
 
             {upgradeClasses.length > 0 && (
-              <SidebarGroup>
+              <SidebarGroup className="group-data-[collapsible=icon]:hidden">
                 <SidebarGroupLabel className="flex items-center gap-2">
                   <Crown className="h-4 w-4" />
                   Upgrade to Pro
@@ -1156,12 +1228,24 @@ export const StudentDashboard = () => {
               </SidebarGroup>
             )}
           </SidebarContent>
+
+          <SidebarFooter>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton tooltip="Sign Out" onClick={handleSignOut}>
+                  <LogOut />
+                  <span>Sign Out</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarFooter>
         </Sidebar>
 
         <div className="flex-1 min-w-0">
           <div className="container mx-auto px-4 py-8">
             <div className="mb-8 flex items-start gap-3">
-              <SidebarTrigger className="mt-1" />
+              <CollapseToggle className="mt-1" />
+
               <div>
                 <h1 className="text-3xl font-bold mb-2">Student Dashboard</h1>
                 <p className="text-muted-foreground">Welcome back, {student.name}!</p>
