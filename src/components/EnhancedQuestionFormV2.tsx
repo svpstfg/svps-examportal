@@ -33,6 +33,25 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const builderRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const [bankOpen, setBankOpen] = useState(false);
+
+  const handleSaveToBank = async (question: Question) => {
+    if (!user) return;
+    try {
+      await saveQuestionToBank(user.id, question);
+      toast.success('Saved to Question Bank');
+    } catch (e) {
+      console.error(e);
+      toast.error('Could not save to Question Bank');
+    }
+  };
+
+  const handleInsertFromBank = (question: Question) => {
+    onAddQuestion({ ...question, id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` });
+    toast.success('Question added from bank');
+  };
+
 
   const startEditing = (question: Question) => {
     setEditingId(question.id);
