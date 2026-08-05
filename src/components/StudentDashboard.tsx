@@ -605,9 +605,13 @@ export const StudentDashboard = () => {
     submittedRef.current = true;
     isTestActiveRef.current = false;
 
-    const score = selectedAnswers.reduce((total, answer, index) => {
-      return total + (answer === currentTest.questions[index].correctAnswer ? 1 : 0);
+    const penalty = (currentTest as any).negativeMarking || 0;
+    const rawScore = selectedAnswers.reduce((total, answer, index) => {
+      if (answer === currentTest.questions[index].correctAnswer) return total + 1;
+      if (answer !== undefined && answer !== null && answer >= 0) return total - penalty;
+      return total;
     }, 0);
+    const score = Math.max(0, rawScore);
 
     const percentage = Math.round((score / currentTest.questions.length) * 100);
     const timeSpent = (currentTest.duration * 60) - timeLeft;
