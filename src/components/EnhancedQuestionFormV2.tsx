@@ -1704,6 +1704,15 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                           <Pencil className="h-4 w-4" />
                         </Button>
                       )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        title="Save to Question Bank"
+                        onClick={() => handleSaveToBank(question)}
+                      >
+                        <BookmarkPlus className="h-4 w-4" />
+                      </Button>
+
                       {onRemoveQuestion && (
                         <Button
                           variant="outline"
