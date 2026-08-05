@@ -713,6 +713,8 @@ export const TeacherDashboard = () => {
     { key: 'upgrades' as const, label: 'Upgrades', icon: Sparkles },
     { key: 'reexams' as const, label: 'Re-exam Requests', icon: KeyRound },
     { key: 'users' as const, label: 'User Management', icon: UsersRound },
+    { key: 'question-bank' as const, label: 'Question Bank', icon: Library },
+    { key: 'ai-usage' as const, label: 'AI Usage Tracker', icon: Activity },
     { key: 'share-signup' as const, label: 'Share Signup Link', icon: Share2 },
   ];
 
