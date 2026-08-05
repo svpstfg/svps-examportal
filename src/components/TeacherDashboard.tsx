@@ -466,6 +466,7 @@ export const TeacherDashboard = () => {
         isPro: false,
         closeAfterSchedule: false,
         singleAttempt: false,
+        negativeMarking: 0,
       });
       toast.success('Test created successfully!');
     } catch (error) {
