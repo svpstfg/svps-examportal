@@ -210,7 +210,9 @@ export const TestEditor = ({ test, chapters, courses, classes, onSave, onCancel 
                 <Label htmlFor="single-attempt-edit">
                   Allow only one attempt (no retake unless teacher approves)
                 </Label>
+              </div>
             </div>
+
 
             <div className="space-y-2 max-w-xs">
               <Label htmlFor="negative-marking-edit">Negative marking (per wrong answer)</Label>
