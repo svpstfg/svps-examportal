@@ -1059,6 +1059,23 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <Dialog open={bankOpen} onOpenChange={setBankOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Library className="h-4 w-4 mr-2" />
+              Question Bank
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Question Bank</DialogTitle>
+            </DialogHeader>
+            <QuestionBankManager compact onInsert={handleInsertFromBank} />
+          </DialogContent>
+        </Dialog>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
