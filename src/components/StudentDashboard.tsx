@@ -429,10 +429,12 @@ export const StudentDashboard = () => {
     const answers = (selectedAnswersRef.current && selectedAnswersRef.current.length)
       ? selectedAnswersRef.current
       : new Array(t.questions.length).fill(-1);
-    const score = answers.reduce(
-      (total, answer, index) => total + (answer === t.questions[index]?.correctAnswer ? 1 : 0),
-      0
-    );
+    const penalty = (t as any).negativeMarking || 0;
+    const score = Math.max(0, answers.reduce((total, answer, index) => {
+      if (answer === t.questions[index]?.correctAnswer) return total + 1;
+      if (answer >= 0) return total - penalty;
+      return total;
+    }, 0));
     const percentage = t.questions.length ? Math.round((score / t.questions.length) * 100) : 0;
     const timeSpent = Math.max(0, t.duration * 60 - timeLeftRef.current);
     const questionTimes = questionTimesRef.current
