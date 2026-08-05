@@ -48,6 +48,8 @@ import { TestPreview } from "@/components/TestPreview";
 import { TestPaperPDF } from "@/components/TestPaperPDF";
 import { StudentManagement } from "@/components/StudentManagement";
 import { UserManagement } from "@/components/UserManagement";
+import { QuestionBankManager } from "@/components/QuestionBankManager";
+import { AIUsageTracker } from "@/components/AIUsageTracker";
 import { UpgradeRequestsManager } from "@/components/UpgradeRequestsManager";
 import { ReexamRequestsManager } from "@/components/ReexamRequestsManager";
 import { KeyRound } from "lucide-react";
