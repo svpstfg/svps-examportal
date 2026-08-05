@@ -1,4 +1,6 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { logAiUsage } from '../_shared/ai-usage.ts';
 
 interface ImagePayload {
   // data URL (data:image/png;base64,....) or raw https URL
