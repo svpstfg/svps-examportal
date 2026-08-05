@@ -48,11 +48,27 @@ Deno.serve(async (req) => {
       });
     }
 
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+    const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    let callerId: string | null = null;
+    const authHeader = req.headers.get('Authorization') ?? '';
+    if (authHeader) {
+      const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await userClient.auth.getUser();
+      callerId = user?.id ?? null;
+    }
+
     const body = await req.json().catch(() => null);
     const images: ImagePayload[] = Array.isArray(body?.images) ? body.images : [];
     const count: number = Number(body?.count) > 0 ? Math.min(Number(body.count), 30) : 0;
     const difficulty: string = typeof body?.difficulty === 'string' ? body.difficulty : 'medium';
     const extraInstructions: string = typeof body?.instructions === 'string' ? body.instructions.slice(0, 1000) : '';
+
 
     if (!images.length) {
       return new Response(JSON.stringify({ error: 'No images provided' }), {
