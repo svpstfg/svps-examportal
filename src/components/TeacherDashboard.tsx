@@ -753,6 +753,10 @@ export const TeacherDashboard = () => {
         return <ReexamRequestsManager />;
       case 'users':
         return <UserManagement classes={classes} />;
+      case 'question-bank':
+        return <QuestionBankManager />;
+      case 'ai-usage':
+        return <AIUsageTracker />;
       case 'share-signup':
         return (
           <div className="space-y-6">
