@@ -1730,6 +1730,23 @@ export const TeacherDashboard = () => {
                   </Label>
                 </div>
 
+                <div className="space-y-2 max-w-xs">
+                  <Label htmlFor="negative-marking">Negative marking (per wrong answer)</Label>
+                  <Input
+                    id="negative-marking"
+                    type="number"
+                    min="0"
+                    step="0.25"
+                    value={newTest.negativeMarking}
+                    onChange={(e) => setNewTest(prev => ({ ...prev, negativeMarking: Math.max(0, parseFloat(e.target.value) || 0) }))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    0 = no penalty. e.g. 0.25 deducts a quarter mark for each wrong answer.
+                  </p>
+                </div>
+
+
+
                 {newTest.isScheduled && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
