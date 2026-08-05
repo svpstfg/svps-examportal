@@ -99,6 +99,7 @@ export const TeacherDashboard = () => {
     isPro: false,
     closeAfterSchedule: false,
     singleAttempt: false,
+    negativeMarking: 0,
   });
 
   // Load data from Supabase
