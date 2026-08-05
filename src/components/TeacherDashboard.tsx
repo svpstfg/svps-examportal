@@ -453,7 +453,8 @@ export const TeacherDashboard = () => {
         isScheduled: data.is_scheduled || false,
         isPro: (data as any).is_pro || false,
         closeAfterSchedule: (data as any).close_after_schedule || false,
-        singleAttempt: (data as any).single_attempt || false
+        singleAttempt: (data as any).single_attempt || false,
+        negativeMarking: Number((data as any).negative_marking) || 0
       };
 
       setTests(prev => [transformedTest, ...prev]);
