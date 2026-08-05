@@ -431,7 +431,8 @@ export const TeacherDashboard = () => {
           is_scheduled: newTest.isScheduled,
           is_pro: newTest.isPro,
           close_after_schedule: newTest.closeAfterSchedule,
-          single_attempt: newTest.singleAttempt
+          single_attempt: newTest.singleAttempt,
+          negative_marking: newTest.negativeMarking || 0
         } as any)
         .select()
         .single();
