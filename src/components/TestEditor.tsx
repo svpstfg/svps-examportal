@@ -84,6 +84,7 @@ export const TestEditor = ({ test, chapters, courses, classes, onSave, onCancel 
           is_pro: editingTest.isPro,
           close_after_schedule: editingTest.closeAfterSchedule ?? false,
           single_attempt: editingTest.singleAttempt ?? false,
+          negative_marking: editingTest.negativeMarking ?? 0,
         } as any)
         .eq('id', editingTest.id);
 
