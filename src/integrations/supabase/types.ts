@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage_logs: {
+        Row: {
+          class_id: string | null
+          completion_tokens: number
+          created_at: string
+          error_message: string | null
+          feature: string
+          id: string
+          metadata: Json
+          model: string | null
+          prompt_tokens: number
+          status: string
+          student_id: string | null
+          teacher_id: string | null
+          total_tokens: number
+          user_id: string | null
+          user_role: string
+        }
+        Insert: {
+          class_id?: string | null
+          completion_tokens?: number
+          created_at?: string
+          error_message?: string | null
+          feature: string
+          id?: string
+          metadata?: Json
+          model?: string | null
+          prompt_tokens?: number
+          status?: string
+          student_id?: string | null
+          teacher_id?: string | null
+          total_tokens?: number
+          user_id?: string | null
+          user_role?: string
+        }
+        Update: {
+          class_id?: string | null
+          completion_tokens?: number
+          created_at?: string
+          error_message?: string | null
+          feature?: string
+          id?: string
+          metadata?: Json
+          model?: string | null
+          prompt_tokens?: number
+          status?: string
+          student_id?: string | null
+          teacher_id?: string | null
+          total_tokens?: number
+          user_id?: string | null
+          user_role?: string
+        }
+        Relationships: []
+      }
       chapters: {
         Row: {
           course_id: string
@@ -286,6 +340,45 @@ export type Database = {
           role?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      question_bank: {
+        Row: {
+          chapter_id: string | null
+          class_id: string | null
+          course_id: string | null
+          created_at: string
+          id: string
+          question: Json
+          tags: string[]
+          teacher_id: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          chapter_id?: string | null
+          class_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          question: Json
+          tags?: string[]
+          teacher_id: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chapter_id?: string | null
+          class_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          question?: Json
+          tags?: string[]
+          teacher_id?: string
+          title?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -648,6 +741,7 @@ export type Database = {
           is_locked: boolean
           is_pro: boolean
           is_scheduled: boolean | null
+          negative_marking: number
           questions: Json
           results_published: boolean
           scheduled_date: string | null
@@ -665,6 +759,7 @@ export type Database = {
           is_locked?: boolean
           is_pro?: boolean
           is_scheduled?: boolean | null
+          negative_marking?: number
           questions?: Json
           results_published?: boolean
           scheduled_date?: string | null
@@ -682,6 +777,7 @@ export type Database = {
           is_locked?: boolean
           is_pro?: boolean
           is_scheduled?: boolean | null
+          negative_marking?: number
           questions?: Json
           results_published?: boolean
           scheduled_date?: string | null
