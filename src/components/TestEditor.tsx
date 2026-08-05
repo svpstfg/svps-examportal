@@ -84,6 +84,7 @@ export const TestEditor = ({ test, chapters, courses, classes, onSave, onCancel 
           is_pro: editingTest.isPro,
           close_after_schedule: editingTest.closeAfterSchedule ?? false,
           single_attempt: editingTest.singleAttempt ?? false,
+          negative_marking: editingTest.negativeMarking ?? 0,
         } as any)
         .eq('id', editingTest.id);
 
@@ -211,6 +212,22 @@ export const TestEditor = ({ test, chapters, courses, classes, onSave, onCancel 
                 </Label>
               </div>
             </div>
+
+
+            <div className="space-y-2 max-w-xs">
+              <Label htmlFor="negative-marking-edit">Negative marking (per wrong answer)</Label>
+              <Input
+                id="negative-marking-edit"
+                type="number"
+                min="0"
+                step="0.25"
+                value={editingTest.negativeMarking ?? 0}
+                onChange={(e) => setEditingTest(prev => ({ ...prev, negativeMarking: Math.max(0, parseFloat(e.target.value) || 0) }))}
+              />
+              <p className="text-xs text-muted-foreground">0 = no penalty for wrong answers.</p>
+            </div>
+
+
 
             {editingTest.isScheduled && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

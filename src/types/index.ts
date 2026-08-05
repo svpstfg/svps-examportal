@@ -50,6 +50,7 @@ export interface Test {
   isLocked?: boolean;
   closeAfterSchedule?: boolean;
   singleAttempt?: boolean;
+  negativeMarking?: number;
 }
 
 export interface StudentEnrollment {

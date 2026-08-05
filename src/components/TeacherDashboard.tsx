@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Plus, BookOpen, Clock, Users, Edit, Trash2, Image, GraduationCap, FolderOpen, CalendarIcon, Eye, Copy, Crown, FileText, BarChart3, Trophy, Download, UsersRound, MessageCircle, Megaphone, FileQuestion, Sparkles, LayoutDashboard, Share2, Lock, FileJson } from "lucide-react";
+import { Plus, BookOpen, Clock, Users, Edit, Trash2, Image, GraduationCap, FolderOpen, CalendarIcon, Eye, Copy, Crown, FileText, BarChart3, Trophy, Download, UsersRound, MessageCircle, Megaphone, FileQuestion, Sparkles, LayoutDashboard, Share2, Lock, FileJson, Library, Activity } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
@@ -48,6 +48,8 @@ import { TestPreview } from "@/components/TestPreview";
 import { TestPaperPDF } from "@/components/TestPaperPDF";
 import { StudentManagement } from "@/components/StudentManagement";
 import { UserManagement } from "@/components/UserManagement";
+import { QuestionBankManager } from "@/components/QuestionBankManager";
+import { AIUsageTracker } from "@/components/AIUsageTracker";
 import { UpgradeRequestsManager } from "@/components/UpgradeRequestsManager";
 import { ReexamRequestsManager } from "@/components/ReexamRequestsManager";
 import { KeyRound } from "lucide-react";
@@ -77,7 +79,7 @@ export const TeacherDashboard = () => {
   const [pdfShowOptions, setPdfShowOptions] = useState(true);
   const [participationTest, setParticipationTest] = useState<Test | null>(null);
   const [testToDelete, setTestToDelete] = useState<Test | null>(null);
-  const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'upgrades' | 'reexams' | 'share-signup' | 'users'>(null);
+  const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'upgrades' | 'reexams' | 'share-signup' | 'users' | 'ai-usage' | 'question-bank'>(null);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'classes' | 'students' | 'courses' | 'chapters' | 'create-test' | 'tests'>('classes');
@@ -99,6 +101,7 @@ export const TeacherDashboard = () => {
     isPro: false,
     closeAfterSchedule: false,
     singleAttempt: false,
+    negativeMarking: 0,
   });
 
   // Load data from Supabase
@@ -166,7 +169,9 @@ export const TeacherDashboard = () => {
           isPro: (t as any).is_pro || false,
           isLocked: (t as any).is_locked || true,
           closeAfterSchedule: (t as any).close_after_schedule || false,
-          singleAttempt: (t as any).single_attempt || false
+          singleAttempt: (t as any).single_attempt || false,
+          negativeMarking: Number((t as any).negative_marking) || 0
+
         })) || [];
 
         setClasses(transformedClasses);
@@ -430,7 +435,8 @@ export const TeacherDashboard = () => {
           is_scheduled: newTest.isScheduled,
           is_pro: newTest.isPro,
           close_after_schedule: newTest.closeAfterSchedule,
-          single_attempt: newTest.singleAttempt
+          single_attempt: newTest.singleAttempt,
+          negative_marking: newTest.negativeMarking || 0
         } as any)
         .select()
         .single();
@@ -449,7 +455,8 @@ export const TeacherDashboard = () => {
         isScheduled: data.is_scheduled || false,
         isPro: (data as any).is_pro || false,
         closeAfterSchedule: (data as any).close_after_schedule || false,
-        singleAttempt: (data as any).single_attempt || false
+        singleAttempt: (data as any).single_attempt || false,
+        negativeMarking: Number((data as any).negative_marking) || 0
       };
 
       setTests(prev => [transformedTest, ...prev]);
@@ -465,6 +472,7 @@ export const TeacherDashboard = () => {
         isPro: false,
         closeAfterSchedule: false,
         singleAttempt: false,
+        negativeMarking: 0,
       });
       toast.success('Test created successfully!');
     } catch (error) {
@@ -707,6 +715,8 @@ export const TeacherDashboard = () => {
     { key: 'upgrades' as const, label: 'Upgrades', icon: Sparkles },
     { key: 'reexams' as const, label: 'Re-exam Requests', icon: KeyRound },
     { key: 'users' as const, label: 'User Management', icon: UsersRound },
+    { key: 'question-bank' as const, label: 'Question Bank', icon: Library },
+    { key: 'ai-usage' as const, label: 'AI Usage Tracker', icon: Activity },
     { key: 'share-signup' as const, label: 'Share Signup Link', icon: Share2 },
   ];
 
@@ -745,6 +755,10 @@ export const TeacherDashboard = () => {
         return <ReexamRequestsManager />;
       case 'users':
         return <UserManagement classes={classes} />;
+      case 'question-bank':
+        return <QuestionBankManager />;
+      case 'ai-usage':
+        return <AIUsageTracker />;
       case 'share-signup':
         return (
           <div className="space-y-6">
@@ -1723,6 +1737,23 @@ export const TeacherDashboard = () => {
                     <span>Allow only one attempt (no retake unless teacher approves)</span>
                   </Label>
                 </div>
+
+                <div className="space-y-2 max-w-xs">
+                  <Label htmlFor="negative-marking">Negative marking (per wrong answer)</Label>
+                  <Input
+                    id="negative-marking"
+                    type="number"
+                    min="0"
+                    step="0.25"
+                    value={newTest.negativeMarking}
+                    onChange={(e) => setNewTest(prev => ({ ...prev, negativeMarking: Math.max(0, parseFloat(e.target.value) || 0) }))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    0 = no penalty. e.g. 0.25 deducts a quarter mark for each wrong answer.
+                  </p>
+                </div>
+
+
 
                 {newTest.isScheduled && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

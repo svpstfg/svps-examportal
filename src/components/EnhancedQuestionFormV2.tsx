@@ -8,7 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Type, Calculator, AlignLeft, Trash2, Image as ImageIcon, Upload, Download, FileJson, Pencil, Save, X, ChevronUp, ChevronDown, Table as TableIcon, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, Type, Calculator, AlignLeft, Trash2, Image as ImageIcon, Upload, Download, FileJson, Pencil, Save, X, ChevronUp, ChevronDown, Table as TableIcon, Sparkles, Loader2, Library, BookmarkPlus } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { QuestionBankManager, saveQuestionToBank } from './QuestionBankManager';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Question } from '@/types';
 import { MathSymbolToolbar, processMathText, convertToUnicode, processRichTextPaste } from './MathFormulaProcessor';
@@ -30,6 +33,25 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const builderRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const [bankOpen, setBankOpen] = useState(false);
+
+  const handleSaveToBank = async (question: Question) => {
+    if (!user) return;
+    try {
+      await saveQuestionToBank(user.id, question);
+      toast.success('Saved to Question Bank');
+    } catch (e) {
+      console.error(e);
+      toast.error('Could not save to Question Bank');
+    }
+  };
+
+  const handleInsertFromBank = (question: Question) => {
+    onAddQuestion({ ...question, id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` });
+    toast.success('Question added from bank');
+  };
+
 
   const startEditing = (question: Question) => {
     setEditingId(question.id);
@@ -1037,6 +1059,23 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <Dialog open={bankOpen} onOpenChange={setBankOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Library className="h-4 w-4 mr-2" />
+              Question Bank
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Question Bank</DialogTitle>
+            </DialogHeader>
+            <QuestionBankManager compact onInsert={handleInsertFromBank} />
+          </DialogContent>
+        </Dialog>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -1665,6 +1704,15 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                           <Pencil className="h-4 w-4" />
                         </Button>
                       )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        title="Save to Question Bank"
+                        onClick={() => handleSaveToBank(question)}
+                      >
+                        <BookmarkPlus className="h-4 w-4" />
+                      </Button>
+
                       {onRemoveQuestion && (
                         <Button
                           variant="outline"

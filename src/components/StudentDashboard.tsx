@@ -226,7 +226,8 @@ export const StudentDashboard = () => {
             isScheduled: t.is_scheduled || false,
             isPro: (t as any).is_pro || false,
             closeAfterSchedule: (t as any).close_after_schedule || false,
-            singleAttempt: (t as any).single_attempt || false
+            singleAttempt: (t as any).single_attempt || false,
+            negativeMarking: Number((t as any).negative_marking) || 0
           })) || [];
 
           setClasses(transformedClasses);
@@ -313,7 +314,8 @@ export const StudentDashboard = () => {
           isScheduled: t.is_scheduled || false,
           isPro: (t as any).is_pro || false,
           closeAfterSchedule: (t as any).close_after_schedule || false,
-          singleAttempt: (t as any).single_attempt || false
+          singleAttempt: (t as any).single_attempt || false,
+          negativeMarking: Number((t as any).negative_marking) || 0
         })) || [];
 
         const transformedAttempts: TestAttempt[] = attemptsRes.data?.map(a => ({
@@ -429,10 +431,12 @@ export const StudentDashboard = () => {
     const answers = (selectedAnswersRef.current && selectedAnswersRef.current.length)
       ? selectedAnswersRef.current
       : new Array(t.questions.length).fill(-1);
-    const score = answers.reduce(
-      (total, answer, index) => total + (answer === t.questions[index]?.correctAnswer ? 1 : 0),
-      0
-    );
+    const penalty = (t as any).negativeMarking || 0;
+    const score = Math.max(0, answers.reduce((total, answer, index) => {
+      if (answer === t.questions[index]?.correctAnswer) return total + 1;
+      if (answer >= 0) return total - penalty;
+      return total;
+    }, 0));
     const percentage = t.questions.length ? Math.round((score / t.questions.length) * 100) : 0;
     const timeSpent = Math.max(0, t.duration * 60 - timeLeftRef.current);
     const questionTimes = questionTimesRef.current
@@ -605,9 +609,13 @@ export const StudentDashboard = () => {
     submittedRef.current = true;
     isTestActiveRef.current = false;
 
-    const score = selectedAnswers.reduce((total, answer, index) => {
-      return total + (answer === currentTest.questions[index].correctAnswer ? 1 : 0);
+    const penalty = (currentTest as any).negativeMarking || 0;
+    const rawScore = selectedAnswers.reduce((total, answer, index) => {
+      if (answer === currentTest.questions[index].correctAnswer) return total + 1;
+      if (answer !== undefined && answer !== null && answer >= 0) return total - penalty;
+      return total;
     }, 0);
+    const score = Math.max(0, rawScore);
 
     const percentage = Math.round((score / currentTest.questions.length) * 100);
     const timeSpent = (currentTest.duration * 60) - timeLeft;

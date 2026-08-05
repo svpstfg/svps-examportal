@@ -1,4 +1,6 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { logAiUsage } from '../_shared/ai-usage.ts';
 
 interface ImagePayload {
   // data URL (data:image/png;base64,....) or raw https URL
@@ -46,11 +48,27 @@ Deno.serve(async (req) => {
       });
     }
 
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+    const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    let callerId: string | null = null;
+    const authHeader = req.headers.get('Authorization') ?? '';
+    if (authHeader) {
+      const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await userClient.auth.getUser();
+      callerId = user?.id ?? null;
+    }
+
     const body = await req.json().catch(() => null);
     const images: ImagePayload[] = Array.isArray(body?.images) ? body.images : [];
     const count: number = Number(body?.count) > 0 ? Math.min(Number(body.count), 30) : 0;
     const difficulty: string = typeof body?.difficulty === 'string' ? body.difficulty : 'medium';
     const extraInstructions: string = typeof body?.instructions === 'string' ? body.instructions.slice(0, 1000) : '';
+
 
     if (!images.length) {
       return new Response(JSON.stringify({ error: 'No images provided' }), {
@@ -98,21 +116,35 @@ Deno.serve(async (req) => {
       }),
     });
 
-    if (aiResponse.status === 429) {
-      return new Response(JSON.stringify({ error: 'Rate limit reached. Please try again shortly.' }), {
-        status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    if (aiResponse.status === 402) {
-      return new Response(JSON.stringify({ error: 'AI credits exhausted. Please add credits to continue.' }), {
-        status: 402,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    const baseLog = {
+      userId: callerId,
+      userRole: 'teacher',
+      teacherId: callerId,
+      feature: 'questions_from_images',
+      model: 'google/gemini-2.5-flash',
+      metadata: { images: images.length, difficulty, requested: count },
+    } as const;
+
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
       console.error('AI gateway error:', aiResponse.status, errText);
+      await logAiUsage(admin, {
+        ...baseLog,
+        status: 'error',
+        errorMessage: `HTTP ${aiResponse.status}`,
+      });
+      if (aiResponse.status === 429) {
+        return new Response(JSON.stringify({ error: 'Rate limit reached. Please try again shortly.' }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (aiResponse.status === 402) {
+        return new Response(JSON.stringify({ error: 'AI credits exhausted. Please add credits to continue.' }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       return new Response(JSON.stringify({ error: 'Failed to generate questions' }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -120,7 +152,9 @@ Deno.serve(async (req) => {
     }
 
     const data = await aiResponse.json();
+    await logAiUsage(admin, { ...baseLog, usage: data?.usage, status: 'success' });
     const raw = data?.choices?.[0]?.message?.content ?? '';
+
 
     let parsed: any = null;
     try {
