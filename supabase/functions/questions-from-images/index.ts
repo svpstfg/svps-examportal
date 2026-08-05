@@ -116,21 +116,35 @@ Deno.serve(async (req) => {
       }),
     });
 
-    if (aiResponse.status === 429) {
-      return new Response(JSON.stringify({ error: 'Rate limit reached. Please try again shortly.' }), {
-        status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    if (aiResponse.status === 402) {
-      return new Response(JSON.stringify({ error: 'AI credits exhausted. Please add credits to continue.' }), {
-        status: 402,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    const baseLog = {
+      userId: callerId,
+      userRole: 'teacher',
+      teacherId: callerId,
+      feature: 'questions_from_images',
+      model: 'google/gemini-2.5-flash',
+      metadata: { images: images.length, difficulty, requested: count },
+    } as const;
+
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
       console.error('AI gateway error:', aiResponse.status, errText);
+      await logAiUsage(admin, {
+        ...baseLog,
+        status: 'error',
+        errorMessage: `HTTP ${aiResponse.status}`,
+      });
+      if (aiResponse.status === 429) {
+        return new Response(JSON.stringify({ error: 'Rate limit reached. Please try again shortly.' }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (aiResponse.status === 402) {
+        return new Response(JSON.stringify({ error: 'AI credits exhausted. Please add credits to continue.' }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       return new Response(JSON.stringify({ error: 'Failed to generate questions' }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -138,7 +152,9 @@ Deno.serve(async (req) => {
     }
 
     const data = await aiResponse.json();
+    await logAiUsage(admin, { ...baseLog, usage: data?.usage, status: 'success' });
     const raw = data?.choices?.[0]?.message?.content ?? '';
+
 
     let parsed: any = null;
     try {
