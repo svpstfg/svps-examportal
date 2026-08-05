@@ -167,7 +167,9 @@ export const TeacherDashboard = () => {
           isPro: (t as any).is_pro || false,
           isLocked: (t as any).is_locked || true,
           closeAfterSchedule: (t as any).close_after_schedule || false,
-          singleAttempt: (t as any).single_attempt || false
+          singleAttempt: (t as any).single_attempt || false,
+          negativeMarking: Number((t as any).negative_marking) || 0
+
         })) || [];
 
         setClasses(transformedClasses);
