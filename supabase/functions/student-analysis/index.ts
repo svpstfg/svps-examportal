@@ -145,22 +145,43 @@ Keep the whole report under 220 words.`;
       }),
     });
 
-    if (aiRes.status === 429) {
-      return json({ error: "Rate limit reached. Please try again shortly." }, 429);
-    }
-    if (aiRes.status === 402) {
-      return json(
-        { error: "AI credits exhausted. Please add credits to continue." },
-        402,
-      );
-    }
+    // Who is calling, and which teacher owns this student?
+    const { data: roleRow } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const callerRole = roleRow?.role ?? "teacher";
+    const { teacherId, classId } = await resolveTeacherForStudent(admin, p.studentId);
+    const baseLog = {
+      userId: user.id,
+      userRole: callerRole,
+      teacherId: teacherId ?? (callerRole === "teacher" ? user.id : null),
+      studentId: p.studentId ?? null,
+      classId,
+      feature: "student_analysis",
+      model: "google/gemini-2.5-flash",
+      metadata: { testId: p.testId ?? null, testTitle: p.testTitle, scorePct: p.scorePct },
+    } as const;
+
     if (!aiRes.ok) {
       const t = await aiRes.text();
       console.error("AI gateway error", aiRes.status, t);
+      await logAiUsage(admin, { ...baseLog, status: "error", errorMessage: `HTTP ${aiRes.status}` });
+      if (aiRes.status === 429) {
+        return json({ error: "Rate limit reached. Please try again shortly." }, 429);
+      }
+      if (aiRes.status === 402) {
+        return json(
+          { error: "AI credits exhausted. Please add credits to continue." },
+          402,
+        );
+      }
       return json({ error: "AI analysis failed" }, 500);
     }
 
     const data = await aiRes.json();
+    await logAiUsage(admin, { ...baseLog, usage: data?.usage, status: "success" });
     const report = data?.choices?.[0]?.message?.content ?? "";
 
     if (canCache && report) {
@@ -180,6 +201,7 @@ Keep the whole report under 220 words.`;
     }
 
     return json({ report, cached: false });
+
 
   } catch (err) {
     console.error(err);
