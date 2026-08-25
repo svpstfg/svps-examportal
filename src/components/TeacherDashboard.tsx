@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Plus, BookOpen, Clock, Users, Edit, Trash2, Image, GraduationCap, FolderOpen, CalendarIcon, Eye, Copy, Crown, FileText, BarChart3, Trophy, Download, UsersRound, MessageCircle, Megaphone, FileQuestion, Sparkles, LayoutDashboard, Share2, Lock, FileJson, Library, Activity } from "lucide-react";
+import { Plus, BookOpen, Clock, Users, Edit, Trash2, Image, GraduationCap, FolderOpen, CalendarIcon, Eye, Copy, Crown, FileText, BarChart3, Trophy, Download, UsersRound, MessageCircle, Megaphone, FileQuestion, Sparkles, LayoutDashboard, Share2, Lock, FileJson, Library, Activity, CheckCircle2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
@@ -50,6 +50,7 @@ import { StudentManagement } from "@/components/StudentManagement";
 import { UserManagement } from "@/components/UserManagement";
 import { QuestionBankManager } from "@/components/QuestionBankManager";
 import { AIUsageTracker } from "@/components/AIUsageTracker";
+import { AttemptedStudents } from "@/components/AttemptedStudents";
 import { UpgradeRequestsManager } from "@/components/UpgradeRequestsManager";
 import { ReexamRequestsManager } from "@/components/ReexamRequestsManager";
 import { KeyRound } from "lucide-react";
@@ -79,7 +80,7 @@ export const TeacherDashboard = () => {
   const [pdfShowOptions, setPdfShowOptions] = useState(true);
   const [participationTest, setParticipationTest] = useState<Test | null>(null);
   const [testToDelete, setTestToDelete] = useState<Test | null>(null);
-  const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'upgrades' | 'reexams' | 'share-signup' | 'users' | 'ai-usage' | 'question-bank'>(null);
+  const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'upgrades' | 'reexams' | 'share-signup' | 'users' | 'ai-usage' | 'question-bank' | 'attempts'>(null);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'classes' | 'students' | 'courses' | 'chapters' | 'create-test' | 'tests'>('classes');
@@ -712,6 +713,7 @@ export const TeacherDashboard = () => {
     { key: 'doubts' as const, label: 'Doubts', icon: MessageCircle },
     { key: 'notices' as const, label: 'Notices', icon: Megaphone },
     { key: 'leaderboard' as const, label: 'Leaderboard', icon: Trophy },
+    { key: 'attempts' as const, label: 'Successful Attempts', icon: CheckCircle2 },
     { key: 'upgrades' as const, label: 'Upgrades', icon: Sparkles },
     { key: 'reexams' as const, label: 'Re-exam Requests', icon: KeyRound },
     { key: 'users' as const, label: 'User Management', icon: UsersRound },
@@ -749,6 +751,8 @@ export const TeacherDashboard = () => {
             )}
           </div>
         );
+      case 'attempts':
+        return <AttemptedStudents classes={classes} />;
       case 'upgrades':
         return <UpgradeRequestsManager />;
       case 'reexams':
