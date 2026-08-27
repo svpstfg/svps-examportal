@@ -51,6 +51,7 @@ import { UserManagement } from "@/components/UserManagement";
 import { QuestionBankManager } from "@/components/QuestionBankManager";
 import { AIUsageTracker } from "@/components/AIUsageTracker";
 import { AttemptedStudents } from "@/components/AttemptedStudents";
+import { TalentSearch } from "@/components/TalentSearch";
 import { UpgradeRequestsManager } from "@/components/UpgradeRequestsManager";
 import { ReexamRequestsManager } from "@/components/ReexamRequestsManager";
 import { KeyRound } from "lucide-react";
@@ -714,6 +715,7 @@ export const TeacherDashboard = () => {
     { key: 'notices' as const, label: 'Notices', icon: Megaphone },
     { key: 'leaderboard' as const, label: 'Leaderboard', icon: Trophy },
     { key: 'attempts' as const, label: 'Successful Attempts', icon: CheckCircle2 },
+    { key: 'talent' as const, label: 'Talent Search', icon: Sparkles },
     { key: 'upgrades' as const, label: 'Upgrades', icon: Sparkles },
     { key: 'reexams' as const, label: 'Re-exam Requests', icon: KeyRound },
     { key: 'users' as const, label: 'User Management', icon: UsersRound },
@@ -753,6 +755,8 @@ export const TeacherDashboard = () => {
         );
       case 'attempts':
         return <AttemptedStudents classes={classes} />;
+      case 'talent':
+        return <TalentSearch classes={classes} />;
       case 'upgrades':
         return <UpgradeRequestsManager />;
       case 'reexams':
