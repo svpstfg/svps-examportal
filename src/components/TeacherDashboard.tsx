@@ -51,6 +51,7 @@ import { UserManagement } from "@/components/UserManagement";
 import { QuestionBankManager } from "@/components/QuestionBankManager";
 import { AIUsageTracker } from "@/components/AIUsageTracker";
 import { AttemptedStudents } from "@/components/AttemptedStudents";
+import { TalentSearch } from "@/components/TalentSearch";
 import { UpgradeRequestsManager } from "@/components/UpgradeRequestsManager";
 import { ReexamRequestsManager } from "@/components/ReexamRequestsManager";
 import { KeyRound } from "lucide-react";
