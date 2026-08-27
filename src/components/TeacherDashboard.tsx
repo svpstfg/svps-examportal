@@ -754,6 +754,8 @@ export const TeacherDashboard = () => {
         );
       case 'attempts':
         return <AttemptedStudents classes={classes} />;
+      case 'talent':
+        return <TalentSearch classes={classes} />;
       case 'upgrades':
         return <UpgradeRequestsManager />;
       case 'reexams':
