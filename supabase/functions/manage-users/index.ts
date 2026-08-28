@@ -162,22 +162,57 @@ Deno.serve(async (req) => {
     }
 
     if (action === "delete") {
-      // Remove the auth account (if any) and the student records
-      if (authUser) {
-        const { error: delErr } = await admin.auth.admin.deleteUser(
-          authUser.id,
-        );
-        if (delErr) throw delErr;
-      }
-      // Remove student + enrollments by email
-      const { data: stu } = await admin
+      // A single login can have multiple student rows (one per original class).
+      // Delete all of them, rather than maybeSingle() which silently returns no
+      // row once the student has more than one class assignment.
+      const { data: studentRows, error: studentsError } = await admin
         .from("students")
         .select("id")
         .eq("email", email)
-        .maybeSingle();
-      if (stu) {
-        await admin.from("student_enrollments").delete().eq("student_id", stu.id);
-        await admin.from("students").delete().eq("id", stu.id);
+        .throwOnError();
+      if (studentsError) throw studentsError;
+      const studentIds = (studentRows ?? []).map((student) => student.id);
+
+      if (!studentIds.length) {
+        return json({ error: "Student record was not found." }, 404);
+      }
+
+      // The caller may only delete a student who belongs to one of their classes.
+      const { data: managedEnrollment, error: enrollmentCheckError } = await admin
+        .from("student_enrollments")
+        .select("id, classes!inner(teacher_id)")
+        .in("student_id", studentIds)
+        .eq("classes.teacher_id", user.id)
+        .limit(1);
+      if (enrollmentCheckError) throw enrollmentCheckError;
+      if (!managedEnrollment?.length) {
+        return json({ error: "You can only delete students assigned to your classes." }, 403);
+      }
+
+      // upgrade_requests has no foreign key to students in older databases.
+      const { error: upgradeError } = await admin
+        .from("upgrade_requests")
+        .delete()
+        .in("student_id", studentIds);
+      if (upgradeError) throw upgradeError;
+
+      const { error: enrollmentsError } = await admin
+        .from("student_enrollments")
+        .delete()
+        .in("student_id", studentIds);
+      if (enrollmentsError) throw enrollmentsError;
+
+      const { error: deleteStudentsError } = await admin
+        .from("students")
+        .delete()
+        .in("id", studentIds);
+      if (deleteStudentsError) throw deleteStudentsError;
+
+      // Remove the login last. This prevents a partially deleted account if a
+      // database constraint fails during student cleanup.
+      if (authUser) {
+        const { error: deleteAuthError } = await admin.auth.admin.deleteUser(authUser.id);
+        if (deleteAuthError) throw deleteAuthError;
       }
       return json({ success: true });
     }
