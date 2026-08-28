@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Plus, BookOpen, Clock, Users, Edit, Trash2, Image, GraduationCap, FolderOpen, CalendarIcon, Eye, Copy, Crown, FileText, BarChart3, Trophy, Download, UsersRound, MessageCircle, Megaphone, FileQuestion, Sparkles, LayoutDashboard, Share2, Lock, FileJson, Library, Activity, CheckCircle2 } from "lucide-react";
+import { Plus, BookOpen, Clock, Users, Edit, Trash2, Image, GraduationCap, FolderOpen, CalendarIcon, Eye, Copy, Crown, FileText, BarChart3, Trophy, Download, UsersRound, MessageCircle, Megaphone, FileQuestion, Sparkles, LayoutDashboard, Share2, Lock, FileJson, Library, Activity, CheckCircle2, Settings } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
@@ -54,6 +54,7 @@ import { AttemptedStudents } from "@/components/AttemptedStudents";
 import { TalentSearch } from "@/components/TalentSearch";
 import { UpgradeRequestsManager } from "@/components/UpgradeRequestsManager";
 import { ReexamRequestsManager } from "@/components/ReexamRequestsManager";
+import { PortalSettings } from "@/components/PortalSettings";
 import { KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -81,7 +82,7 @@ export const TeacherDashboard = () => {
   const [pdfShowOptions, setPdfShowOptions] = useState(true);
   const [participationTest, setParticipationTest] = useState<Test | null>(null);
   const [testToDelete, setTestToDelete] = useState<Test | null>(null);
-  const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'upgrades' | 'reexams' | 'share-signup' | 'users' | 'ai-usage' | 'question-bank' | 'attempts'>(null);
+  const [sidebarSection, setSidebarSection] = useState<null | 'pyq' | 'doubts' | 'notices' | 'leaderboard' | 'talent' | 'upgrades' | 'reexams' | 'share-signup' | 'users' | 'ai-usage' | 'question-bank' | 'attempts' | 'settings'>(null);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'classes' | 'students' | 'courses' | 'chapters' | 'create-test' | 'tests'>('classes');
@@ -721,6 +722,7 @@ export const TeacherDashboard = () => {
     { key: 'users' as const, label: 'User Management', icon: UsersRound },
     { key: 'question-bank' as const, label: 'Question Bank', icon: Library },
     { key: 'ai-usage' as const, label: 'AI Usage Tracker', icon: Activity },
+    { key: 'settings' as const, label: 'Settings', icon: Settings },
     { key: 'share-signup' as const, label: 'Share Signup Link', icon: Share2 },
   ];
 
@@ -767,6 +769,8 @@ export const TeacherDashboard = () => {
         return <QuestionBankManager />;
       case 'ai-usage':
         return <AIUsageTracker />;
+      case 'settings':
+        return <PortalSettings />;
       case 'share-signup':
         return (
           <div className="space-y-6">

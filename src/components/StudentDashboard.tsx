@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Clock, BookOpen, Play, CheckCircle, AlertCircle, Trophy, Target, GraduationCap, User, LogOut, Calendar, FileText, Lock, Crown, Download } from "lucide-react";
+import { Clock, BookOpen, Play, CheckCircle, AlertCircle, Trophy, Target, GraduationCap, User, LogOut, Calendar, FileText, Lock, Crown, Download, Sparkles } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -71,6 +71,7 @@ export const StudentDashboard = () => {
   const [tests, setTests] = useState<Test[]>([]);
   const [loading, setLoading] = useState(true);
   const [attempts, setAttempts] = useState<TestAttempt[]>([]);
+  const [aiReportsByTeacher, setAiReportsByTeacher] = useState<Record<string, boolean>>({});
   const [reexamGrants, setReexamGrants] = useState<string[]>([]);
   const [currentTest, setCurrentTest] = useState<Test | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -329,6 +330,20 @@ export const StudentDashboard = () => {
           questionTimes: (a.question_times as any) || [],
           status: ((a as any).status as 'completed' | 'unfinished') || 'completed',
         })) || [];
+
+        const teacherIds = Array.from(new Set(transformedClasses.map((c) => c.teacherId)));
+        if (teacherIds.length) {
+          const { data: settingsRows, error: settingsError } = await supabase
+            .from("teacher_settings")
+            .select("teacher_id, student_ai_reports_enabled")
+            .in("teacher_id", teacherIds);
+          if (settingsError) console.error("Student AI report settings error:", settingsError);
+          else {
+            setAiReportsByTeacher(
+              Object.fromEntries((settingsRows || []).map((row) => [row.teacher_id, row.student_ai_reports_enabled])),
+            );
+          }
+        }
 
         setClasses(transformedClasses);
         setCourses(transformedCourses);
@@ -860,6 +875,13 @@ export const StudentDashboard = () => {
   const freeTests = newFreeTests;
   const proTests = newProTests;
 
+  const isAiReportEnabled = (test: Test) => {
+    const chapter = chapters.find((item) => item.id === test.chapterId);
+    const course = courses.find((item) => item.id === chapter?.courseId);
+    const teacherId = classes.find((item) => item.id === course?.classId)?.teacherId;
+    return teacherId ? aiReportsByTeacher[teacherId] ?? true : true;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -891,6 +913,7 @@ export const StudentDashboard = () => {
         test={viewingAnswerSheet.test}
         studentName={student?.name || user?.email || 'Student'}
         onBack={() => setViewingAnswerSheet(null)}
+        aiReportEnabled={isAiReportEnabled(viewingAnswerSheet.test)}
       />
     );
   }
@@ -983,6 +1006,12 @@ export const StudentDashboard = () => {
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
             <div className="flex justify-end mb-4">
+              {isAiReportEnabled(currentTest) && (
+                <Button onClick={() => setViewingAnswerSheet({ attempt: currentAttempt, test: currentTest })} variant="secondary" size="sm" className="mr-2">
+                  <Sparkles className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">AI Report</span>
+                </Button>
+              )}
               <Button onClick={handleDownloadResultPdf} disabled={downloadingPdf} variant="outline" size="sm" title="Download as PDF">
                 <Download className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">{downloadingPdf ? "Preparing..." : "Download as PDF"}</span>
@@ -1619,6 +1648,22 @@ export const StudentDashboard = () => {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /> Talent Search Rules</CardTitle>
+              <CardDescription>Your teacher uses these rules to understand learning potential. This is not an IQ score.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex justify-between gap-3"><span>Accuracy</span><span className="font-medium">35%</span></div>
+              <div className="flex justify-between gap-3"><span>Attempt rate</span><span className="font-medium">15%</span></div>
+              <div className="flex justify-between gap-3"><span>Solving speed</span><span className="font-medium">15%</span></div>
+              <div className="flex justify-between gap-3"><span>Consistency</span><span className="font-medium">15%</span></div>
+              <div className="flex justify-between gap-3"><span>Improvement trend</span><span className="font-medium">10%</span></div>
+              <div className="flex justify-between gap-3"><span>Quick, correct answers</span><span className="font-medium">10%</span></div>
+              <p className="border-t pt-3 text-xs text-muted-foreground">Complete at least two tests for a more reliable profile. Your teacher should compare relevant class and subject groups. This supports guidance and enrichment—it does not define your ability.</p>
             </CardContent>
           </Card>
 

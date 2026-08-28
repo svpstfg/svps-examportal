@@ -49,6 +49,8 @@ interface StudentRow {
   attemptRate: number;
   speedScore: number;
   consistency: number;
+  improvement: number;
+  confidence: "Low" | "Medium" | "High";
   talentScore: number;
   topics: Record<string, { correct: number; total: number }>;
 }
@@ -142,10 +144,16 @@ export const TalentSearch = ({ classes }: Props) => {
     [tests, classFilter]
   );
 
+  useEffect(() => {
+    setSingleTest((current) =>
+      visibleTests.some((test) => test.id === current) ? current : visibleTests[0]?.id || ""
+    );
+  }, [visibleTests]);
+
   const buildRows = (testIds: string[]): StudentRow[] => {
     const testById = new Map(tests.map((t) => [t.id, t]));
     const acc = new Map<string, StudentRow>();
-    const perStudentScores = new Map<string, number[]>();
+    const perStudentScores = new Map<string, { score: number; completedAt: string }[]>();
 
     attempts
       .filter((a) => testIds.includes(a.test_id))
@@ -163,7 +171,7 @@ export const TalentSearch = ({ classes }: Props) => {
             studentId: a.student_id, name: s.name, email: s.email, className: s.className,
             testsTaken: 0, totalQuestions: 0, attempted: 0, skipped: 0, correct: 0, wrong: 0,
             totalTime: 0, avgTimePerAttempt: 0, fastCorrect: 0, accuracy: 0, attemptRate: 0,
-            speedScore: 0, consistency: 0, talentScore: 0, topics: {},
+            speedScore: 0, consistency: 0, improvement: 0, confidence: "Low", talentScore: 0, topics: {},
           };
           acc.set(a.student_id, row);
         }
@@ -192,7 +200,7 @@ export const TalentSearch = ({ classes }: Props) => {
         row.topics[topicKey] = topic;
 
         const pct = qs.length ? Math.round((qs.reduce((n, q, i) => n + (isAnswerCorrect(answers[i], q.correctAnswer) ? 1 : 0), 0) / qs.length) * 100) : 0;
-        perStudentScores.set(a.student_id, [...(perStudentScores.get(a.student_id) || []), pct]);
+        perStudentScores.set(a.student_id, [...(perStudentScores.get(a.student_id) || []), { score: pct, completedAt: a.completed_at || "" }]);
       });
 
     const rows = Array.from(acc.values()).map((r) => {
@@ -203,17 +211,21 @@ export const TalentSearch = ({ classes }: Props) => {
       r.speedScore = r.avgTimePerAttempt
         ? Math.max(0, Math.min(100, Math.round(((150 - r.avgTimePerAttempt) / 120) * 100)))
         : 0;
-      const scores = perStudentScores.get(r.studentId) || [];
+      const scores = (perStudentScores.get(r.studentId) || []).sort(
+        (a, b) => new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime(),
+      );
       if (scores.length > 1) {
-        const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
-        const sd = Math.sqrt(scores.reduce((a, b) => a + (b - mean) ** 2, 0) / scores.length);
+        const mean = scores.reduce((sum, item) => sum + item.score, 0) / scores.length;
+        const sd = Math.sqrt(scores.reduce((sum, item) => sum + (item.score - mean) ** 2, 0) / scores.length);
         r.consistency = Math.max(0, Math.round(100 - sd * 2));
+        r.improvement = Math.max(-100, Math.min(100, scores[scores.length - 1].score - scores[0].score));
       } else {
         r.consistency = 70;
       }
+      r.confidence = r.testsTaken >= 3 && r.totalQuestions >= 30 ? "High" : r.testsTaken >= 2 && r.totalQuestions >= 15 ? "Medium" : "Low";
       const fastBonus = r.correct ? (r.fastCorrect / r.correct) * 100 : 0;
       r.talentScore = Math.round(
-        r.accuracy * 0.4 + r.attemptRate * 0.2 + r.speedScore * 0.15 + r.consistency * 0.15 + fastBonus * 0.1
+        r.accuracy * 0.35 + r.attemptRate * 0.15 + r.speedScore * 0.15 + r.consistency * 0.15 + Math.max(0, r.improvement) * 0.1 + fastBonus * 0.1
       );
       return r;
     });
@@ -254,8 +266,10 @@ export const TalentSearch = ({ classes }: Props) => {
         "Attempt rate %": r.attemptRate,
         "Avg time / question": fmtTime(r.avgTimePerAttempt),
         "Consistency": r.consistency,
+        "Improvement (points)": r.improvement,
+        Confidence: r.confidence,
         "Talent score": r.talentScore,
-        Band: band(r.talentScore),
+        Band: r.confidence === "Low" ? "Provisional" : band(r.talentScore),
         "Weak topics": weakTopics(r).map((w) => `${w.topic} (${w.pct}%)`).join("; ") || "None",
       }))
     );
@@ -285,6 +299,8 @@ export const TalentSearch = ({ classes }: Props) => {
             <TableHead>Accuracy</TableHead>
             <TableHead>Avg time / Q</TableHead>
             <TableHead>Consistency</TableHead>
+            <TableHead>Trend</TableHead>
+            <TableHead>Evidence</TableHead>
             <TableHead>Band</TableHead>
           </TableRow>
         </TableHeader>
@@ -307,9 +323,13 @@ export const TalentSearch = ({ classes }: Props) => {
               <TableCell className="text-sm">{r.accuracy}%</TableCell>
               <TableCell className="text-sm">{fmtTime(r.avgTimePerAttempt)}</TableCell>
               <TableCell className="text-sm">{r.consistency}</TableCell>
+              <TableCell className={`text-sm font-medium ${r.improvement > 0 ? "text-emerald-600" : r.improvement < 0 ? "text-destructive" : ""}`}>
+                {r.improvement > 0 ? `+${r.improvement}` : r.improvement}
+              </TableCell>
+              <TableCell><Badge variant={r.confidence === "High" ? "default" : "outline"}>{r.confidence}</Badge></TableCell>
               <TableCell>
                 <Badge variant={r.talentScore >= 65 ? "default" : r.talentScore >= 50 ? "secondary" : "outline"}>
-                  {band(r.talentScore)}
+                  {r.confidence === "Low" ? "Provisional" : band(r.talentScore)}
                 </Badge>
               </TableCell>
             </TableRow>
@@ -334,8 +354,9 @@ export const TalentSearch = ({ classes }: Props) => {
           <Sparkles className="h-6 w-6 text-primary" /> Talent Search
         </h2>
         <p className="text-sm text-muted-foreground">
-          Ranks students on a composite talent score: accuracy (40%), attempt rate (20%), solving speed (15%),
-          consistency across exams (15%) and quick-correct answers (10%).
+          Uses repeated exam evidence—not IQ—to identify academic potential: accuracy (35%), attempt rate (15%),
+          solving speed (15%), consistency (15%), improvement trend (10%) and quick-correct answers (10%).
+          Scores based on fewer than two exams are marked provisional.
         </p>
       </div>
 
@@ -395,7 +416,7 @@ export const TalentSearch = ({ classes }: Props) => {
             <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle className="text-base">Select exams ({selectedTests.length} chosen)</CardTitle>
-                <CardDescription>Combine multiple exams into a single talent list with summary reports.</CardDescription>
+                <CardDescription>Combine comparable exams into one list. For fair rankings, select one class and related subjects.</CardDescription>
               </div>
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setSelectedTests(visibleTests.map((t) => t.id))}>Select all</Button>

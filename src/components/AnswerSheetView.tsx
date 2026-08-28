@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Download, CheckCircle, AlertCircle, Clock, Trophy, Target, Loader2, Sparkles } from "lucide-react";
@@ -21,9 +22,10 @@ interface AnswerSheetViewProps {
   /** Optional context passed to the AI analysis */
   subject?: string;
   className?: string;
+  aiReportEnabled?: boolean;
 }
 
-export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, className }: AnswerSheetViewProps) => {
+export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, className, aiReportEnabled = true }: AnswerSheetViewProps) => {
   const printRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [aiReport, setAiReport] = useState<string>("");
@@ -34,12 +36,34 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
   }, 0);
 
   const questionTimes = (attempt.questionTimes || []).map(normalizeQuestionTime);
-
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}m ${remainingSeconds}s`;
   };
+  const attemptedCount = test.questions.filter((_, index) => isAnswered(attempt.answers[index])).length;
+  const wrongQuestionNumbers = test.questions
+    .map((question, index) => (!isAnswered(attempt.answers[index]) || !isAnswerCorrect(attempt.answers[index], question.correctAnswer) ? index + 1 : null))
+    .filter((index): index is number => index !== null);
+  const fastCorrectQuestionNumbers = test.questions
+    .map((question, index) => (
+      isAnswerCorrect(attempt.answers[index], question.correctAnswer) && questionTimes[index] > 0 && questionTimes[index] <= 45 ? index + 1 : null
+    ))
+    .filter((index): index is number => index !== null);
+  const accuracy = attemptedCount ? Math.round((correctCount / attemptedCount) * 100) : 0;
+  const attemptRate = test.questions.length ? Math.round((attemptedCount / test.questions.length) * 100) : 0;
+  const avgTime = attemptedCount ? Math.round(attempt.timeSpent / attemptedCount) : 0;
+  const plannedTimePerQuestion = test.questions.length ? Math.round((test.duration * 60) / test.questions.length) : 0;
+  const confidence = accuracy >= 75 && attemptRate >= 80 ? "High" : accuracy >= 50 || attemptRate >= 70 ? "Growing" : "Build with practice";
+  const timeManagement = avgTime <= plannedTimePerQuestion ? "On pace" : avgTime <= plannedTimePerQuestion * 1.2 ? "Needs pacing" : "Needs time practice";
+  const performanceRows = [
+    ["Stronger response areas", fastCorrectQuestionNumbers.length ? `Quick, correct: Q${fastCorrectQuestionNumbers.slice(0, 5).join(", Q")}` : correctCount ? `${correctCount} correct answer${correctCount === 1 ? "" : "s"}` : "Keep building core concepts"],
+    ["Weaker response areas", wrongQuestionNumbers.length ? `Review Q${wrongQuestionNumbers.slice(0, 5).join(", Q")}` : "No incorrect or skipped answers"],
+    ["Fast thinking", fastCorrectQuestionNumbers.length ? `${fastCorrectQuestionNumbers.length} quick-correct answer${fastCorrectQuestionNumbers.length === 1 ? "" : "s"} (≤45 sec)` : "No quick-correct pattern yet"],
+    ["Accuracy", `${accuracy}% of attempted questions correct`],
+    ["Answer confidence", `${confidence} (${attemptRate}% attempted)`],
+    ["Time management", `${timeManagement} — ${formatTime(avgTime)} per attempt; target ${formatTime(plannedTimePerQuestion)}`],
+  ];
 
   const handleDownloadPDF = async () => {
     const content = printRef.current;
@@ -135,10 +159,12 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
           Back to Dashboard
         </Button>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" onClick={runAiAnalysis} disabled={aiLoading}>
-            {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-            {aiLoading ? "Analysing..." : "AI Report"}
-          </Button>
+          {aiReportEnabled && (
+            <Button variant="secondary" onClick={runAiAnalysis} disabled={aiLoading}>
+              {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              {aiLoading ? "Analysing..." : "AI Report"}
+            </Button>
+          )}
           <Button variant="outline" onClick={() => window.print()}>
             🖨️ Print
           </Button>
@@ -155,6 +181,12 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="h-4 w-4 text-primary" />
             <h3 className="font-semibold text-sm">AI Performance Report</h3>
+          </div>
+          <div className="mb-4 overflow-x-auto rounded-md border bg-background">
+            <Table className="text-xs">
+              <TableHeader><TableRow><TableHead>Performance area</TableHead><TableHead>Result</TableHead></TableRow></TableHeader>
+              <TableBody>{performanceRows.map(([area, result]) => <TableRow key={area}><TableCell className="font-medium">{area}</TableCell><TableCell>{result}</TableCell></TableRow>)}</TableBody>
+            </Table>
           </div>
           <div className="text-sm space-y-1 text-foreground">
             {aiReport.split("\n").map((line, idx) => {
@@ -174,6 +206,10 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
         {aiReport && (
           <div className="border-2 border-black border-b-0 p-4">
             <h3 className="font-bold text-sm uppercase tracking-wide mb-2">AI Performance Report</h3>
+            <table className="w-full border-collapse text-[10px] mb-3">
+              <thead><tr><th className="border border-black p-1 text-left">Performance area</th><th className="border border-black p-1 text-left">Result</th></tr></thead>
+              <tbody>{performanceRows.map(([area, result]) => <tr key={area}><td className="border border-black p-1 font-semibold">{area}</td><td className="border border-black p-1">{result}</td></tr>)}</tbody>
+            </table>
             <div className="text-[11px] leading-snug space-y-1 text-black">
               {aiReport.split("\n").map((line, idx) => {
                 const t = line.trim();
