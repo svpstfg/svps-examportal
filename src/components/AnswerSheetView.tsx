@@ -71,6 +71,21 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
   const plannedTimePerQuestion = test.questions.length ? Math.round((test.duration * 60) / test.questions.length) : 0;
   const confidence = accuracy >= 75 && attemptRate >= 80 ? "High" : accuracy >= 50 || attemptRate >= 70 ? "Growing" : "Build with practice";
   const timeManagement = avgTime <= plannedTimePerQuestion ? "On pace" : avgTime <= plannedTimePerQuestion * 1.2 ? "Needs pacing" : "Needs time practice";
+  const speedScore = avgTime ? Math.max(0, Math.min(100, Math.round(((150 - avgTime) / 120) * 100))) : 0;
+  const quickCorrectRate = correctCount ? Math.round((fastCorrectQuestionNumbers.length / correctCount) * 100) : 0;
+  // One exam does not provide a score trend; the same 70 starting consistency
+  // used by Talent Search is shown transparently as a provisional baseline.
+  const currentExamTalentScore = Math.round(
+    accuracy * 0.35 + attemptRate * 0.15 + speedScore * 0.15 + 70 * 0.15 + quickCorrectRate * 0.1,
+  );
+  const talentScoreRows = [
+    ["Accuracy", accuracy, 35],
+    ["Attempt rate", attemptRate, 15],
+    ["Solving speed", speedScore, 15],
+    ["Consistency baseline", 70, 15],
+    ["Improvement trend", 0, 10],
+    ["Quick, correct answers", quickCorrectRate, 10],
+  ];
   const performanceRows = [
     ["Stronger response areas", fastCorrectQuestionNumbers.length ? `Quick, correct: Q${fastCorrectQuestionNumbers.slice(0, 5).join(", Q")}` : correctCount ? `${correctCount} correct answer${correctCount === 1 ? "" : "s"}` : "Keep building core concepts"],
     ["Weaker response areas", wrongQuestionNumbers.length ? `Review Q${wrongQuestionNumbers.slice(0, 5).join(", Q")}` : "No incorrect or skipped answers"],
@@ -192,12 +207,33 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
 
       {/* Printable exam paper layout */}
       <div ref={printRef} className="bg-white text-black">
+        <div className="border-2 border-black border-b-0 p-4">
+          <h3 className="font-bold text-sm uppercase tracking-wide mb-2">Performance Report</h3>
+          <p className="mb-3 text-[10px] text-gray-700">This report uses only this exam’s recorded answers and question times. It does not change your marks.</p>
+          <table className="w-full border-collapse text-[10px] mb-3">
+            <thead><tr><th className="border border-black p-1 text-left">Performance area</th><th className="border border-black p-1 text-left">Result</th></tr></thead>
+            <tbody>{performanceRows.map(([area, result]) => <tr key={area}><td className="border border-black p-1 font-semibold">{area}</td><td className="border border-black p-1">{result}</td></tr>)}</tbody>
+          </table>
+          <div className="grid grid-cols-1 gap-1 text-[10px] leading-snug sm:grid-cols-2">
+            <p><strong>Accuracy:</strong> correct answers ÷ attempted answers.</p>
+            <p><strong>Fast thinking:</strong> a correct answer completed in 45 seconds or less.</p>
+            <p><strong>Answer confidence:</strong> an exam indicator based on accuracy and questions attempted—not a measure of personality or IQ.</p>
+            <p><strong>Time management:</strong> average time per attempted question compared with the planned time per question.</p>
+          </div>
+          <div className="mt-4">
+            <h4 className="mb-2 font-bold text-[11px] uppercase tracking-wide">Talent Score Calculation: {currentExamTalentScore}</h4>
+            <table className="w-full border-collapse text-[10px]">
+              <thead><tr><th className="border border-black p-1 text-left">Factor</th><th className="border border-black p-1 text-left">Score × weight</th><th className="border border-black p-1 text-right">Contribution</th></tr></thead>
+              <tbody>{talentScoreRows.map(([factor, value, weight]) => <tr key={String(factor)}><td className="border border-black p-1 font-semibold">{factor}</td><td className="border border-black p-1">{value} × {weight}%</td><td className="border border-black p-1 text-right">{(Number(value) * Number(weight) / 100).toFixed(1)}</td></tr>)}</tbody>
+            </table>
+            <p className="mt-2 text-[10px] text-gray-700">Formula: Accuracy × 35% + Attempt rate × 15% + Speed × 15% + Consistency × 15% + positive trend × 10% + quick-correct rate × 10%. This single-exam score is provisional: trend is 0 and consistency starts at 70 until more exams are completed. The multi-exam Talent Search score may differ.</p>
+          </div>
+        </div>
         {aiReport && (
-          <div className="border-2 border-black border-b-0 p-4">
-            <h3 className="font-bold text-sm uppercase tracking-wide mb-2">AI Performance Report</h3>
+          <div className="border-x-2 border-b-2 border-black p-4">
+            <h3 className="font-bold text-sm uppercase tracking-wide mb-2">AI Guidance</h3>
             <table className="w-full border-collapse text-[10px] mb-3">
-              <thead><tr><th className="border border-black p-1 text-left">Performance area</th><th className="border border-black p-1 text-left">Result</th></tr></thead>
-              <tbody>{performanceRows.map(([area, result]) => <tr key={area}><td className="border border-black p-1 font-semibold">{area}</td><td className="border border-black p-1">{result}</td></tr>)}</tbody>
+              <tbody><tr><td className="border border-black p-1 text-gray-700">Suggestions are generated from the factual performance report above. They are guidance for study, not a change to marks.</td></tr></tbody>
             </table>
             <div className="text-[11px] leading-snug space-y-1 text-black">
               {aiReport.split("\n").map((line, idx) => {
