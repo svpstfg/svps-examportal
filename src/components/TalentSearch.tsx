@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sparkles, Download, Loader2, Search, Trophy, Timer, Target, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadCSV } from "@/lib/csv";
@@ -74,6 +75,7 @@ export const TalentSearch = ({ classes }: Props) => {
   const [singleTest, setSingleTest] = useState<string>("");
   const [selectedTests, setSelectedTests] = useState<string[]>([]);
   const [search, setSearch] = useState("");
+  const [scoreDetail, setScoreDetail] = useState<StudentRow | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -316,7 +318,9 @@ export const TalentSearch = ({ classes }: Props) => {
               <TableCell className="w-40">
                 <div className="flex items-center gap-2">
                   <Progress value={r.talentScore} className="h-2 w-20" />
-                  <span className="text-sm font-semibold">{r.talentScore}</span>
+                  <Button variant="ghost" size="sm" className="h-auto px-1 py-0 text-sm font-semibold underline-offset-2 hover:underline" onClick={() => setScoreDetail(r)}>
+                    {r.talentScore}
+                  </Button>
                 </div>
               </TableCell>
               <TableCell className="text-sm">{r.attempted}/{r.totalQuestions}</TableCell>
@@ -521,6 +525,43 @@ export const TalentSearch = ({ classes }: Props) => {
           )}
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!scoreDetail} onOpenChange={(open) => !open && setScoreDetail(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Talent Score: {scoreDetail?.talentScore ?? 0}</DialogTitle>
+            <DialogDescription>
+              {scoreDetail?.name} · {scoreDetail?.className} · based on {scoreDetail?.testsTaken} exam{scoreDetail?.testsTaken === 1 ? "" : "s"} and {scoreDetail?.totalQuestions} questions.
+            </DialogDescription>
+          </DialogHeader>
+          {scoreDetail && (() => {
+            const factors = [
+              { label: "Accuracy", value: scoreDetail.accuracy, weight: 35, note: `${scoreDetail.correct} correct out of ${scoreDetail.attempted} attempted` },
+              { label: "Attempt rate", value: scoreDetail.attemptRate, weight: 15, note: `${scoreDetail.attempted} attempted, ${scoreDetail.skipped} skipped` },
+              { label: "Solving speed", value: scoreDetail.speedScore, weight: 15, note: `${fmtTime(scoreDetail.avgTimePerAttempt)} average per attempted question` },
+              { label: "Consistency", value: scoreDetail.consistency, weight: 15, note: "Stability of results across selected exams" },
+              { label: "Improvement trend", value: Math.max(0, scoreDetail.improvement), weight: 10, note: scoreDetail.improvement > 0 ? `Improved by ${scoreDetail.improvement} points from first to latest exam` : "No positive improvement bonus yet" },
+              { label: "Quick, correct answers", value: scoreDetail.correct ? Math.round((scoreDetail.fastCorrect / scoreDetail.correct) * 100) : 0, weight: 10, note: `${scoreDetail.fastCorrect} correct answers completed within 45 seconds` },
+            ];
+            return (
+              <div className="space-y-3">
+                <div className="rounded-md border bg-muted/40 p-3 text-sm">
+                  <div className="flex items-center justify-between"><span className="font-medium">Evidence confidence</span><Badge variant={scoreDetail.confidence === "High" ? "default" : "outline"}>{scoreDetail.confidence}</Badge></div>
+                  <p className="mt-1 text-xs text-muted-foreground">High: 3+ exams and 30+ questions. Medium: 2+ exams and 15+ questions. Otherwise the score is provisional.</p>
+                </div>
+                <Table>
+                  <TableHeader><TableRow><TableHead>Factor</TableHead><TableHead>Score × weight</TableHead><TableHead className="text-right">Contribution</TableHead></TableRow></TableHeader>
+                  <TableBody>{factors.map((factor) => {
+                    const contribution = (factor.value * factor.weight) / 100;
+                    return <TableRow key={factor.label}><TableCell><div className="font-medium">{factor.label}</div><div className="text-xs text-muted-foreground">{factor.note}</div></TableCell><TableCell>{factor.value} × {factor.weight}%</TableCell><TableCell className="text-right font-medium">{contribution.toFixed(1)}</TableCell></TableRow>;
+                  })}</TableBody>
+                </Table>
+                <p className="text-xs text-muted-foreground">Formula: Accuracy × 35% + Attempt rate × 15% + Speed × 15% + Consistency × 15% + positive improvement × 10% + quick-correct rate × 10%. The final result is rounded to a whole number. This is an academic performance indicator, not an IQ score.</p>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
