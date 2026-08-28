@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Download, CheckCircle, AlertCircle, Clock, Trophy, Target, Loader2, Sparkles } from "lucide-react";
@@ -174,32 +173,6 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
           </Button>
         </div>
       </div>
-
-      {/* On-screen AI report (also captured into the PDF) */}
-      {aiReport && (
-        <div className="mb-6 rounded-lg border border-primary/30 bg-primary/5 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <h3 className="font-semibold text-sm">AI Performance Report</h3>
-          </div>
-          <div className="mb-4 overflow-x-auto rounded-md border bg-background">
-            <Table className="text-xs">
-              <TableHeader><TableRow><TableHead>Performance area</TableHead><TableHead>Result</TableHead></TableRow></TableHeader>
-              <TableBody>{performanceRows.map(([area, result]) => <TableRow key={area}><TableCell className="font-medium">{area}</TableCell><TableCell>{result}</TableCell></TableRow>)}</TableBody>
-            </Table>
-          </div>
-          <div className="text-sm space-y-1 text-foreground">
-            {aiReport.split("\n").map((line, idx) => {
-              const t = line.trim();
-              if (!t) return <div key={idx} className="h-1" />;
-              if (t.startsWith("## ")) return <h4 key={idx} className="font-semibold mt-2">{t.replace(/^##\s*/, "")}</h4>;
-              if (t.startsWith("# ")) return <h3 key={idx} className="font-bold text-base mt-2">{t.replace(/^#\s*/, "")}</h3>;
-              if (t.startsWith("- ") || t.startsWith("* ")) return <li key={idx} className="ml-4 list-disc">{t.replace(/^[-*]\s*/, "")}</li>;
-              return <p key={idx}>{t}</p>;
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Printable exam paper layout */}
       <div ref={printRef} className="bg-white text-black">
