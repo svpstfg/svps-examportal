@@ -657,6 +657,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          student_ai_reports_enabled: boolean
           student_email_domain: string
           teacher_id: string
           updated_at: string
@@ -664,6 +665,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          student_ai_reports_enabled?: boolean
           student_email_domain?: string
           teacher_id: string
           updated_at?: string
@@ -671,6 +673,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          student_ai_reports_enabled?: boolean
           student_email_domain?: string
           teacher_id?: string
           updated_at?: string
