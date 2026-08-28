@@ -70,6 +70,7 @@ export const StudentDashboard = () => {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [tests, setTests] = useState<Test[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dataRevision, setDataRevision] = useState(0);
   const [attempts, setAttempts] = useState<TestAttempt[]>([]);
   const [aiReportsByTeacher, setAiReportsByTeacher] = useState<Record<string, boolean>>({});
   const [reexamGrants, setReexamGrants] = useState<string[]>([]);
@@ -369,7 +370,7 @@ export const StudentDashboard = () => {
     };
 
     loadData();
-  }, [user]);
+  }, [user, dataRevision]);
 
 
   useEffect(() => {
@@ -781,13 +782,8 @@ export const StudentDashboard = () => {
         .eq('email', user.email);
       
       if (allStudents && allStudents.length > 0) {
-        const classIds = allStudents.map(s => s.class_id);
         const studentIds = allStudents.map(s => s.id);
-        const idByClass: Record<string, string> = {};
-        allStudents.forEach(s => { idByClass[s.class_id] = s.id; });
-        setEnrolledClassIds(classIds);
         setAllStudentIds(studentIds);
-        setStudentIdByClass(idByClass);
         
         // Load tiers from enrollments for all student IDs
         const { data: enrollments } = await supabase
@@ -795,17 +791,29 @@ export const StudentDashboard = () => {
           .select('class_id, tier, subscription_expires_at')
           .in('student_id', studentIds);
         
-        if (enrollments) {
+        if (enrollments && enrollments.length > 0) {
+          const classIds = [...new Set(enrollments.map(e => e.class_id))];
+          const idByClass: Record<string, string> = {};
           const tiers: Record<string, 'free' | 'pro'> = {};
           const expiries: Record<string, Date | null> = {};
           enrollments.forEach(e => {
+            idByClass[e.class_id] = e.student_id;
             const expiry = (e as any).subscription_expires_at;
             const isExpired = expiry && new Date(expiry) < new Date();
             tiers[e.class_id] = isExpired ? 'free' : ((e as any).tier || 'free');
             expiries[e.class_id] = expiry ? new Date(expiry) : null;
           });
+          setEnrolledClassIds(classIds);
+          setStudentIdByClass(idByClass);
           setStudentTiers(tiers);
           setSubscriptionExpiry(expiries);
+          setSelectedClassId(current => current !== 'all' && !classIds.includes(current) ? 'all' : current);
+        } else if (student) {
+          // Backward compatibility for older student records created before
+          // the multi-class enrollment table was introduced.
+          setEnrolledClassIds([student.classId]);
+          setAllStudentIds([student.id]);
+          setStudentIdByClass({ [student.classId]: student.id });
         }
       } else if (student) {
         setEnrolledClassIds([student.classId]);
@@ -813,7 +821,28 @@ export const StudentDashboard = () => {
       }
     };
     loadEnrollments();
+
+    const channel = supabase
+      .channel(`student-enrollments-${user?.id || 'anonymous'}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_enrollments' }, () => {
+        loadEnrollments();
+        setDataRevision((revision) => revision + 1);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user, student]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel(`student-content-${user?.id || 'anonymous'}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'classes' }, () => setDataRevision((revision) => revision + 1))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => setDataRevision((revision) => revision + 1))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chapters' }, () => setDataRevision((revision) => revision + 1))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tests' }, () => setDataRevision((revision) => revision + 1))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
 
   const isProStudent = Object.values(studentTiers).some(t => t === 'pro');
 
