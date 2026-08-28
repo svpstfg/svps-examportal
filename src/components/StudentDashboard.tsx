@@ -80,6 +80,7 @@ export const StudentDashboard = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [isTestActive, setIsTestActive] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentAttempt, setCurrentAttempt] = useState<TestAttempt | null>(null);
   const [viewingAnswerSheet, setViewingAnswerSheet] = useState<{ attempt: TestAttempt; test: Test } | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
@@ -90,6 +91,7 @@ export const StudentDashboard = () => {
   // Refs used to persist an "unfinished" record if the student leaves mid-test
   const isTestActiveRef = useRef(false);
   const submittedRef = useRef(false);
+  const submittingRef = useRef(false);
   const abandonSavedRef = useRef(false);
   const selectedAnswersRef = useRef<number[]>([]);
   const timeLeftRef = useRef(0);
@@ -584,6 +586,8 @@ export const StudentDashboard = () => {
     questionStartRef.current = Date.now();
     // Reset abandon-tracking for the new attempt
     submittedRef.current = false;
+    submittingRef.current = false;
+    setIsSubmitting(false);
     abandonSavedRef.current = false;
     isTestActiveRef.current = true;
     currentTestRef.current = test;
@@ -619,7 +623,12 @@ export const StudentDashboard = () => {
   };
 
   const handleSubmitTest = async () => {
-    if (!currentTest || !student) return;
+    if (!currentTest || !student || submittingRef.current) return;
+
+    // Lock synchronously: React state alone cannot prevent two rapid clicks
+    // before the button has re-rendered as disabled.
+    submittingRef.current = true;
+    setIsSubmitting(true);
 
     // Mark as submitted so the abandon handler does not also record it as unfinished.
     submittedRef.current = true;
@@ -680,6 +689,11 @@ export const StudentDashboard = () => {
     } catch (error) {
       console.error('Error saving test attempt:', error);
       toast.error('Error saving test results');
+      // Let the student retry only when the request itself failed.
+      submittedRef.current = false;
+      isTestActiveRef.current = true;
+      submittingRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
@@ -788,7 +802,7 @@ export const StudentDashboard = () => {
         // Load tiers from enrollments for all student IDs
         const { data: enrollments } = await supabase
           .from('student_enrollments')
-          .select('class_id, tier, subscription_expires_at')
+          .select('student_id, class_id, tier, subscription_expires_at')
           .in('student_id', studentIds);
         
         if (enrollments && enrollments.length > 0) {
@@ -989,6 +1003,7 @@ export const StudentDashboard = () => {
                       variant={selectedAnswers[currentQuestionIndex] === index ? "default" : "outline"}
                       className="justify-start text-left h-auto p-4"
                       onClick={() => handleAnswerSelect(index)}
+                      disabled={isSubmitting}
                     >
                       <span className="font-semibold mr-3">{String.fromCharCode(65 + index)}.</span>
                       <RichTextDisplay content={option} />
@@ -1000,7 +1015,7 @@ export const StudentDashboard = () => {
                   <Button 
                     variant="outline" 
                     onClick={handlePreviousQuestion}
-                    disabled={currentQuestionIndex === 0}
+                    disabled={currentQuestionIndex === 0 || isSubmitting}
                   >
                     Previous
                   </Button>
@@ -1010,11 +1025,12 @@ export const StudentDashboard = () => {
                       <Button 
                         onClick={handleSubmitTest}
                         className="bg-success hover:bg-success/90"
+                        disabled={isSubmitting}
                       >
-                        Submit Test
+                        {isSubmitting ? "Submitting..." : "Final Submit"}
                       </Button>
                     ) : (
-                      <Button onClick={handleNextQuestion}>
+                      <Button onClick={handleNextQuestion} disabled={isSubmitting}>
                         Next
                       </Button>
                     )}
