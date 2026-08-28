@@ -295,6 +295,7 @@ export const TalentSearch = ({ classes }: Props) => {
             <TableHead>Student</TableHead>
             <TableHead>Talent score</TableHead>
             <TableHead>Attempted</TableHead>
+            <TableHead>Incorrect</TableHead>
             <TableHead>Skipped</TableHead>
             <TableHead>Accuracy</TableHead>
             <TableHead>Avg time / Q</TableHead>
@@ -319,6 +320,7 @@ export const TalentSearch = ({ classes }: Props) => {
                 </div>
               </TableCell>
               <TableCell className="text-sm">{r.attempted}/{r.totalQuestions}</TableCell>
+              <TableCell className="text-sm">{r.wrong}</TableCell>
               <TableCell className="text-sm">{r.skipped}</TableCell>
               <TableCell className="text-sm">{r.accuracy}%</TableCell>
               <TableCell className="text-sm">{fmtTime(r.avgTimePerAttempt)}</TableCell>
