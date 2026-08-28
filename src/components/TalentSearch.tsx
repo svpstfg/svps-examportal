@@ -51,6 +51,7 @@ interface StudentRow {
   speedScore: number;
   consistency: number;
   improvement: number;
+  scoreHistory: { testTitle: string; score: number; completedAt: string }[];
   confidence: "Low" | "Medium" | "High";
   talentScore: number;
   topics: Record<string, { correct: number; total: number }>;
@@ -76,6 +77,7 @@ export const TalentSearch = ({ classes }: Props) => {
   const [selectedTests, setSelectedTests] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [scoreDetail, setScoreDetail] = useState<StudentRow | null>(null);
+  const [trendDetail, setTrendDetail] = useState<StudentRow | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -155,7 +157,7 @@ export const TalentSearch = ({ classes }: Props) => {
   const buildRows = (testIds: string[]): StudentRow[] => {
     const testById = new Map(tests.map((t) => [t.id, t]));
     const acc = new Map<string, StudentRow>();
-    const perStudentScores = new Map<string, { score: number; completedAt: string }[]>();
+    const perStudentScores = new Map<string, { testTitle: string; score: number; completedAt: string }[]>();
 
     attempts
       .filter((a) => testIds.includes(a.test_id))
@@ -173,7 +175,7 @@ export const TalentSearch = ({ classes }: Props) => {
             studentId: a.student_id, name: s.name, email: s.email, className: s.className,
             testsTaken: 0, totalQuestions: 0, attempted: 0, skipped: 0, correct: 0, wrong: 0,
             totalTime: 0, avgTimePerAttempt: 0, fastCorrect: 0, accuracy: 0, attemptRate: 0,
-            speedScore: 0, consistency: 0, improvement: 0, confidence: "Low", talentScore: 0, topics: {},
+            speedScore: 0, consistency: 0, improvement: 0, scoreHistory: [], confidence: "Low", talentScore: 0, topics: {},
           };
           acc.set(a.student_id, row);
         }
@@ -202,7 +204,7 @@ export const TalentSearch = ({ classes }: Props) => {
         row.topics[topicKey] = topic;
 
         const pct = qs.length ? Math.round((qs.reduce((n, q, i) => n + (isAnswerCorrect(answers[i], q.correctAnswer) ? 1 : 0), 0) / qs.length) * 100) : 0;
-        perStudentScores.set(a.student_id, [...(perStudentScores.get(a.student_id) || []), { score: pct, completedAt: a.completed_at || "" }]);
+        perStudentScores.set(a.student_id, [...(perStudentScores.get(a.student_id) || []), { testTitle: t.title, score: pct, completedAt: a.completed_at || "" }]);
       });
 
     const rows = Array.from(acc.values()).map((r) => {
@@ -216,6 +218,7 @@ export const TalentSearch = ({ classes }: Props) => {
       const scores = (perStudentScores.get(r.studentId) || []).sort(
         (a, b) => new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime(),
       );
+      r.scoreHistory = scores;
       if (scores.length > 1) {
         const mean = scores.reduce((sum, item) => sum + item.score, 0) / scores.length;
         const sd = Math.sqrt(scores.reduce((sum, item) => sum + (item.score - mean) ** 2, 0) / scores.length);
@@ -330,7 +333,9 @@ export const TalentSearch = ({ classes }: Props) => {
               <TableCell className="text-sm">{fmtTime(r.avgTimePerAttempt)}</TableCell>
               <TableCell className="text-sm">{r.consistency}</TableCell>
               <TableCell className={`text-sm font-medium ${r.improvement > 0 ? "text-emerald-600" : r.improvement < 0 ? "text-destructive" : ""}`}>
-                {r.improvement > 0 ? `+${r.improvement}` : r.improvement}
+                <Button variant="ghost" size="sm" className="h-auto px-1 py-0 text-sm font-semibold underline-offset-2 hover:underline" onClick={() => setTrendDetail(r)}>
+                  {r.improvement > 0 ? `+${r.improvement}` : r.improvement}
+                </Button>
               </TableCell>
               <TableCell><Badge variant={r.confidence === "High" ? "default" : "outline"}>{r.confidence}</Badge></TableCell>
               <TableCell>
@@ -560,6 +565,34 @@ export const TalentSearch = ({ classes }: Props) => {
               </div>
             );
           })()}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!trendDetail} onOpenChange={(open) => !open && setTrendDetail(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Improvement Trend: {trendDetail && (trendDetail.improvement > 0 ? `+${trendDetail.improvement}` : trendDetail.improvement)} points</DialogTitle>
+            <DialogDescription>{trendDetail?.name} · score history across the selected exams.</DialogDescription>
+          </DialogHeader>
+          {trendDetail && (
+            <div className="space-y-4">
+              {trendDetail.scoreHistory.length > 1 ? (
+                <>
+                  <div className="rounded-md border bg-muted/40 p-3 text-sm">
+                    <span className="font-medium">Calculation: </span>
+                    latest score ({trendDetail.scoreHistory[trendDetail.scoreHistory.length - 1].score}%) − first score ({trendDetail.scoreHistory[0].score}%) = {trendDetail.improvement > 0 ? "+" : ""}{trendDetail.improvement} points.
+                    <p className="mt-1 text-xs text-muted-foreground">Only positive improvement contributes to Talent Score: max(0, trend) × 10%.</p>
+                  </div>
+                  <Table>
+                    <TableHeader><TableRow><TableHead>Exam</TableHead><TableHead>Date</TableHead><TableHead className="text-right">Score</TableHead></TableRow></TableHeader>
+                    <TableBody>{trendDetail.scoreHistory.map((item, index) => <TableRow key={`${item.testTitle}-${item.completedAt}-${index}`}><TableCell className="font-medium">{item.testTitle}</TableCell><TableCell>{item.completedAt ? new Date(item.completedAt).toLocaleDateString() : "—"}</TableCell><TableCell className="text-right">{item.score}%</TableCell></TableRow>)}</TableBody>
+                  </Table>
+                </>
+              ) : (
+                <p className="rounded-md border p-4 text-sm text-muted-foreground">Trend needs at least two completed exams. This student currently has one exam in the selected list, so their trend is 0 and earns no improvement bonus.</p>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
