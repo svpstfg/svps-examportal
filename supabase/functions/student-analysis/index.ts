@@ -77,6 +77,43 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const { data: roleRow } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const callerRole = roleRow?.role ?? "teacher";
+
+    // A student must only generate their own report, and the test owner's
+    // setting is the source of truth even if the endpoint is called directly.
+    if (callerRole === "student") {
+      const { data: callerStudent } = await admin
+        .from("students")
+        .select("email")
+        .eq("id", p.studentId || "")
+        .maybeSingle();
+      if (!callerStudent || callerStudent.email.toLowerCase() !== (user.email || "").toLowerCase()) {
+        return json({ error: "You can only generate reports for your own attempts." }, 403);
+      }
+
+      const { data: test } = await admin
+        .from("tests")
+        .select("chapters:chapter_id (courses:course_id (classes:class_id (teacher_id)))")
+        .eq("id", p.testId || "")
+        .maybeSingle();
+      const teacherId = (test as any)?.chapters?.courses?.classes?.teacher_id;
+      if (!teacherId) return json({ error: "Test owner could not be determined." }, 400);
+
+      const { data: setting } = await admin
+        .from("teacher_settings")
+        .select("student_ai_reports_enabled")
+        .eq("teacher_id", teacherId)
+        .maybeSingle();
+      if (setting?.student_ai_reports_enabled === false) {
+        return json({ error: "AI reports are currently disabled by your teacher." }, 403);
+      }
+    }
+
     const canCache = !!(p.testId && p.studentId);
 
     if (canCache && !p.force) {
@@ -122,15 +159,15 @@ Total time: ${fmt(p.totalTimeSec)} | Average per question: ${fmt(avgTime)}
 Per-question breakdown:
 ${lines}
 
-Write a short report for the teacher with these sections using markdown headings:
+Write a short, student-friendly report using these markdown headings. The UI already displays an exact performance table, so do not repeat raw metrics unnecessarily:
 ## Summary
 1-2 sentences on overall performance.
-## Strengths
-Bullet points on what the student did well (fast + correct, consistent, etc).
-## Areas to Improve
-Bullet points on weak spots. Call out questions that were wrong, and questions where the student spent unusually long (possible confusion) or answered very fast then got it wrong (possible guessing/carelessness).
-## Recommended Actions
-2-4 concrete, actionable next steps the teacher can take for this student.
+## Stronger Areas
+Bullet points on fast and correct responses, accuracy, and good habits.
+## Focus Areas
+Bullet points on incorrect or skipped questions, unusually long responses, or very-fast wrong answers.
+## Next Steps
+2-4 concrete, actionable next steps the student can take.
 Keep the whole report under 220 words.`;
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -146,12 +183,6 @@ Keep the whole report under 220 words.`;
     });
 
     // Who is calling, and which teacher owns this student?
-    const { data: roleRow } = await admin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    const callerRole = roleRow?.role ?? "teacher";
     const { teacherId, classId } = await resolveTeacherForStudent(admin, p.studentId);
     const baseLog = {
       userId: user.id,
