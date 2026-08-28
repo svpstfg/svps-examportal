@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,22 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
   const [downloading, setDownloading] = useState(false);
   const [aiReport, setAiReport] = useState<string>("");
   const [aiLoading, setAiLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const loadSavedReport = async () => {
+      setAiReport("");
+      const { data, error } = await supabase
+        .from("student_analyses")
+        .select("report")
+        .eq("test_id", test.id)
+        .eq("student_id", attempt.studentId)
+        .maybeSingle();
+      if (active && !error && data?.report) setAiReport(data.report);
+    };
+    loadSavedReport();
+    return () => { active = false; };
+  }, [attempt.studentId, test.id]);
 
   const correctCount = attempt.answers.reduce((total, answer, index) => {
     return total + (answer === test.questions[index]?.correctAnswer ? 1 : 0);
@@ -159,9 +175,9 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
         </Button>
         <div className="flex items-center gap-2">
           {aiReportEnabled && (
-            <Button variant="secondary" onClick={runAiAnalysis} disabled={aiLoading}>
+            <Button variant="secondary" onClick={runAiAnalysis} disabled={aiLoading || !!aiReport}>
               {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-              {aiLoading ? "Analysing..." : "AI Report"}
+              {aiLoading ? "Analysing..." : aiReport ? "Report Saved" : "AI Report"}
             </Button>
           )}
           <Button variant="outline" onClick={() => window.print()}>
