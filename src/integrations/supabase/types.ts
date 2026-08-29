@@ -658,7 +658,11 @@ export type Database = {
           created_at: string
           id: string
           student_ai_reports_enabled: boolean
+          student_completed_tests_enabled: boolean
           student_email_domain: string
+          student_new_tests_enabled: boolean
+          student_pro_tests_enabled: boolean
+          student_scheduled_tests_enabled: boolean
           teacher_id: string
           updated_at: string
         }
@@ -666,7 +670,11 @@ export type Database = {
           created_at?: string
           id?: string
           student_ai_reports_enabled?: boolean
+          student_completed_tests_enabled?: boolean
           student_email_domain?: string
+          student_new_tests_enabled?: boolean
+          student_pro_tests_enabled?: boolean
+          student_scheduled_tests_enabled?: boolean
           teacher_id: string
           updated_at?: string
         }
@@ -674,7 +682,11 @@ export type Database = {
           created_at?: string
           id?: string
           student_ai_reports_enabled?: boolean
+          student_completed_tests_enabled?: boolean
           student_email_domain?: string
+          student_new_tests_enabled?: boolean
+          student_pro_tests_enabled?: boolean
+          student_scheduled_tests_enabled?: boolean
           teacher_id?: string
           updated_at?: string
         }
