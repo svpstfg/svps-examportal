@@ -75,6 +75,7 @@ export type Database = {
           description: string | null
           id: string
           is_pro: boolean
+          is_visible: boolean
           name: string
           test_count: number | null
           updated_at: string
@@ -85,6 +86,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_pro?: boolean
+          is_visible?: boolean
           name: string
           test_count?: number | null
           updated_at?: string
@@ -95,6 +97,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_pro?: boolean
+          is_visible?: boolean
           name?: string
           test_count?: number | null
           updated_at?: string
