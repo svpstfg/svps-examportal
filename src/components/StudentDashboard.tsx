@@ -42,6 +42,7 @@ import { ClassLeaderboard } from "./ClassLeaderboard";
 import { TestResults } from "./TestResults";
 import { UpgradeBanner } from "./UpgradeBanner";
 import { ReexamRequestButton } from "./ReexamRequestButton";
+import { LearningPlan } from "./LearningPlan";
 
 const RESUME_KEY = (studentId: string, testId: string) => `test_progress_${studentId}_${testId}`;
 
@@ -1336,6 +1337,15 @@ export const StudentDashboard = () => {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
+                      tooltip="Learning Plan"
+                      onClick={() => document.getElementById('learning-plan')?.scrollIntoView({ behavior: 'smooth' })}
+                    >
+                      <GraduationCap />
+                      <span>Learning Plan</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
                       tooltip="Test History"
                       onClick={() => document.getElementById('test-history')?.scrollIntoView({ behavior: 'smooth' })}
                     >
@@ -1669,6 +1679,8 @@ export const StudentDashboard = () => {
 
           {/* Previous Year Question Papers */}
           <QuestionPaperDownload enrolledClassIds={enrolledClassIds} selectedClassId={selectedClassId} classes={classes} />
+
+          <LearningPlan tests={readyTests} attempts={attempts} onPractice={handleStartTest} />
         </div>
 
         <div className="space-y-6">

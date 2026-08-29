@@ -1504,7 +1504,7 @@ export const TeacherDashboard = () => {
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0"
-                          title="Question analytics"
+                          title="Question difficulty calibration"
                           onClick={(e) => {
                             e.stopPropagation();
                             setAnalyticsTest(test);

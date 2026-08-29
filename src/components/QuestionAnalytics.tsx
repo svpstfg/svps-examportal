@@ -24,6 +24,16 @@ interface QuestionStat {
   optionCounts: number[];
 }
 
+const getCalibration = (correctPct: number, responses: number) => {
+  if (responses < 10) {
+    return { label: "Preliminary", detail: "Need 10 answered responses for a reliable calibration", tone: "secondary" as const };
+  }
+  if (correctPct <= 35) return { label: "Very hard", detail: "Most students could not answer this correctly", tone: "destructive" as const };
+  if (correctPct <= 55) return { label: "Hard", detail: "This question challenged many students", tone: "destructive" as const };
+  if (correctPct <= 75) return { label: "Suitable", detail: "A balanced level for most students", tone: "secondary" as const };
+  return { label: "Easy", detail: "Most students answered this correctly", tone: "default" as const };
+};
+
 export const QuestionAnalytics = ({ test, onClose }: Props) => {
   const [attempts, setAttempts] = useState<{ score: number; answers: number[] }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -89,6 +99,7 @@ export const QuestionAnalytics = ({ test, onClose }: Props) => {
       "Correct Answer": String.fromCharCode(65 + s.correctAnswer),
       Attempts: s.totalAnswered,
       "Correct (%)": s.correctPct,
+      "Calibrated difficulty": getCalibration(s.correctPct, s.totalAnswered).label,
       ...Object.fromEntries(s.optionCounts.map((c, i) => [`Picked ${String.fromCharCode(65 + i)}`, c])),
     }));
     downloadCSV(`analytics-${test.title.replace(/\s+/g, "_")}.csv`, rows);
@@ -100,7 +111,7 @@ export const QuestionAnalytics = ({ test, onClose }: Props) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Question Analytics — {test?.title}
+            Question Difficulty Calibration — {test?.title}
           </DialogTitle>
           <DialogDescription>
             {loading
@@ -130,10 +141,16 @@ export const QuestionAnalytics = ({ test, onClose }: Props) => {
               </Button>
             </div>
 
+            <div className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
+              <span className="font-semibold text-foreground">Difficulty calibration: </span>
+              based on the percentage of students who answered each question correctly. At least 10 answered responses are needed before a label is reliable. This measures question difficulty in this class, not student ability.
+            </div>
+
             <div className="space-y-4 mt-2">
               {stats.map((s) => {
                 const tone =
                   s.correctPct >= 75 ? "default" : s.correctPct >= 50 ? "secondary" : "destructive";
+                const calibration = getCalibration(s.correctPct, s.totalAnswered);
                 return (
                   <div key={s.index} className="border rounded-lg p-3 space-y-2">
                     <div className="flex items-start justify-between gap-2">
@@ -141,9 +158,13 @@ export const QuestionAnalytics = ({ test, onClose }: Props) => {
                         <span className="text-muted-foreground mr-2">Q{s.index + 1}.</span>
                         <RichTextDisplay content={s.question} as="span" />
                       </div>
-                      <Badge variant={tone}>{s.correctPct}% correct</Badge>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <Badge variant={tone}>{s.correctPct}% correct</Badge>
+                        <Badge variant={calibration.tone}>{calibration.label}</Badge>
+                      </div>
                     </div>
                     <Progress value={s.correctPct} className="h-1.5" />
+                    <p className="text-xs text-muted-foreground">{calibration.detail}</p>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
                       {s.optionCounts.map((count, i) => {
                         const pct = s.totalAnswered ? Math.round((count / s.totalAnswered) * 100) : 0;
