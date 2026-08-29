@@ -74,6 +74,7 @@ export const StudentDashboard = () => {
   const [dataRevision, setDataRevision] = useState(0);
   const [attempts, setAttempts] = useState<TestAttempt[]>([]);
   const [aiReportsByTeacher, setAiReportsByTeacher] = useState<Record<string, boolean>>({});
+  const [portalTitlesByTeacher, setPortalTitlesByTeacher] = useState<Record<string, string>>({});
   const [testTabsByTeacher, setTestTabsByTeacher] = useState<Record<string, { newTests: boolean; proTests: boolean; scheduledTests: boolean; completedTests: boolean }>>({});
   const [reexamGrants, setReexamGrants] = useState<string[]>([]);
   const [currentTest, setCurrentTest] = useState<Test | null>(null);
@@ -342,13 +343,14 @@ export const StudentDashboard = () => {
         if (teacherIds.length) {
           const { data: settingsRows, error: settingsError } = await supabase
             .from("teacher_settings")
-            .select("teacher_id, student_ai_reports_enabled, student_new_tests_enabled, student_pro_tests_enabled, student_scheduled_tests_enabled, student_completed_tests_enabled")
+            .select("teacher_id, student_ai_reports_enabled, student_new_tests_enabled, student_pro_tests_enabled, student_scheduled_tests_enabled, student_completed_tests_enabled, student_portal_title")
             .in("teacher_id", teacherIds);
           if (settingsError) console.error("Student AI report settings error:", settingsError);
           else {
             setAiReportsByTeacher(
               Object.fromEntries((settingsRows || []).map((row) => [row.teacher_id, row.student_ai_reports_enabled])),
             );
+            setPortalTitlesByTeacher(Object.fromEntries((settingsRows || []).map((row) => [row.teacher_id, row.student_portal_title || "Skyview Test Pro"])));
             setTestTabsByTeacher(Object.fromEntries((settingsRows || []).map((row) => [row.teacher_id, {
               newTests: row.student_new_tests_enabled,
               proTests: row.student_pro_tests_enabled,
@@ -1292,6 +1294,8 @@ export const StudentDashboard = () => {
 
 
   const enrolledClasses = classes.filter(c => enrolledClassIds.includes(c.id));
+  const titleClass = selectedClassId === 'all' ? enrolledClasses[0] : enrolledClasses.find((item) => item.id === selectedClassId);
+  const portalTitle = titleClass ? portalTitlesByTeacher[titleClass.teacherId] || "Skyview Test Pro" : "Skyview Test Pro";
   const upgradeClasses = enrolledClasses
     .filter(c => studentTiers[c.id] !== 'pro')
     .filter(c => selectedClassId === 'all' || c.id === selectedClassId);
@@ -1306,7 +1310,7 @@ export const StudentDashboard = () => {
                 <GraduationCap className="h-5 w-5 text-primary" />
               </div>
               <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-                <p className="font-bold text-sm truncate">Skyview Test Pro</p>
+                <p className="font-bold text-sm truncate">{portalTitle}</p>
                 <p className="text-[11px] text-muted-foreground truncate">Advanced Mock Testing Platform</p>
               </div>
             </div>

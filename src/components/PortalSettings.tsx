@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 const settingColumns = {
@@ -25,6 +27,7 @@ export const PortalSettings = () => {
   const [settings, setSettings] = useState({ aiReports: true, newTests: true, proTests: true, scheduledTests: true, completedTests: true });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [portalTitle, setPortalTitle] = useState("Skyview Test Pro");
 
   useEffect(() => {
     let active = true;
@@ -36,12 +39,15 @@ export const PortalSettings = () => {
       }
       const { data, error } = await supabase
         .from("teacher_settings")
-        .select("student_ai_reports_enabled, student_new_tests_enabled, student_pro_tests_enabled, student_scheduled_tests_enabled, student_completed_tests_enabled")
+        .select("student_ai_reports_enabled, student_new_tests_enabled, student_pro_tests_enabled, student_scheduled_tests_enabled, student_completed_tests_enabled, student_portal_title")
         .eq("teacher_id", auth.user.id)
         .maybeSingle();
       if (!active) return;
       if (error) toast.error("Failed to load portal settings");
-      else if (data) setSettings({ aiReports: data.student_ai_reports_enabled, newTests: data.student_new_tests_enabled, proTests: data.student_pro_tests_enabled, scheduledTests: data.student_scheduled_tests_enabled, completedTests: data.student_completed_tests_enabled });
+      else if (data) {
+        setSettings({ aiReports: data.student_ai_reports_enabled, newTests: data.student_new_tests_enabled, proTests: data.student_pro_tests_enabled, scheduledTests: data.student_scheduled_tests_enabled, completedTests: data.student_completed_tests_enabled });
+        setPortalTitle(data.student_portal_title || "Skyview Test Pro");
+      }
       setLoading(false);
     };
     load();
@@ -68,12 +74,47 @@ export const PortalSettings = () => {
     }
   };
 
+  const savePortalTitle = async () => {
+    const title = portalTitle.trim();
+    if (!title) {
+      toast.error("Enter a portal title");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) throw new Error("Not signed in");
+      const { error } = await supabase.from("teacher_settings").upsert(
+        { teacher_id: auth.user.id, student_portal_title: title } as any,
+        { onConflict: "teacher_id" },
+      );
+      if (error) throw error;
+      setPortalTitle(title);
+      toast.success("Student portal title saved");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to save portal title");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
         <h2 className="flex items-center gap-2 text-2xl font-semibold"><Settings className="h-6 w-6 text-primary" /> Settings</h2>
         <p className="text-sm text-muted-foreground">Control the features available in your student portal.</p>
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Student Portal Title</CardTitle>
+          <CardDescription>This name appears in the student dashboard header. Maximum 60 characters.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 sm:flex-row">
+          <Input value={portalTitle} maxLength={60} onChange={(event) => setPortalTitle(event.target.value)} placeholder="Skyview Test Pro" disabled={loading || saving} />
+          <Button onClick={savePortalTitle} disabled={loading || saving}>{saving ? "Saving..." : "Save title"}</Button>
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base"><Bot className="h-5 w-5" /> Student AI Reports</CardTitle>
