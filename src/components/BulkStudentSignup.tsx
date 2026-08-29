@@ -119,8 +119,8 @@ export const BulkStudentSignup = ({ classes, onImported }: Props) => {
 
   const downloadTemplate = () => {
     const ws = XLSX.utils.json_to_sheet([
-      { name: "Aisha Khan", mobile: "9876543210", dob: "2005-04-12" },
-      { name: "Rahul Roy", mobile: "9812345678", dob: "2006-11-30" },
+      { name: "Aisha Khan", mobile: "9876543210", dob: "12-04-2005" },
+      { name: "Rahul Roy", mobile: "9812345678", dob: "30-11-2006" },
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Students");
@@ -138,7 +138,7 @@ export const BulkStudentSignup = ({ classes, onImported }: Props) => {
           Upload an Excel/CSV with <code>name</code>, <code>mobile</code> and{" "}
           <code>dob</code> columns. Each student gets a login account where the{" "}
           <strong>username is their mobile number</strong> and the{" "}
-          <strong>password is their date of birth</strong>. They sign in with{" "}
+          <strong>password is their DOB in DDMMYYYY format</strong> (for example, 12-04-2005 becomes <code>12042005</code>). They sign in with{" "}
           <code>&lt;mobile&gt;@{domain}</code>. Change this domain in{" "}
           <strong>User Management</strong>.
         </CardDescription>
