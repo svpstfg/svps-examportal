@@ -47,6 +47,7 @@ export interface Test {
   scheduledTime?: string;
   isScheduled: boolean;
   isPro: boolean;
+  isVisible?: boolean;
   isLocked?: boolean;
   closeAfterSchedule?: boolean;
   singleAttempt?: boolean;
