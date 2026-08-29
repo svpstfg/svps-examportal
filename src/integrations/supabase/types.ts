@@ -664,6 +664,7 @@ export type Database = {
           student_completed_tests_enabled: boolean
           student_email_domain: string
           student_new_tests_enabled: boolean
+          student_portal_title: string
           student_pro_tests_enabled: boolean
           student_scheduled_tests_enabled: boolean
           teacher_id: string
@@ -676,6 +677,7 @@ export type Database = {
           student_completed_tests_enabled?: boolean
           student_email_domain?: string
           student_new_tests_enabled?: boolean
+          student_portal_title?: string
           student_pro_tests_enabled?: boolean
           student_scheduled_tests_enabled?: boolean
           teacher_id: string
@@ -688,6 +690,7 @@ export type Database = {
           student_completed_tests_enabled?: boolean
           student_email_domain?: string
           student_new_tests_enabled?: boolean
+          student_portal_title?: string
           student_pro_tests_enabled?: boolean
           student_scheduled_tests_enabled?: boolean
           teacher_id?: string
