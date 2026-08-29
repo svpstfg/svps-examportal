@@ -73,6 +73,7 @@ export const StudentDashboard = () => {
   const [dataRevision, setDataRevision] = useState(0);
   const [attempts, setAttempts] = useState<TestAttempt[]>([]);
   const [aiReportsByTeacher, setAiReportsByTeacher] = useState<Record<string, boolean>>({});
+  const [testTabsByTeacher, setTestTabsByTeacher] = useState<Record<string, { newTests: boolean; proTests: boolean; scheduledTests: boolean; completedTests: boolean }>>({});
   const [reexamGrants, setReexamGrants] = useState<string[]>([]);
   const [currentTest, setCurrentTest] = useState<Test | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -338,13 +339,19 @@ export const StudentDashboard = () => {
         if (teacherIds.length) {
           const { data: settingsRows, error: settingsError } = await supabase
             .from("teacher_settings")
-            .select("teacher_id, student_ai_reports_enabled")
+            .select("teacher_id, student_ai_reports_enabled, student_new_tests_enabled, student_pro_tests_enabled, student_scheduled_tests_enabled, student_completed_tests_enabled")
             .in("teacher_id", teacherIds);
           if (settingsError) console.error("Student AI report settings error:", settingsError);
           else {
             setAiReportsByTeacher(
               Object.fromEntries((settingsRows || []).map((row) => [row.teacher_id, row.student_ai_reports_enabled])),
             );
+            setTestTabsByTeacher(Object.fromEntries((settingsRows || []).map((row) => [row.teacher_id, {
+              newTests: row.student_new_tests_enabled,
+              proTests: row.student_pro_tests_enabled,
+              scheduledTests: row.student_scheduled_tests_enabled,
+              completedTests: row.student_completed_tests_enabled,
+            }])));
           }
         }
 
@@ -910,20 +917,32 @@ export const StudentDashboard = () => {
     return `${minutes}m ${seconds}s`;
   };
 
-  const scheduledTests = availableTests.filter(test => test.isScheduled && !attempts.some(a => a.testId === test.id));
-  const readyTests = availableTests.filter(test => !test.isScheduled || isTestAvailable(test));
-  const completedTests = readyTests.filter(test => attempts.some(a => a.testId === test.id));
-  const newFreeTests = readyTests.filter(test => !test.isPro && !test.isScheduled && !attempts.some(a => a.testId === test.id));
-  const newProTests = readyTests.filter(test => test.isPro && !test.isScheduled && !attempts.some(a => a.testId === test.id));
-  const freeTests = newFreeTests;
-  const proTests = newProTests;
-
   const isAiReportEnabled = (test: Test) => {
     const chapter = chapters.find((item) => item.id === test.chapterId);
     const course = courses.find((item) => item.id === chapter?.courseId);
     const teacherId = classes.find((item) => item.id === course?.classId)?.teacherId;
     return teacherId ? aiReportsByTeacher[teacherId] ?? true : true;
   };
+
+  const isTestTabEnabled = (test: Test, tab: "newTests" | "proTests" | "scheduledTests" | "completedTests") => {
+    const chapter = chapters.find((item) => item.id === test.chapterId);
+    const course = courses.find((item) => item.id === chapter?.courseId);
+    const teacherId = classes.find((item) => item.id === course?.classId)?.teacherId;
+    return teacherId ? testTabsByTeacher[teacherId]?.[tab] ?? true : true;
+  };
+
+  const scheduledTests = availableTests.filter(test => test.isScheduled && !attempts.some(a => a.testId === test.id) && isTestTabEnabled(test, "scheduledTests"));
+  const readyTests = availableTests.filter(test => !test.isScheduled || isTestAvailable(test));
+  const completedTests = readyTests.filter(test => attempts.some(a => a.testId === test.id) && isTestTabEnabled(test, "completedTests"));
+  const newFreeTests = readyTests.filter(test => !test.isPro && !test.isScheduled && !attempts.some(a => a.testId === test.id) && isTestTabEnabled(test, "newTests"));
+  const newProTests = readyTests.filter(test => test.isPro && !test.isScheduled && !attempts.some(a => a.testId === test.id) && isTestTabEnabled(test, "proTests"));
+  const freeTests = newFreeTests;
+  const proTests = newProTests;
+  const showNewTab = availableTests.some((test) => isTestTabEnabled(test, "newTests"));
+  const showProTab = availableTests.some((test) => isTestTabEnabled(test, "proTests"));
+  const showScheduledTab = availableTests.some((test) => isTestTabEnabled(test, "scheduledTests"));
+  const showCompletedTab = availableTests.some((test) => isTestTabEnabled(test, "completedTests"));
+  const initialTestTab = showNewTab ? "free" : showProTab ? "pro" : showScheduledTab ? "scheduled" : "completed";
 
   if (loading) {
     return (
@@ -1442,24 +1461,24 @@ export const StudentDashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="free">
+              <Tabs defaultValue={initialTestTab}>
                 <TabsList className="w-full grid grid-cols-4">
-                  <TabsTrigger value="free">New ({freeTests.length})</TabsTrigger>
-                  <TabsTrigger value="pro">
+                  {showNewTab && <TabsTrigger value="free">New ({freeTests.length})</TabsTrigger>}
+                  {showProTab && <TabsTrigger value="pro">
                     <Crown className="h-3 w-3 mr-1" />
                     Pro ({proTests.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="scheduled">
+                  </TabsTrigger>}
+                  {showScheduledTab && <TabsTrigger value="scheduled">
                     <Calendar className="h-3 w-3 mr-1" />
                     Scheduled ({scheduledTests.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="completed">
+                  </TabsTrigger>}
+                  {showCompletedTab && <TabsTrigger value="completed">
                     <CheckCircle className="h-3 w-3 mr-1" />
                     Done ({completedTests.length})
-                  </TabsTrigger>
+                  </TabsTrigger>}
                 </TabsList>
 
-                <TabsContent value="free" className="space-y-4 mt-4">
+                {showNewTab && <TabsContent value="free" className="space-y-4 mt-4">
                   {freeTests.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">No new tests available</p>
                   ) : (
@@ -1491,9 +1510,9 @@ export const StudentDashboard = () => {
                       );
                     })
                   )}
-                </TabsContent>
+                </TabsContent>}
 
-                <TabsContent value="pro" className="space-y-4 mt-4">
+                {showProTab && <TabsContent value="pro" className="space-y-4 mt-4">
                   {proTests.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">No pro tests available</p>
                   ) : (
@@ -1534,9 +1553,9 @@ export const StudentDashboard = () => {
                       );
                     })
                   )}
-                </TabsContent>
+                </TabsContent>}
 
-                <TabsContent value="scheduled" className="space-y-4 mt-4">
+                {showScheduledTab && <TabsContent value="scheduled" className="space-y-4 mt-4">
                   {scheduledTests.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">No scheduled tests</p>
                   ) : (
@@ -1593,9 +1612,9 @@ export const StudentDashboard = () => {
                       );
                     })
                   )}
-                </TabsContent>
+                </TabsContent>}
 
-                <TabsContent value="completed" className="space-y-4 mt-4">
+                {showCompletedTab && <TabsContent value="completed" className="space-y-4 mt-4">
                   {completedTests.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">No completed tests yet</p>
                   ) : (
@@ -1640,7 +1659,7 @@ export const StudentDashboard = () => {
                       );
                     })
                   )}
-                </TabsContent>
+                </TabsContent>}
               </Tabs>
             </CardContent>
           </Card>
