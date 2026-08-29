@@ -25,6 +25,42 @@ const sanitizeDomain = (d: unknown) => {
 const mobileToEmail = (mobile: string, domain: string) =>
   `${String(mobile).replace(/\D/g, "")}@${domain}`;
 
+// Accept common spreadsheet DOB formats and always create the same DDMMYYYY password.
+// Day/month order is deliberate for Indian school records; ISO dates remain unambiguous.
+const dobToPassword = (value: unknown): string | null => {
+  const dob = String(value ?? "").trim();
+  if (/^\d{8}$/.test(dob)) {
+    const day = Number(dob.slice(0, 2));
+    const month = Number(dob.slice(2, 4));
+    const year = Number(dob.slice(4));
+    return isValidDate(day, month, year) ? dob : null;
+  }
+
+  let match = dob.match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/);
+  if (match) {
+    const [, yearText, monthText, dayText] = match;
+    const day = Number(dayText);
+    const month = Number(monthText);
+    const year = Number(yearText);
+    return isValidDate(day, month, year) ? `${String(day).padStart(2, "0")}${String(month).padStart(2, "0")}${year}` : null;
+  }
+
+  match = dob.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (match) {
+    const [, dayText, monthText, yearText] = match;
+    const day = Number(dayText);
+    const month = Number(monthText);
+    const year = Number(yearText);
+    return isValidDate(day, month, year) ? `${String(day).padStart(2, "0")}${String(month).padStart(2, "0")}${year}` : null;
+  }
+  return null;
+};
+
+const isValidDate = (day: number, month: number, year: number) => {
+  if (year < 1900 || year > new Date().getFullYear() || month < 1 || month > 12 || day < 1) return false;
+  return day <= new Date(year, month, 0).getDate();
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -98,7 +134,7 @@ Deno.serve(async (req) => {
     for (const s of students) {
       const mobile = String(s.mobile ?? "").replace(/\D/g, "");
       const name = String(s.name ?? "").trim();
-      const dob = String(s.dob ?? "").trim();
+      const password = dobToPassword(s.dob);
       const email = mobileToEmail(mobile, domain);
 
       if (!mobile || mobile.length < 6) {
@@ -106,13 +142,13 @@ Deno.serve(async (req) => {
         results.push({ mobile, email, status: "failed", message: "Invalid mobile number" });
         continue;
       }
-      if (dob.length < 6) {
+      if (!password) {
         failed++;
         results.push({
           mobile,
           email,
           status: "failed",
-          message: "Date of birth (password) must be at least 6 characters",
+          message: "Invalid DOB. Use DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD, or DDMMYYYY",
         });
         continue;
       }
@@ -121,7 +157,7 @@ Deno.serve(async (req) => {
         const { data: createdUser, error: createErr } =
           await admin.auth.admin.createUser({
             email,
-            password: dob,
+            password,
             email_confirm: true,
             user_metadata: {
               name: name || mobile,
