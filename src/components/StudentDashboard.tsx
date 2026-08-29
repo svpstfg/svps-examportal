@@ -946,7 +946,8 @@ export const StudentDashboard = () => {
   const showProTab = availableTests.some((test) => isTestTabEnabled(test, "proTests"));
   const showScheduledTab = availableTests.some((test) => isTestTabEnabled(test, "scheduledTests"));
   const showCompletedTab = availableTests.some((test) => isTestTabEnabled(test, "completedTests"));
-  const initialTestTab = showNewTab ? "free" : showProTab ? "pro" : showScheduledTab ? "scheduled" : "completed";
+  // If teachers hide New Tests, take students straight to Scheduled Tests before Pro/Done.
+  const initialTestTab = showNewTab ? "free" : showScheduledTab ? "scheduled" : showProTab ? "pro" : "completed";
 
   if (loading) {
     return (
