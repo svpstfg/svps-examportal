@@ -230,6 +230,7 @@ export const StudentDashboard = () => {
             scheduledTime: t.scheduled_time || undefined,
             isScheduled: t.is_scheduled || false,
             isPro: (t as any).is_pro || false,
+            isVisible: (t as any).is_visible ?? true,
             closeAfterSchedule: (t as any).close_after_schedule || false,
             singleAttempt: (t as any).single_attempt || false,
             negativeMarking: Number((t as any).negative_marking) || 0
@@ -318,6 +319,7 @@ export const StudentDashboard = () => {
           scheduledTime: t.scheduled_time || undefined,
           isScheduled: t.is_scheduled || false,
           isPro: (t as any).is_pro || false,
+          isVisible: (t as any).is_visible ?? true,
           closeAfterSchedule: (t as any).close_after_schedule || false,
           singleAttempt: (t as any).single_attempt || false,
           negativeMarking: Number((t as any).negative_marking) || 0
@@ -868,6 +870,7 @@ export const StudentDashboard = () => {
   const isProStudent = Object.values(studentTiers).some(t => t === 'pro');
 
   const availableTests = tests.filter(test => {
+    if (test.isVisible === false) return false;
     const chapter = chapters.find(ch => ch.id === test.chapterId);
     const course = chapter ? courses.find(c => c.id === chapter.courseId) : null;
     if (!course || !enrolledClassIds.includes(course.classId)) return false;

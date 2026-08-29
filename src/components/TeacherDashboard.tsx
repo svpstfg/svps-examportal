@@ -170,6 +170,7 @@ export const TeacherDashboard = () => {
           scheduledTime: t.scheduled_time || undefined,
           isScheduled: t.is_scheduled || false,
           isPro: (t as any).is_pro || false,
+          isVisible: (t as any).is_visible ?? true,
           isLocked: (t as any).is_locked || true,
           closeAfterSchedule: (t as any).close_after_schedule || false,
           singleAttempt: (t as any).single_attempt || false,
@@ -614,6 +615,18 @@ export const TeacherDashboard = () => {
     const matchesChapter = !testFilterChapterId || testFilterChapterId === 'all' || test.chapterId === testFilterChapterId;
     return matchesClass && matchesCourse && matchesChapter;
   });
+
+  const handleToggleTestVisibility = async (test: Test, visible: boolean) => {
+    try {
+      const { error } = await supabase.from('tests').update({ is_visible: visible } as any).eq('id', test.id);
+      if (error) throw error;
+      setTests((current) => current.map((item) => item.id === test.id ? { ...item, isVisible: visible } : item));
+      toast.success(visible ? 'Test is now visible to students' : 'Test hidden from students');
+    } catch (error) {
+      console.error('Failed to update test visibility:', error);
+      toast.error('Failed to update test visibility');
+    }
+  };
 
   const availableTestCourses = courses.filter((course) => !testFilterClassId || testFilterClassId === 'all' || course.classId === testFilterClassId);
   const availableTestChapters = chapters.filter((chapter) => !testFilterCourseId || testFilterCourseId === 'all' || chapter.courseId === testFilterCourseId);
@@ -1582,6 +1595,12 @@ export const TeacherDashboard = () => {
                           className="text-xs flex items-center gap-1 cursor-pointer text-muted-foreground"
                         >
                           <Lock className="h-3 w-3" /> Lock (disable delete)
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox id={`visible-${test.id}`} checked={test.isVisible !== false} onCheckedChange={(checked) => handleToggleTestVisibility(test, checked === true)} />
+                        <Label htmlFor={`visible-${test.id}`} className="text-xs flex items-center gap-1 cursor-pointer text-muted-foreground">
+                          <Eye className="h-3 w-3" /> Visible to students
                         </Label>
                       </div>
                       {/* Test title below the icons line, above the subject */}

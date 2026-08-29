@@ -6,6 +6,21 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 
+const settingColumns = {
+  aiReports: "student_ai_reports_enabled",
+  newTests: "student_new_tests_enabled",
+  proTests: "student_pro_tests_enabled",
+  scheduledTests: "student_scheduled_tests_enabled",
+  completedTests: "student_completed_tests_enabled",
+} as const;
+
+const tabOptions: { key: keyof typeof settingColumns; title: string; description: string; Icon: typeof Sparkles }[] = [
+  { key: "newTests", title: "New tests", description: "Show currently available free tests", Icon: Sparkles },
+  { key: "proTests", title: "Pro tests", description: "Show Pro-only test tab", Icon: CheckCircle },
+  { key: "scheduledTests", title: "Scheduled tests", description: "Show upcoming scheduled tests", Icon: Calendar },
+  { key: "completedTests", title: "Completed tests", description: "Show completed tests and answer-sheet links", Icon: Clock },
+];
+
 export const PortalSettings = () => {
   const [settings, setSettings] = useState({ aiReports: true, newTests: true, proTests: true, scheduledTests: true, completedTests: true });
   const [loading, setLoading] = useState(true);
@@ -39,7 +54,7 @@ export const PortalSettings = () => {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) throw new Error("Not signed in");
       const { error } = await supabase.from("teacher_settings").upsert(
-        { teacher_id: auth.user.id, [key === "aiReports" ? "student_ai_reports_enabled" : key === "newTests" ? "student_new_tests_enabled" : key === "proTests" ? "student_pro_tests_enabled" : key === "scheduledTests" ? "student_scheduled_tests_enabled" : "student_completed_tests_enabled"]: next },
+        { teacher_id: auth.user.id, [settingColumns[key]]: next } as any,
         { onConflict: "teacher_id" },
       );
       if (error) throw error;
@@ -77,12 +92,7 @@ export const PortalSettings = () => {
       <Card>
         <CardHeader><CardTitle className="text-base">Available Tests Tabs</CardTitle><CardDescription>Choose which tabs and related tests students can see in their dashboard.</CardDescription></CardHeader>
         <CardContent className="space-y-3">
-          {[
-            ["newTests", "New tests", "Show currently available free tests", Sparkles],
-            ["proTests", "Pro tests", "Show Pro-only test tab", CheckCircle],
-            ["scheduledTests", "Scheduled tests", "Show upcoming scheduled tests", Calendar],
-            ["completedTests", "Completed tests", "Show completed tests and answer-sheet links", Clock],
-          ].map(([key, title, description, Icon]) => <div key={String(key)} className="flex items-center justify-between gap-6 rounded-lg border p-4"><div><Label className="flex items-center gap-2 text-sm font-medium"><Icon className="h-4 w-4 text-primary" />{title}</Label><p className="mt-1 text-sm text-muted-foreground">{description}</p></div>{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Switch checked={settings[key as keyof typeof settings]} onCheckedChange={(value) => updateSetting(key as keyof typeof settings, value)} disabled={saving} />}</div>)}
+          {tabOptions.map(({ key, title, description, Icon }) => <div key={key} className="flex items-center justify-between gap-6 rounded-lg border p-4"><div><Label className="flex items-center gap-2 text-sm font-medium"><Icon className="h-4 w-4 text-primary" />{title}</Label><p className="mt-1 text-sm text-muted-foreground">{description}</p></div>{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Switch checked={settings[key]} onCheckedChange={(value) => updateSetting(key, value)} disabled={saving} />}</div>)}
         </CardContent>
       </Card>
     </div>
