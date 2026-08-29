@@ -84,6 +84,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
       correctAnswer: 0,
       explanation: '',
       explanationImage: '',
+      lessonPlanCategory: '',
     });
     // clear any pasted image metadata tracked while building a question
     try { setPastedImages && setPastedImages([]); } catch (e) { /* noop if not initialized yet */ }
@@ -103,6 +104,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
     correctAnswer: 0,
     explanation: '',
     explanationImage: '',
+    lessonPlanCategory: '',
   });
 
   interface PastedImage {
@@ -1520,6 +1522,12 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2 rounded-lg border border-dashed p-3">
+            <Label htmlFor="lesson-plan-category">Lesson-plan category (optional)</Label>
+            <Input id="lesson-plan-category" value={currentQuestion.lessonPlanCategory || ''} onChange={(event) => setCurrentQuestion((question) => ({ ...question, lessonPlanCategory: event.target.value }))} placeholder="e.g. Fractions – application, Algebra – equations" />
+            <p className="text-xs text-muted-foreground">Used to create a category-wise performance table in the answer sheet. Leave blank if this question does not need curriculum mapping.</p>
           </div>
 
           {/* Explanation Field with Image */}

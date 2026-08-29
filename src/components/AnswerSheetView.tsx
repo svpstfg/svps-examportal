@@ -94,6 +94,22 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
     ["Answer confidence", `${confidence} (${attemptRate}% attempted)`],
     ["Time management", `${timeManagement} — ${formatTime(avgTime)} per attempt; target ${formatTime(plannedTimePerQuestion)}`],
   ];
+  const lessonPlanRows = Object.entries(test.questions.reduce<Record<string, { total: number; correct: number; time: number }>>((groups, question, index) => {
+    const category = question.lessonPlanCategory?.trim();
+    if (!category) return groups;
+    const group = groups[category] || { total: 0, correct: 0, time: 0 };
+    group.total += 1;
+    group.time += questionTimes[index] || 0;
+    if (isAnswerCorrect(attempt.answers[index], question.correctAnswer)) group.correct += 1;
+    groups[category] = group;
+    return groups;
+  }, {})).map(([category, group]) => ({
+    category,
+    questions: group.total,
+    correct: group.correct,
+    accuracy: Math.round((group.correct / group.total) * 100),
+    avgTime: Math.round(group.time / group.total),
+  }));
 
   const handleDownloadPDF = async () => {
     const content = printRef.current;
@@ -220,6 +236,15 @@ export const AnswerSheetView = ({ attempt, test, studentName, onBack, subject, c
             <p><strong>Answer confidence:</strong> an exam indicator based on accuracy and questions attempted—not a measure of personality or IQ.</p>
             <p><strong>Time management:</strong> average time per attempted question compared with the planned time per question.</p>
           </div>
+          {lessonPlanRows.length > 0 && (
+            <div className="mt-4">
+              <h4 className="mb-2 font-bold text-[11px] uppercase tracking-wide">Lesson-plan Performance</h4>
+              <table className="w-full border-collapse text-[10px]">
+                <thead><tr><th className="border border-black p-1 text-left">Category</th><th className="border border-black p-1 text-right">Questions</th><th className="border border-black p-1 text-right">Correct</th><th className="border border-black p-1 text-right">Accuracy</th><th className="border border-black p-1 text-right">Avg. time</th></tr></thead>
+                <tbody>{lessonPlanRows.map((row) => <tr key={row.category}><td className="border border-black p-1 font-semibold">{row.category}</td><td className="border border-black p-1 text-right">{row.questions}</td><td className="border border-black p-1 text-right">{row.correct}</td><td className="border border-black p-1 text-right">{row.accuracy}%</td><td className="border border-black p-1 text-right">{formatTime(row.avgTime)}</td></tr>)}</tbody>
+              </table>
+            </div>
+          )}
           <div className="mt-4">
             <h4 className="mb-2 font-bold text-[11px] uppercase tracking-wide">Talent Score Calculation: {currentExamTalentScore}</h4>
             <table className="w-full border-collapse text-[10px]">
