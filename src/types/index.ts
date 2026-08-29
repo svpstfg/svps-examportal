@@ -34,6 +34,8 @@ export interface Question {
   correctAnswer: number;
   explanation: string;
   explanationImage?: string;
+  /** Optional teacher-defined lesson-plan / learning-outcome category. */
+  lessonPlanCategory?: string;
 }
 
 export interface Test {
