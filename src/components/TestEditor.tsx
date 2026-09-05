@@ -13,6 +13,7 @@ import { Test, Question, Chapter, Course, Class } from "@/types";
 import { EnhancedQuestionFormV2 } from "@/components/EnhancedQuestionFormV2";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatDateOnly, parseDateOnly } from "@/lib/scheduledDate";
 
 interface TestEditorProps {
   test: Test;
@@ -78,7 +79,7 @@ export const TestEditor = ({ test, chapters, courses, classes, onSave, onCancel 
           duration: editingTest.duration,
           chapter_id: editingTest.chapterId,
           questions: editingTest.questions as any,
-          scheduled_date: editingTest.scheduledDate?.toISOString().split('T')[0] || null,
+          scheduled_date: formatDateOnly(editingTest.scheduledDate),
           scheduled_time: editingTest.scheduledTime || null,
           is_scheduled: editingTest.isScheduled,
           is_pro: editingTest.isPro,

@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Test, TestAttempt, Question } from "@/types";
 import { AnswerSheetView } from "./AnswerSheetView";
+import { parseDateOnly } from "@/lib/scheduledDate";
 
 interface Props {
   studentId: string;
@@ -58,7 +59,7 @@ export const StudentHistoryDialog = ({ studentId, studentName, open, onClose }: 
               chapterId: t.chapter_id,
               questions: (t.questions as any as Question[]) || [],
               createdAt: new Date(t.created_at),
-              scheduledDate: t.scheduled_date ? new Date(t.scheduled_date) : undefined,
+              scheduledDate: parseDateOnly(t.scheduled_date),
               scheduledTime: t.scheduled_time || undefined,
               isScheduled: t.is_scheduled || false,
               isPro: t.is_pro || false,
