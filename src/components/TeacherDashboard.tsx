@@ -65,6 +65,7 @@ import { Class, Course, Chapter, Question, Test } from "@/types";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { formatDateOnly, parseDateOnly } from "@/lib/scheduledDate";
 
 export const TeacherDashboard = () => {
   const { user } = useAuth();
@@ -166,7 +167,7 @@ export const TeacherDashboard = () => {
           chapterId: t.chapter_id,
           questions: (t.questions as any as Question[]) || [],
           createdAt: new Date(t.created_at),
-          scheduledDate: t.scheduled_date ? new Date(t.scheduled_date) : undefined,
+          scheduledDate: parseDateOnly(t.scheduled_date),
           scheduledTime: t.scheduled_time || undefined,
           isScheduled: t.is_scheduled || false,
           isPro: (t as any).is_pro || false,
@@ -434,7 +435,7 @@ export const TeacherDashboard = () => {
           duration: newTest.duration,
           chapter_id: newTest.chapterId,
           questions: newTest.questions as any,
-          scheduled_date: newTest.scheduledDate?.toISOString().split('T')[0],
+          scheduled_date: formatDateOnly(newTest.scheduledDate),
           scheduled_time: newTest.scheduledTime || null,
           is_scheduled: newTest.isScheduled,
           is_pro: newTest.isPro,
@@ -454,7 +455,7 @@ export const TeacherDashboard = () => {
         chapterId: data.chapter_id,
         questions: (data.questions as any as Question[]) || [],
         createdAt: new Date(data.created_at),
-        scheduledDate: data.scheduled_date ? new Date(data.scheduled_date) : undefined,
+        scheduledDate: parseDateOnly(data.scheduled_date),
         scheduledTime: data.scheduled_time || undefined,
         isScheduled: data.is_scheduled || false,
         isPro: (data as any).is_pro || false,
@@ -550,7 +551,7 @@ export const TeacherDashboard = () => {
       className: getClassName(course?.classId || ''),
       questions: test.questions,
       createdAt: test.createdAt?.toISOString(),
-      scheduledDate: test.scheduledDate?.toISOString(),
+      scheduledDate: formatDateOnly(test.scheduledDate),
       scheduledTime: test.scheduledTime,
       isScheduled: test.isScheduled,
       isPro: test.isPro,

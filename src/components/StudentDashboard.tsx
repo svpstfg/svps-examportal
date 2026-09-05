@@ -43,6 +43,7 @@ import { TestResults } from "./TestResults";
 import { UpgradeBanner } from "./UpgradeBanner";
 import { ReexamRequestButton } from "./ReexamRequestButton";
 import { LearningPlan } from "./LearningPlan";
+import { parseDateOnly } from "@/lib/scheduledDate";
 
 const RESUME_KEY = (studentId: string, testId: string) => `test_progress_${studentId}_${testId}`;
 
@@ -228,7 +229,7 @@ export const StudentDashboard = () => {
             chapterId: t.chapter_id,
             questions: (t.questions as any as Question[]) || [],
             createdAt: new Date(t.created_at),
-            scheduledDate: t.scheduled_date ? new Date(t.scheduled_date) : undefined,
+            scheduledDate: parseDateOnly(t.scheduled_date),
             scheduledTime: t.scheduled_time || undefined,
             isScheduled: t.is_scheduled || false,
             isPro: (t as any).is_pro || false,
@@ -317,7 +318,7 @@ export const StudentDashboard = () => {
           chapterId: t.chapter_id,
           questions: (t.questions as any as Question[]) || [],
           createdAt: new Date(t.created_at),
-          scheduledDate: t.scheduled_date ? new Date(t.scheduled_date) : undefined,
+          scheduledDate: parseDateOnly(t.scheduled_date),
           scheduledTime: t.scheduled_time || undefined,
           isScheduled: t.is_scheduled || false,
           isPro: (t as any).is_pro || false,
