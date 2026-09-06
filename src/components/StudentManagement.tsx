@@ -55,6 +55,8 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordResult, setPasswordResult] = useState<{ studentName: string; password: string } | null>(null);
+  const [recentPasswords, setRecentPasswords] = useState<Record<string, string>>({});
+  const [visiblePasswordIds, setVisiblePasswordIds] = useState<Record<string, boolean>>({});
 
   interface PendingStudent {
     enrollmentId: string;
@@ -393,6 +395,8 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       toast.success(`Password updated for ${passwordStudent.name}`);
+      setRecentPasswords(prev => ({ ...prev, [passwordStudent.id]: newPassword }));
+      setVisiblePasswordIds(prev => ({ ...prev, [passwordStudent.id]: true }));
       setPasswordResult({ studentName: passwordStudent.name, password: newPassword });
       setPasswordStudent(null);
       setNewPassword('');
@@ -616,6 +620,30 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
                         <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                           <Mail className="h-3 w-3 shrink-0" />
                           <span className="break-all">{student.email}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm mt-2">
+                          <KeyRound className="h-3 w-3 shrink-0 text-muted-foreground" />
+                          <span className="text-muted-foreground">Password:</span>
+                          {recentPasswords[student.id] ? (
+                            <>
+                              <span className="font-mono text-foreground">
+                                {visiblePasswordIds[student.id] ? recentPasswords[student.id] : '••••••••'}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                title={visiblePasswordIds[student.id] ? 'Hide password' : 'Show password'}
+                                aria-label={visiblePasswordIds[student.id] ? 'Hide password' : 'Show password'}
+                                onClick={() => setVisiblePasswordIds(prev => ({ ...prev, [student.id]: !prev[student.id] }))}
+                              >
+                                {visiblePasswordIds[student.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                              </Button>
+                            </>
+                          ) : (
+                            <span className="text-muted-foreground italic">Not available — set a new password</span>
+                          )}
                         </div>
                       </div>
                     </div>
