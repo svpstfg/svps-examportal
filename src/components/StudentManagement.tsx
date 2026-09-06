@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Crown, Search, UserPlus, Trash2, Mail, CalendarClock, Download, ShieldCheck, ShieldAlert, BadgeCheck, Lock, LockOpen, Settings2, KeyRound, Eye, EyeOff, Copy } from "lucide-react";
+import { Users, Crown, Search, UserPlus, Trash2, Mail, CalendarClock, Download, ShieldCheck, ShieldAlert, BadgeCheck, Lock, LockOpen, Settings2, KeyRound, Eye, EyeOff } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -32,6 +32,7 @@ interface StudentRow {
   id: string;
   name: string;
   email: string;
+  dateOfBirth: string | null;
   isLocked: boolean;
   classAssignments: ClassAssignment[];
 }
@@ -54,9 +55,6 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
   const [newPassword, setNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
-  const [passwordResult, setPasswordResult] = useState<{ studentName: string; password: string } | null>(null);
-  const [recentPasswords, setRecentPasswords] = useState<Record<string, string>>({});
-  const [visiblePasswordIds, setVisiblePasswordIds] = useState<Record<string, boolean>>({});
 
   interface PendingStudent {
     enrollmentId: string;
@@ -141,10 +139,21 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
         return;
       }
 
-      const { data: studentsData, error: studentsError } = await supabase
+      let { data: studentsData, error: studentsError } = await supabase
         .from('students')
-        .select('id, name, email, is_locked')
+        .select('id, name, email, date_of_birth, is_locked')
         .in('id', studentIds);
+
+      // Keep the student list usable while an older remote schema is waiting
+      // for the date_of_birth migration to be applied.
+      if (studentsError) {
+        const fallback = await supabase
+          .from('students')
+          .select('id, name, email, is_locked')
+          .in('id', studentIds);
+        studentsData = fallback.data;
+        studentsError = fallback.error;
+      }
 
       if (studentsError) throw studentsError;
 
@@ -155,6 +164,7 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
           id: student?.id || '',
           name: student?.name || 'Unknown',
           email: student?.email || '',
+          dateOfBirth: (student as any)?.date_of_birth || null,
           isLocked: (student as any)?.is_locked ?? false,
           classAssignments: []
         };
@@ -395,9 +405,6 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       toast.success(`Password updated for ${passwordStudent.name}`);
-      setRecentPasswords(prev => ({ ...prev, [passwordStudent.id]: newPassword }));
-      setVisiblePasswordIds(prev => ({ ...prev, [passwordStudent.id]: true }));
-      setPasswordResult({ studentName: passwordStudent.name, password: newPassword });
       setPasswordStudent(null);
       setNewPassword('');
       setShowNewPassword(false);
@@ -538,7 +545,9 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
                 <Users className="h-5 w-5" />
                 <span>Students ({filteredStudents.length})</span>
               </CardTitle>
-              <CardDescription>Manage your students and their access tiers</CardDescription>
+              <CardDescription>
+                Manage your students and their access tiers. Passwords cannot be viewed; use Set Password to create a new one.
+              </CardDescription>
             </div>
             <Button
               variant="outline"
@@ -550,6 +559,7 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
                   filteredStudents.map(s => ({
                     Name: s.name,
                     Email: s.email,
+                    'Date of Birth': s.dateOfBirth || 'Not provided',
                     Classes: s.classAssignments.map(assignment => getClassName(assignment.classId)).join(', '),
                     Tier: s.classAssignments[0]?.tier || 'free',
                     Enrolled: s.classAssignments[0] ? format(s.classAssignments[0].enrolledAt, 'yyyy-MM-dd') : '—',
@@ -620,30 +630,6 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
                         <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                           <Mail className="h-3 w-3 shrink-0" />
                           <span className="break-all">{student.email}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm mt-2">
-                          <KeyRound className="h-3 w-3 shrink-0 text-muted-foreground" />
-                          <span className="text-muted-foreground">Password:</span>
-                          {recentPasswords[student.id] ? (
-                            <>
-                              <span className="font-mono text-foreground">
-                                {visiblePasswordIds[student.id] ? recentPasswords[student.id] : '••••••••'}
-                              </span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                title={visiblePasswordIds[student.id] ? 'Hide password' : 'Show password'}
-                                aria-label={visiblePasswordIds[student.id] ? 'Hide password' : 'Show password'}
-                                onClick={() => setVisiblePasswordIds(prev => ({ ...prev, [student.id]: !prev[student.id] }))}
-                              >
-                                {visiblePasswordIds[student.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                              </Button>
-                            </>
-                          ) : (
-                            <span className="text-muted-foreground italic">Not available — set a new password</span>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -909,45 +895,6 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
               <KeyRound className="h-4 w-4 mr-2" />
               {savingPassword ? 'Saving...' : 'Update Password'}
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!passwordResult} onOpenChange={(open) => { if (!open) setPasswordResult(null); }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Password Updated</DialogTitle>
-            <DialogDescription>
-              Save or share this new password with <span className="font-medium">{passwordResult?.studentName}</span>. It will not be shown again after closing this window.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="updated-student-password">New password</Label>
-            <div className="flex gap-2">
-              <Input
-                id="updated-student-password"
-                value={passwordResult?.password ?? ''}
-                readOnly
-                aria-label="New student password"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                title="Copy password"
-                aria-label="Copy password"
-                onClick={async () => {
-                  if (!passwordResult?.password) return;
-                  await navigator.clipboard.writeText(passwordResult.password);
-                  toast.success('Password copied');
-                }}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-          <div className="flex justify-end pt-2">
-            <Button onClick={() => setPasswordResult(null)}>Done</Button>
           </div>
         </DialogContent>
       </Dialog>
