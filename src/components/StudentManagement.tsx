@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Crown, Search, UserPlus, Trash2, Mail, CalendarClock, Download, ShieldCheck, ShieldAlert, BadgeCheck, Lock, LockOpen, Settings2, KeyRound, Eye, EyeOff } from "lucide-react";
+import { Users, Crown, Search, UserPlus, Trash2, Mail, CalendarClock, Download, ShieldCheck, ShieldAlert, BadgeCheck, Lock, LockOpen, Settings2, KeyRound, Eye, EyeOff, Copy } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -54,6 +54,7 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
   const [newPassword, setNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordResult, setPasswordResult] = useState<{ studentName: string; password: string } | null>(null);
 
   interface PendingStudent {
     enrollmentId: string;
@@ -392,6 +393,7 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       toast.success(`Password updated for ${passwordStudent.name}`);
+      setPasswordResult({ studentName: passwordStudent.name, password: newPassword });
       setPasswordStudent(null);
       setNewPassword('');
       setShowNewPassword(false);
@@ -879,6 +881,45 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
               <KeyRound className="h-4 w-4 mr-2" />
               {savingPassword ? 'Saving...' : 'Update Password'}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!passwordResult} onOpenChange={(open) => { if (!open) setPasswordResult(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Password Updated</DialogTitle>
+            <DialogDescription>
+              Save or share this new password with <span className="font-medium">{passwordResult?.studentName}</span>. It will not be shown again after closing this window.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="updated-student-password">New password</Label>
+            <div className="flex gap-2">
+              <Input
+                id="updated-student-password"
+                value={passwordResult?.password ?? ''}
+                readOnly
+                aria-label="New student password"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                title="Copy password"
+                aria-label="Copy password"
+                onClick={async () => {
+                  if (!passwordResult?.password) return;
+                  await navigator.clipboard.writeText(passwordResult.password);
+                  toast.success('Password copied');
+                }}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex justify-end pt-2">
+            <Button onClick={() => setPasswordResult(null)}>Done</Button>
           </div>
         </DialogContent>
       </Dialog>
