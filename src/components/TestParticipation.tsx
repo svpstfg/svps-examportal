@@ -27,6 +27,7 @@ interface PendingRow {
   studentId: string;
   name: string;
   email: string;
+  absentDays: number;
 }
 
 const formatDuration = (seconds: number) => {
@@ -68,6 +69,15 @@ export const TestParticipation = ({ test, onClose }: Props) => {
       }
       const classId = course.class_id;
 
+      const today = new Date();
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      const nextMonthStart = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      const monthStartIso = monthStart.toISOString().slice(0, 10);
+      const periodEndIso = new Date(Math.min(nextMonthStart.getTime(), tomorrow.getTime()))
+        .toISOString()
+        .slice(0, 10);
+
       const [studentsRes, attemptsRes] = await Promise.all([
         supabase.from("students").select("id, name, email").eq("class_id", classId),
         supabase
@@ -78,6 +88,34 @@ export const TestParticipation = ({ test, onClose }: Props) => {
 
       const students = studentsRes.data || [];
       const rawAttempts = attemptsRes.data || [];
+
+      const { data: courses } = await supabase
+        .from("courses")
+        .select("id")
+        .eq("class_id", classId);
+      const courseIds = (courses || []).map((c) => c.id);
+      const { data: chapters } = courseIds.length
+        ? await supabase.from("chapters").select("id").in("course_id", courseIds)
+        : { data: [] };
+      const chapterIds = (chapters || []).map((c) => c.id);
+      const { data: monthlyTests } = chapterIds.length
+        ? await supabase
+          .from("tests")
+          .select("id, scheduled_date")
+          .in("chapter_id", chapterIds)
+          .gte("scheduled_date", monthStartIso)
+          .lt("scheduled_date", periodEndIso)
+        : { data: [] };
+      const monthlyTestIds = (monthlyTests || []).map((t) => t.id);
+      const { data: monthlyAttempts } = monthlyTestIds.length
+        ? await supabase
+          .from("test_attempts")
+          .select("student_id, test_id")
+          .in("test_id", monthlyTestIds)
+        : { data: [] };
+      const attemptedThisMonth = new Set(
+        (monthlyAttempts || []).map((a) => `${a.student_id}:${a.test_id}`)
+      );
 
       const bestByStudent = new Map<string, typeof rawAttempts[number]>();
       for (const a of rawAttempts) {
@@ -105,7 +143,20 @@ export const TestParticipation = ({ test, onClose }: Props) => {
       const attemptedIds = new Set(bestByStudent.keys());
       const pendingRows: PendingRow[] = students
         .filter((s) => !attemptedIds.has(s.id))
-        .map((s) => ({ studentId: s.id, name: s.name, email: s.email }))
+        .map((s) => {
+          const absentDates = new Set(
+            (monthlyTests || [])
+              .filter((t) => !attemptedThisMonth.has(`${s.id}:${t.id}`))
+              .map((t) => t.scheduled_date)
+              .filter(Boolean)
+          );
+          return {
+            studentId: s.id,
+            name: s.name,
+            email: s.email,
+            absentDays: absentDates.size,
+          };
+        })
         .sort((a, b) => a.name.localeCompare(b.name));
 
       if (!cancelled) {
@@ -159,7 +210,7 @@ export const TestParticipation = ({ test, onClose }: Props) => {
       })),
       ...pending.map((p) => ({
         Status: "Not attempted",
-        Name: p.name,
+        Name: `${p.name} (${p.absentDays} absent days)`,
         Email: p.email,
         "Full marks": fullMarks,
         "Marks obtained": "",
@@ -271,7 +322,9 @@ export const TestParticipation = ({ test, onClose }: Props) => {
                     <TableBody>
                       {pending.map((p) => (
                         <TableRow key={p.studentId}>
-                          <TableCell className="font-medium">{p.name}</TableCell>
+                          <TableCell className="font-medium">
+                            {p.name} <span className="text-muted-foreground font-normal">({p.absentDays} absent days)</span>
+                          </TableCell>
                           <TableCell className="text-xs text-muted-foreground">{p.email}</TableCell>
                         </TableRow>
                       ))}
