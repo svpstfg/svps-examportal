@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 export const Header = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [userRole, setUserRole] = useState<'teacher' | 'student' | null>(null);
+  const [userRole, setUserRole] = useState<'teacher' | 'student' | 'operator' | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -19,7 +19,7 @@ export const Header = () => {
     // Cache role in sessionStorage to avoid repeat fetches across pages
     const cacheKey = `user_role_${user.id}`;
     const cached = sessionStorage.getItem(cacheKey);
-    if (cached === 'teacher' || cached === 'student') {
+    if (cached === 'teacher' || cached === 'student' || cached === 'operator') {
       setUserRole(cached);
       return;
     }
@@ -31,7 +31,7 @@ export const Header = () => {
       .maybeSingle()
       .then(({ data }) => {
         if (cancelled || !data) return;
-        const role = data.role as 'teacher' | 'student';
+        const role = data.role as 'teacher' | 'student' | 'operator';
         sessionStorage.setItem(cacheKey, role);
         setUserRole(role);
       });

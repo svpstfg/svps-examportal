@@ -123,6 +123,30 @@ Deno.serve(async (req) => {
       return json({ users });
     }
 
+    if (action === "list-operators") {
+      const { data: assignments, error: assignmentError } = await admin
+        .from("teacher_operators")
+        .select("operator_user_id, created_at")
+        .eq("teacher_id", user.id)
+        .order("created_at", { ascending: false });
+      if (assignmentError) throw assignmentError;
+
+      const operators = [];
+      for (const assignment of assignments ?? []) {
+        const { data: operatorData, error: operatorError } = await admin.auth.admin.getUserById(
+          assignment.operator_user_id,
+        );
+        if (operatorError || !operatorData.user) continue;
+        operators.push({
+          id: operatorData.user.id,
+          email: operatorData.user.email ?? "",
+          name: String(operatorData.user.user_metadata?.name ?? ""),
+          createdAt: assignment.created_at,
+        });
+      }
+      return json({ operators });
+    }
+
     if (!email) return json({ error: "email is required" }, 400);
 
 
@@ -147,6 +171,64 @@ Deno.serve(async (req) => {
     };
 
     const authUser = await findUserByEmail(email);
+
+    if (action === "create-operator") {
+      const password = String(body?.password ?? "");
+      const name = String(body?.name ?? "").trim();
+      if (password.length < 6) {
+        return json({ error: "Password must be at least 6 characters" }, 400);
+      }
+      if (!name) return json({ error: "name is required" }, 400);
+      if (authUser) return json({ error: "An account with this email already exists" }, 409);
+
+      const { data: created, error: createError } = await admin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { name, role: "operator" },
+      });
+      if (createError || !created.user) throw createError ?? new Error("Could not create operator");
+
+      const { error: assignmentError } = await admin.from("teacher_operators").insert({
+        teacher_id: user.id,
+        operator_user_id: created.user.id,
+      });
+      if (assignmentError) {
+        await admin.auth.admin.deleteUser(created.user.id);
+        throw assignmentError;
+      }
+      return json({ success: true, operator: { id: created.user.id, email, name } });
+    }
+
+    if (action === "delete-operator" || action === "change-operator-password") {
+      if (!authUser) return json({ error: "Operator account was not found" }, 404);
+      const { data: assignment, error: assignmentError } = await admin
+        .from("teacher_operators")
+        .select("operator_user_id")
+        .eq("teacher_id", user.id)
+        .eq("operator_user_id", authUser.id)
+        .maybeSingle();
+      if (assignmentError) throw assignmentError;
+      if (!assignment) return json({ error: "You can only manage your own operators" }, 403);
+
+      if (action === "change-operator-password") {
+        const password = String(body?.password ?? "");
+        if (password.length < 6) return json({ error: "Password must be at least 6 characters" }, 400);
+        const { error: passwordError } = await admin.auth.admin.updateUserById(authUser.id, { password });
+        if (passwordError) throw passwordError;
+        return json({ success: true });
+      }
+
+      const { error: removeError } = await admin
+        .from("teacher_operators")
+        .delete()
+        .eq("teacher_id", user.id)
+        .eq("operator_user_id", authUser.id);
+      if (removeError) throw removeError;
+      const { error: deleteError } = await admin.auth.admin.deleteUser(authUser.id);
+      if (deleteError) throw deleteError;
+      return json({ success: true });
+    }
 
     // Safety: never let a teacher act on another teacher / their own account
     if (authUser) {
