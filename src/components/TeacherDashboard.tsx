@@ -92,6 +92,7 @@ export const TeacherDashboard = () => {
   const [testFilterChapterId, setTestFilterChapterId] = useState('');
   const [newCourseClassId, setNewCourseClassId] = useState('');
   const [isCreatingTest, setIsCreatingTest] = useState(false);
+  const [userRole, setUserRole] = useState<'teacher' | 'operator' | null>(null);
 
   const [newChapter, setNewChapter] = useState({ name: '', description: '', courseId: '' });
   const [newTest, setNewTest] = useState({
@@ -193,6 +194,22 @@ export const TeacherDashboard = () => {
 
     loadData();
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => setUserRole(data?.role === 'operator' ? 'operator' : 'teacher'));
+  }, [user]);
+
+  useEffect(() => {
+    if (userRole === 'operator') {
+      setActiveTab((current) => current === 'classes' ? 'create-test' : current);
+    }
+  }, [userRole]);
 
   // Class management functions
   const handleClassCreate = async (newClass: Omit<Class, 'id' | 'createdAt'>) => {
@@ -738,7 +755,7 @@ export const TeacherDashboard = () => {
     { key: 'ai-usage' as const, label: 'AI Usage Tracker', icon: Activity },
     { key: 'settings' as const, label: 'Settings', icon: Settings },
     { key: 'share-signup' as const, label: 'Share Signup Link', icon: Share2 },
-  ];
+  ].filter(() => userRole !== 'operator');
 
   const renderSidebarSection = () => {
     switch (sidebarSection) {
@@ -872,7 +889,7 @@ export const TeacherDashboard = () => {
               <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  <SidebarMenuItem>
+                  {userRole !== 'operator' && <SidebarMenuItem>
                     <SidebarMenuButton
                       isActive={sidebarSection === null}
                       onClick={() => setSidebarSection(null)}
@@ -881,14 +898,30 @@ export const TeacherDashboard = () => {
                       <LayoutDashboard className="h-4 w-4" />
                       <span>Management</span>
                     </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  </SidebarMenuItem>}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
             <SidebarGroup>
-              <SidebarGroupLabel>Tools</SidebarGroupLabel>
+              <SidebarGroupLabel>{userRole === 'operator' ? 'Test Workspace' : 'Tools'}</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
+                  {userRole === 'operator' && (
+                    <>
+                      <SidebarMenuItem>
+                        <SidebarMenuButton isActive={activeTab === 'create-test'} onClick={() => setActiveTab('create-test')} tooltip="Create Test">
+                          <Plus className="h-4 w-4" />
+                          <span>Create Test</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                      <SidebarMenuItem>
+                        <SidebarMenuButton isActive={activeTab === 'tests'} onClick={() => setActiveTab('tests')} tooltip="Tests">
+                          <FileText className="h-4 w-4" />
+                          <span>Tests</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    </>
+                  )}
                   {sidebarItems.map((item) => (
                     <SidebarMenuItem key={item.key}>
                       <SidebarMenuButton
@@ -929,10 +962,12 @@ export const TeacherDashboard = () => {
             ) : (
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-6">
               <TabsList className="flex flex-wrap h-auto gap-1 w-full">
+                {userRole !== 'operator' && <>
                 <TabsTrigger value="classes" className="flex-1 min-w-[80px] text-xs sm:text-sm">Classes</TabsTrigger>
                 <TabsTrigger value="students" className="flex-1 min-w-[80px] text-xs sm:text-sm">Students</TabsTrigger>
                 <TabsTrigger value="courses" className="flex-1 min-w-[80px] text-xs sm:text-sm">Subjects</TabsTrigger>
                 <TabsTrigger value="chapters" className="flex-1 min-w-[80px] text-xs sm:text-sm">Chapters</TabsTrigger>
+                </>}
                 <TabsTrigger value="create-test" className="flex-1 min-w-[80px] text-xs sm:text-sm">Create Test</TabsTrigger>
                 <TabsTrigger value="tests" className="flex-1 min-w-[80px] text-xs sm:text-sm">Tests</TabsTrigger>
               </TabsList>

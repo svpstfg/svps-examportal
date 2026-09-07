@@ -32,6 +32,7 @@ import {
   Globe,
   Save,
   Loader2,
+  UserPlus,
 } from "lucide-react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
@@ -52,6 +53,13 @@ interface Props {
   classes: Class[];
 }
 
+interface Operator {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
 export const UserManagement = ({ classes }: Props) => {
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +74,14 @@ export const UserManagement = ({ classes }: Props) => {
   const [pwUser, setPwUser] = useState<ManagedUser | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [deleteUser, setDeleteUser] = useState<ManagedUser | null>(null);
+  const [operators, setOperators] = useState<Operator[]>([]);
+  const [operatorName, setOperatorName] = useState("");
+  const [operatorEmail, setOperatorEmail] = useState("");
+  const [operatorPassword, setOperatorPassword] = useState("");
+  const [operatorBusy, setOperatorBusy] = useState(false);
+  const [operatorPasswordDialog, setOperatorPasswordDialog] = useState<Operator | null>(null);
+  const [operatorDeleteDialog, setOperatorDeleteDialog] = useState<Operator | null>(null);
+  const [operatorNewPassword, setOperatorNewPassword] = useState("");
 
 
 
@@ -107,10 +123,96 @@ export const UserManagement = ({ classes }: Props) => {
     }
   }, [classes]);
 
+  const loadOperators = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-users", {
+        body: { action: "list-operators" },
+      });
+      if (error) throw error;
+      setOperators(data?.operators ?? []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load data entry operators");
+    }
+  }, []);
+
   useEffect(() => {
     loadDomain();
     loadUsers();
-  }, [loadDomain, loadUsers]);
+    loadOperators();
+  }, [loadDomain, loadUsers, loadOperators]);
+
+  const createOperator = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setOperatorBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-users", {
+        body: {
+          action: "create-operator",
+          name: operatorName.trim(),
+          email: operatorEmail.trim().toLowerCase(),
+          password: operatorPassword,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Data entry operator added");
+      setOperatorName("");
+      setOperatorEmail("");
+      setOperatorPassword("");
+      await loadOperators();
+    } catch (err) {
+      toast.error((err as Error).message || "Failed to add operator");
+    } finally {
+      setOperatorBusy(false);
+    }
+  };
+
+  const changeOperatorPassword = async () => {
+    if (!operatorPasswordDialog) return;
+    if (operatorNewPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    setOperatorBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-users", {
+        body: {
+          action: "change-operator-password",
+          email: operatorPasswordDialog.email,
+          password: operatorNewPassword,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Operator password updated");
+      setOperatorPasswordDialog(null);
+      setOperatorNewPassword("");
+    } catch (err) {
+      toast.error((err as Error).message || "Failed to update operator password");
+    } finally {
+      setOperatorBusy(false);
+    }
+  };
+
+  const deleteOperator = async () => {
+    if (!operatorDeleteDialog) return;
+    setOperatorBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-users", {
+        body: { action: "delete-operator", email: operatorDeleteDialog.email },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Data entry operator removed");
+      setOperatorDeleteDialog(null);
+      await loadOperators();
+    } catch (err) {
+      toast.error((err as Error).message || "Failed to remove operator");
+    } finally {
+      setOperatorBusy(false);
+    }
+  };
 
   useEffect(() => {
     // default collapsed for all class groups
@@ -303,6 +405,58 @@ export const UserManagement = ({ classes }: Props) => {
         </p>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <UserPlus className="h-5 w-5" /> Data Entry Operators
+          </CardTitle>
+          <CardDescription>
+            Operators can sign in and work only with Create Test and Tests. They cannot manage students, classes, subjects, or settings.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <form onSubmit={createOperator} className="grid gap-3 md:grid-cols-4 md:items-end">
+            <div className="space-y-2">
+              <Label htmlFor="operator-name">Name</Label>
+              <Input id="operator-name" value={operatorName} onChange={(e) => setOperatorName(e.target.value)} placeholder="Operator name" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="operator-email">Email</Label>
+              <Input id="operator-email" type="email" value={operatorEmail} onChange={(e) => setOperatorEmail(e.target.value)} placeholder="operator@example.com" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="operator-password">Temporary password</Label>
+              <Input id="operator-password" type="password" value={operatorPassword} onChange={(e) => setOperatorPassword(e.target.value)} placeholder="At least 6 characters" minLength={6} required />
+            </div>
+            <Button type="submit" disabled={operatorBusy}>
+              {operatorBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
+              Add Operator
+            </Button>
+          </form>
+
+          {operators.length > 0 && (
+            <div className="space-y-2">
+              {operators.map((operator) => (
+                <div key={operator.id} className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-medium">{operator.name || "Unnamed operator"}</p>
+                    <p className="text-sm text-muted-foreground">{operator.email}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" onClick={() => { setOperatorPasswordDialog(operator); setOperatorNewPassword(""); }}>
+                      <KeyRound className="mr-1 h-4 w-4" /> Password
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={() => setOperatorDeleteDialog(operator)}>
+                      <Trash2 className="mr-1 h-4 w-4" /> Remove
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Domain settings */}
       <Card>
         <CardHeader>
@@ -474,6 +628,36 @@ export const UserManagement = ({ classes }: Props) => {
             >
               Delete
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={!!operatorPasswordDialog} onOpenChange={(open) => !open && setOperatorPasswordDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change operator password</DialogTitle>
+            <DialogDescription>Set a new password for {operatorPasswordDialog?.name || operatorPasswordDialog?.email}.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="operator-new-password">New password</Label>
+            <Input id="operator-new-password" type="password" value={operatorNewPassword} onChange={(e) => setOperatorNewPassword(e.target.value)} minLength={6} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOperatorPasswordDialog(null)}>Cancel</Button>
+            <Button onClick={changeOperatorPassword} disabled={operatorBusy}>Update Password</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!operatorDeleteDialog} onOpenChange={(open) => !open && setOperatorDeleteDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this operator?</AlertDialogTitle>
+            <AlertDialogDescription>{operatorDeleteDialog?.name || operatorDeleteDialog?.email} will no longer be able to access your test workspace.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteOperator}>Remove Operator</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
