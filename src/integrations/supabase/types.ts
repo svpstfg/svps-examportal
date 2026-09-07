@@ -653,6 +653,27 @@ export type Database = {
           },
         ]
       }
+      teacher_operators: {
+        Row: {
+          created_at: string
+          id: string
+          operator_user_id: string
+          teacher_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          operator_user_id: string
+          teacher_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          operator_user_id?: string
+          teacher_id?: string
+        }
+        Relationships: []
+      }
       teacher_settings: {
         Row: {
           created_at: string
@@ -936,6 +957,7 @@ export type Database = {
         Args: { _class_id: string; _email: string }
         Returns: boolean
       }
+      is_workspace_member: { Args: { _teacher_id: string }; Returns: boolean }
       list_public_classes: {
         Args: never
         Returns: {
@@ -950,7 +972,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "teacher" | "student"
+      app_role: "teacher" | "student" | "operator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1078,7 +1100,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["teacher", "student"],
+      app_role: ["teacher", "student", "operator"],
     },
   },
 } as const
