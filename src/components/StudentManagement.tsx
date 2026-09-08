@@ -151,7 +151,7 @@ export const StudentManagement = ({ classes }: StudentManagementProps) => {
           .from('students')
           .select('id, name, email, is_locked')
           .in('id', studentIds);
-        studentsData = fallback.data;
+        studentsData = fallback.data as typeof studentsData;
         studentsError = fallback.error;
       }
 
