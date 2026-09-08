@@ -950,9 +950,13 @@ export const TeacherDashboard = () => {
             <div className="flex items-center gap-3">
               <SidebarTrigger className="hidden md:inline-flex" />
               <div className="flex flex-col space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight">Teacher Dashboard</h1>
+                <h1 className="text-3xl font-bold tracking-tight">
+                  {userRole === 'operator' ? 'Test Workspace' : 'Teacher Dashboard'}
+                </h1>
                 <p className="text-muted-foreground">
-                  Manage your classes, subjects, chapters, and create tests for your students.
+                  {userRole === 'operator'
+                    ? 'Create and manage tests assigned to your workspace.'
+                    : 'Manage your classes, subjects, chapters, and create tests for your students.'}
                 </p>
               </div>
             </div>
