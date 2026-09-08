@@ -8,6 +8,13 @@
       "when": 1788766499011,
       "tag": "0000_add_data_entry_operators",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788891841615,
+      "tag": "0001_add_student_date_of_birth",
+      "breakpoints": true
     }
   ]
 }

@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
     return json({ error: "Unknown action" }, 400);
   } catch (err) {
     console.error("manage-student-verification error:", err);
-    return json({ error: String(err?.message ?? err) }, 500);
+    return json({ error: err instanceof Error ? err.message : String(err) }, 500);
   }
 });
 
