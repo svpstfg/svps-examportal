@@ -1319,7 +1319,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                 <TabsTrigger value="image">Image</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="text" className="space-y-2">
+              <TabsContent value="text" tabIndex={-1} className="space-y-2">
                 <div
                   ref={questionRichRef}
                   contentEditable
@@ -1336,7 +1336,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                 />
               </TabsContent>
               
-              <TabsContent value="image">
+              <TabsContent value="image" tabIndex={-1}>
                 <ImageUploadField
                   label="Question Image"
                   value={currentQuestion.questionImage}
@@ -1414,7 +1414,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                       <TabsTrigger value="image">Image</TabsTrigger>
                     </TabsList>
                     
-                    <TabsContent value="text" className="space-y-2">
+                    <TabsContent value="text" tabIndex={-1} className="space-y-2">
                       <div
                         ref={(el) => { optionRichRefs.current[index] = el; }}
                         contentEditable
@@ -1431,7 +1431,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                       />
                     </TabsContent>
                     
-                    <TabsContent value="image">
+                    <TabsContent value="image" tabIndex={-1}>
                       <ImageUploadField
                         label={`Option ${index + 1} Image`}
                         value={currentQuestion.optionImages?.[index]}
@@ -1540,7 +1540,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                 <TabsTrigger value="image">Image</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="text" className="space-y-2">
+              <TabsContent value="text" tabIndex={-1} className="space-y-2">
                 <div
                   ref={explanationRichRef}
                   contentEditable
@@ -1552,7 +1552,7 @@ export const EnhancedQuestionFormV2: React.FC<EnhancedQuestionFormV2Props> = ({
                 />
               </TabsContent>
               
-              <TabsContent value="image">
+              <TabsContent value="image" tabIndex={-1}>
                 <ImageUploadField
                   label="Explanation Image"
                   value={currentQuestion.explanationImage}
